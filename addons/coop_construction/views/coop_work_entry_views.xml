@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Agrega obra_id a la lista inline de horas en la liquidación -->
+    <record id="view_coop_payroll_form_obra" model="ir.ui.view">
+        <field name="name">coop.payroll.form.coop.obra</field>
+        <field name="model">coop.payroll</field>
+        <field name="inherit_id" ref="coop_payroll.view_coop_payroll_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='work_entry_ids']//list/field[@name='description']"
+                   position="after">
+                <field name="obra_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

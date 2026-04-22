@@ -3,6 +3,8 @@
 Sistema de gestión para cooperativas de trabajo construido sobre Odoo 18 Community.
 52 cooperativas interesadas, 7 piloto en Neuquén. Arranca por construcción.
 
+**Repo local:** `~/Documents/coopeapp/` — todos los paths en este archivo son relativos a esa raíz.
+
 ## Stack
 - Odoo 18 Community + Docker en VPS Hetzner (178.105.15.189)
 - Python 3.11, PostgreSQL 16
@@ -10,11 +12,13 @@ Sistema de gestión para cooperativas de trabajo construido sobre Odoo 18 Commun
 
 ## Estructura
 addons/
-  coop_members/   # Socios, aportes, capital social — MÓDULO BASE
-  coop_payroll/   # Liquidaciones transparentes — depende de coop_members
-  coop_assembly/  # Asambleas, votaciones, actas — depende de coop_members
+  coop_members/      # Socios, aportes, capital social — MÓDULO BASE
+  coop_payroll/      # Liquidaciones transparentes — depende de coop_members
+  coop_assembly/     # Asambleas, votaciones, actas — depende de coop_members
+  coop_construction/ # Obras, certificados de avance — depende de coop_members + coop_payroll + project
 
 ## Deploy al VPS
+# Correr desde ~/Documents/coopeapp/
 scp -r addons/MODULO/ odoo-admin@178.105.15.189:~/odoo-coop/addons/
 ssh odoo-admin@178.105.15.189
 cd ~/odoo-coop && docker compose run --rm odoo odoo -u MODULO -d coop_piloto --stop-after-init && docker compose up -d
@@ -54,6 +58,7 @@ Si debilita alguno, no se implementa sin discusión.
 Ver .claude/rules/cooperative-principles.md para detalle.
 
 ## Comandos útiles
+# En el VPS (después de ssh odoo-admin@178.105.15.189, cd ~/odoo-coop):
 docker compose logs -f odoo
 docker compose restart odoo
-docker compose run --rm odoo odoo -u coop_members -d coop_piloto --stop-after-init
+docker compose run --rm odoo odoo -u MODULO -d coop_piloto --stop-after-init

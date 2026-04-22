@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_coop_construction_root"
+              name="Construcción"
+              sequence="50"/>
+
+    <menuitem id="menu_coop_obras"
+              name="Obras"
+              parent="menu_coop_construction_root"
+              action="action_coop_obras"
+              sequence="10"/>
+
+    <menuitem id="menu_coop_certificados"
+              name="Certificados de Avance"
+              parent="menu_coop_construction_root"
+              action="action_coop_certificado"
+              sequence="20"/>
+</odoo>

@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_coop_certificado_member,coop.certificado member,model_coop_certificado,coop_members.group_coop_member,1,0,0,0
+access_coop_certificado_manager,coop.certificado manager,model_coop_certificado,coop_members.group_coop_manager,1,1,1,0
+access_coop_certificado_syndic,coop.certificado syndic,model_coop_certificado,coop_members.group_coop_syndic,1,0,0,0

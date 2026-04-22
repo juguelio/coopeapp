@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extensión del formulario de tarea: agrega categoría y cuadrilla -->
+    <!-- Nota: si el XPath //field[@name='user_ids'] falla, ajustar al campo visible
+         más cercano en project.view_task_form2 de tu instancia -->
+    <record id="view_task_form_coop_obra" model="ir.ui.view">
+        <field name="name">project.task.form.coop.obra</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_ids']" position="after">
+                <field name="categoria_tarea"
+                       invisible="not project_id.is_coop_obra"/>
+                <field name="socio_tarea_ids" widget="many2many_tags"
+                       string="Cuadrilla asignada"
+                       invisible="not project_id.is_coop_obra"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extensión de la vista estándar de proyecto -->
+    <!-- Nota: si el XPath //field[@name='partner_id'] falla en tu versión de Odoo 18,
+         ajustalo a otro campo visible de project.edit_project (ej: //field[@name='user_id']) -->
+    <record id="view_project_form_inherit_coop_obra" model="ir.ui.view">
+        <field name="name">project.project.form.coop.obra</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="is_coop_obra" widget="boolean_toggle"
+                       string="Es obra cooperativa"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Datos de Obra" name="datos_obra"
+                      invisible="not is_coop_obra">
+                    <group>
+                        <group string="Contrato">
+                            <field name="obra_type"/>
+                            <field name="comitente_id"/>
+                            <field name="numero_expediente"/>
+                            <field name="monto_contrato"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="hour_rate"/>
+                            <field name="ubicacion"/>
+                        </group>
+                        <group string="Responsables">
+                            <field name="director_id"/>
+                            <field name="capataz_id"/>
+                            <field name="estado_obra"/>
+                        </group>
+                    </group>
+                    <group string="Resumen económico">
+                        <field name="costo_mano_obra"/>
+                        <field name="total_certificado"/>
+                    </group>
+                    <group string="Plantel asignado">
+                        <field name="socio_obra_ids" widget="many2many_tags" nolabel="1"/>
+                    </group>
+                    <field name="certificado_ids">
+                        <list>
+                            <field name="numero"/>
+                            <field name="date"/>
+                            <field name="porcentaje_avance" string="Avance %"/>
+                            <field name="monto_certificado"/>
+                            <field name="state" widget="badge"
+                                   decoration-muted="state == 'borrador'"
+                                   decoration-info="state == 'presentado'"
+                                   decoration-warning="state == 'aprobado'"
+                                   decoration-success="state == 'cobrado'"
+                                   decoration-danger="state == 'rechazado'"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista lista dedicada para obras -->
+    <record id="view_coop_obra_list" model="ir.ui.view">
+        <field name="name">coop.obra.list</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <list string="Obras"
+                  decoration-success="estado_obra == 'finalizada'"
+                  decoration-warning="estado_obra == 'suspendida'"
+                  decoration-danger="estado_obra == 'cancelada'"
+                  decoration-muted="estado_obra == 'planificacion'">
+                <field name="name" string="Obra"/>
+                <field name="obra_type" widget="badge"/>
+                <field name="comitente_id"/>
+                <field name="director_id"/>
+                <field name="date_start" string="Inicio"/>
+                <field name="date" string="Fin estimado"/>
+                <field name="monto_contrato"/>
+                <field name="total_certificado"/>
+                <field name="certificado_count" string="Certif." optional="show"/>
+                <field name="estado_obra" widget="badge"
+                       decoration-info="estado_obra == 'activa'"
+                       decoration-success="estado_obra == 'finalizada'"
+                       decoration-warning="estado_obra == 'suspendida'"
+                       decoration-danger="estado_obra == 'cancelada'"
+                       decoration-muted="estado_obra == 'planificacion'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista búsqueda de obras -->
+    <record id="view_coop_obra_search" model="ir.ui.view">
+        <field name="name">coop.obra.search</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <search string="Buscar obras">
+                <field name="name" string="Obra"/>
+                <field name="comitente_id"/>
+                <field name="director_id"/>
+                <filter name="activas" string="Activas"
+                        domain="[('estado_obra', '=', 'activa')]"/>
+                <filter name="planificacion" string="En planificación"
+                        domain="[('estado_obra', '=', 'planificacion')]"/>
+                <filter name="suspendidas" string="Suspendidas"
+                        domain="[('estado_obra', '=', 'suspendida')]"/>
+                <filter name="finalizadas" string="Finalizadas"
+                        domain="[('estado_obra', '=', 'finalizada')]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_type" string="Tipo"
+                            context="{'group_by': 'obra_type'}"/>
+                    <filter name="group_estado" string="Estado"
+                            context="{'group_by': 'estado_obra'}"/>
+                    <filter name="group_comitente" string="Comitente"
+                            context="{'group_by': 'comitente_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción para obras: lista dedicada + formulario estándar extendido -->
+    <record id="action_coop_obras" model="ir.actions.act_window">
+        <field name="name">Obras</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_coop_obra', '=', True)]</field>
+        <field name="context">{'default_is_coop_obra': True}</field>
+        <field name="search_view_id" ref="view_coop_obra_search"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_coop_obra_list')}),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Creá la primera obra cooperativa
+            </p>
+            <p>
+                Activá "Es obra cooperativa" en el proyecto para acceder a los campos de construcción.
+            </p>
+        </field>
+    </record>
+</odoo>
