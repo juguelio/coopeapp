@@ -1,0 +1,8 @@
+.DS_Store
+**/.DS_Store
+*.pyc
+__pycache__/
+*.log
+config/odoo.conf
+*.dump
+*.tar.gz
