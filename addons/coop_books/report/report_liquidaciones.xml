@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_action_liquidaciones" model="ir.actions.report">
+        <field name="name">Liquidaciones a Socios</field>
+        <field name="model">coop.book.export</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">coop_books.template_liquidaciones</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <template id="template_liquidaciones">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-set="payrolls" t-value="wizard.get_payrolls()"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="text-align:center;">LIBRO DE LIQUIDACIONES A SOCIOS</h2>
+                        <p style="text-align:center;">
+                            Período: <t t-esc="wizard.date_from"/> al <t t-esc="wizard.date_to"/>
+                        </p>
+                        <t t-if="not payrolls">
+                            <p>No hay liquidaciones aprobadas o pagadas en el período seleccionado.</p>
+                        </t>
+                        <table class="table table-sm table-bordered" style="width:100%; font-size:11px;">
+                            <thead>
+                                <tr>
+                                    <th>Socio</th>
+                                    <th>Período</th>
+                                    <th style="text-align:right;">Horas</th>
+                                    <th style="text-align:right;">Val. Hora</th>
+                                    <th style="text-align:right;">Bonif.</th>
+                                    <th style="text-align:right;">Bruto</th>
+                                    <th style="text-align:right;">Deduc.</th>
+                                    <th style="text-align:right;">Anticipos</th>
+                                    <th style="text-align:right;">Neto</th>
+                                    <th>Estado</th>
+                                    <th>Conforme</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="payrolls" t-as="p">
+                                    <tr>
+                                        <td><t t-esc="p.member_id.name"/></td>
+                                        <td><t t-esc="p.date_from"/> / <t t-esc="p.date_to"/></td>
+                                        <td style="text-align:right;"><t t-esc="'%.1f' % p.total_hours"/></td>
+                                        <td style="text-align:right;"><t t-esc="'{:,.0f}'.format(p.hour_rate)"/></td>
+                                        <td style="text-align:right;"><t t-esc="'{:,.0f}'.format(p.bonus_amount)"/></td>
+                                        <td style="text-align:right;"><t t-esc="'{:,.0f}'.format(p.gross_amount)"/></td>
+                                        <td style="text-align:right;"><t t-esc="'{:,.0f}'.format(p.deduction_amount)"/></td>
+                                        <td style="text-align:right;"><t t-esc="'{:,.0f}'.format(p.total_advances)"/></td>
+                                        <td style="text-align:right;font-weight:bold;"><t t-esc="'{:,.0f}'.format(p.net_amount)"/></td>
+                                        <td><t t-esc="dict(p._fields['state'].selection).get(p.state, p.state)"/></td>
+                                        <td style="text-align:center;">
+                                            <t t-if="p.member_agrees">Sí</t>
+                                            <t t-else="">—</t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" style="text-align:right;font-weight:bold;">Totales:</td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="'{:,.0f}'.format(sum(payrolls.mapped('gross_amount')))"/>
+                                    </td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="'{:,.0f}'.format(sum(payrolls.mapped('deduction_amount')))"/>
+                                    </td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="'{:,.0f}'.format(sum(payrolls.mapped('total_advances')))"/>
+                                    </td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="'{:,.0f}'.format(sum(payrolls.mapped('net_amount')))"/>
+                                    </td>
+                                    <td colspan="2"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

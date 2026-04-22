@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Solo managers y síndicos pueden generar libros. Los socios no. -->
+    <record id="rule_books_manager" model="ir.rule">
+        <field name="name">Libros: acceso solo a managers y síndicos</field>
+        <field name="model_id" ref="model_coop_book_export"/>
+        <field name="groups" eval="[(4, ref('coop_members.group_coop_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

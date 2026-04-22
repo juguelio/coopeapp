@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_coop_assembly_member,coop.assembly socio,model_coop_assembly,coop_members.group_coop_member,1,0,0,0
+access_coop_assembly_manager,coop.assembly admin,model_coop_assembly,coop_members.group_coop_manager,1,1,1,0
+access_coop_assembly_syndic,coop.assembly sindico,model_coop_assembly,coop_members.group_coop_syndic,1,0,0,0
+access_coop_vote_member,coop.vote socio,model_coop_vote,coop_members.group_coop_member,1,0,0,0
+access_coop_vote_manager,coop.vote admin,model_coop_vote,coop_members.group_coop_manager,1,1,1,0
+access_coop_vote_syndic,coop.vote sindico,model_coop_vote,coop_members.group_coop_syndic,1,0,0,0

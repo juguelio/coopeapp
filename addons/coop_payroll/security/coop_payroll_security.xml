@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Regla: socio solo ve sus propias liquidaciones -->
+        <record id="rule_payroll_own_member" model="ir.rule">
+            <field name="name">Socio: solo sus liquidaciones</field>
+            <field name="model_id" ref="model_coop_payroll"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_member'))]"/>
+            <field name="domain_force">[('member_id.partner_id.user_ids', 'in', [user.id])]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Regla: admin ve todas las liquidaciones -->
+        <record id="rule_payroll_all_manager" model="ir.rule">
+            <field name="name">Admin: todas las liquidaciones</field>
+            <field name="model_id" ref="model_coop_payroll"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_manager'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Regla: socio solo ve sus propios anticipos -->
+        <record id="rule_advance_own_member" model="ir.rule">
+            <field name="name">Socio: solo sus anticipos</field>
+            <field name="model_id" ref="model_coop_advance"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_member'))]"/>
+            <field name="domain_force">[('member_id.partner_id.user_ids', 'in', [user.id])]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+    </data>
+</odoo>

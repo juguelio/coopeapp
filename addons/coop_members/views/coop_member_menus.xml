@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_coop_root"
+              name="Cooperativa"
+              sequence="10"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_coop_members"
+              name="Socios"
+              parent="menu_coop_root"
+              sequence="10"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_coop_member_list"
+              name="Todos los socios"
+              parent="menu_coop_members"
+              action="action_coop_member"
+              sequence="10"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_coop_contribution_list"
+              name="Aportes y retiros"
+              parent="menu_coop_members"
+              action="action_coop_contribution"
+              sequence="20"
+              groups="base.group_user"/>
+</odoo>

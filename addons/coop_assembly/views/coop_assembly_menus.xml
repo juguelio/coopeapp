@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_coop_assembly"
+              name="Asambleas"
+              parent="coop_members.menu_coop_root"
+              sequence="30"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_coop_assembly_list"
+              name="Todas las asambleas"
+              parent="menu_coop_assembly"
+              action="action_coop_assembly"
+              sequence="10"
+              groups="base.group_user"/>
+</odoo>

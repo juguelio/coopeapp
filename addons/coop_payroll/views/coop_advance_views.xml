@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_advance_form" model="ir.ui.view">
+        <field name="name">coop.advance.form</field>
+        <field name="model">coop.advance</field>
+        <field name="arch" type="xml">
+            <form string="Anticipo">
+                <header>
+                    <button name="action_approve" string="Aprobar"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_reject" string="Rechazar"
+                            type="object"
+                            invisible="state != 'draft'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_draft" string="Volver a pendiente"
+                            type="object"
+                            invisible="state != 'rejected'"
+                            groups="coop_members.group_coop_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="member_id"/>
+                            <field name="name"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="approved_by" readonly="1"/>
+                            <field name="date_approved" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="reason" placeholder="Motivo del anticipo..."/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_coop_advance_tree" model="ir.ui.view">
+        <field name="name">coop.advance.list</field>
+        <field name="model">coop.advance</field>
+        <field name="arch" type="xml">
+            <list string="Anticipos"
+                  decoration-success="state == 'approved'"
+                  decoration-danger="state == 'rejected'"
+                  decoration-muted="state == 'discounted'">
+                <field name="date"/>
+                <field name="member_id"/>
+                <field name="name"/>
+                <field name="amount"/>
+                <field name="approved_by" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'draft'"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"
+                       decoration-muted="state == 'discounted'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_advance" model="ir.actions.act_window">
+        <field name="name">Anticipos</field>
+        <field name="res_model">coop.advance</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_draft': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay anticipos pendientes
+            </p>
+        </field>
+    </record>
+</odoo>

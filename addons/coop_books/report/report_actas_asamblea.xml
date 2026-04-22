@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_action_actas_asamblea" model="ir.actions.report">
+        <field name="name">Actas de Asamblea</field>
+        <field name="model">coop.book.export</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">coop_books.template_actas_asamblea</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <template id="template_actas_asamblea">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-set="assemblies" t-value="wizard.get_assemblies('ordinary') + wizard.get_assemblies('extraordinary')"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="text-align:center;">LIBRO DE ACTAS DE ASAMBLEA</h2>
+                        <p style="text-align:center;">
+                            Período: <t t-esc="wizard.date_from"/> al <t t-esc="wizard.date_to"/>
+                        </p>
+                        <t t-if="not assemblies">
+                            <p>No hay asambleas cerradas en el período seleccionado.</p>
+                        </t>
+                        <t t-foreach="assemblies" t-as="asamblea">
+                            <div style="margin-bottom:24px; page-break-inside:avoid;">
+                                <h4>
+                                    Asamblea N° <t t-esc="asamblea_index + 1"/> —
+                                    <t t-esc="dict(asamblea._fields['assembly_type'].selection).get(asamblea.assembly_type, '')"/>
+                                </h4>
+                                <table class="table table-sm" style="width:100%; font-size:11px;">
+                                    <tr>
+                                        <td><strong>Fecha:</strong> <t t-esc="asamblea.date"/></td>
+                                        <td><strong>Lugar:</strong> <t t-esc="asamblea.location or '—'"/></td>
+                                        <td><strong>Quórum:</strong> <t t-esc="asamblea.attendee_count"/> de <t t-esc="asamblea.total_active_members"/> socios (<t t-esc="'%.0f%%' % asamblea.quorum_percentage"/>)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Presidente:</strong> <t t-esc="asamblea.president_id.name or '—'"/></td>
+                                        <td><strong>Secretario:</strong> <t t-esc="asamblea.secretary_id.name or '—'"/></td>
+                                        <td/>
+                                    </tr>
+                                </table>
+                                <t t-if="asamblea.agenda">
+                                    <p><strong>Orden del día:</strong></p>
+                                    <p style="white-space:pre-wrap; font-size:11px;"><t t-esc="asamblea.agenda"/></p>
+                                </t>
+                                <t t-if="asamblea.vote_ids">
+                                    <p><strong>Votaciones:</strong></p>
+                                    <table class="table table-sm table-bordered" style="width:100%; font-size:11px;">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Punto</th>
+                                                <th>Tipo mayoría</th>
+                                                <th>A favor</th>
+                                                <th>En contra</th>
+                                                <th>Abstención</th>
+                                                <th>Resultado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="asamblea.vote_ids" t-as="vote">
+                                                <tr>
+                                                    <td><t t-esc="vote.sequence"/></td>
+                                                    <td><t t-esc="vote.name"/></td>
+                                                    <td><t t-esc="dict(vote._fields['vote_type'].selection).get(vote.vote_type, '')"/></td>
+                                                    <td><t t-esc="vote.votes_yes"/></td>
+                                                    <td><t t-esc="vote.votes_no"/></td>
+                                                    <td><t t-esc="vote.votes_abstain"/></td>
+                                                    <td>
+                                                        <t t-if="vote.approved">APROBADO</t>
+                                                        <t t-else="">RECHAZADO</t>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </t>
+                                <t t-if="asamblea.minutes">
+                                    <p><strong>Acta:</strong></p>
+                                    <p style="white-space:pre-wrap; font-size:11px;"><t t-esc="asamblea.minutes"/></p>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

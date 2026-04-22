@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_coop_vote" model="ir.actions.act_window">
+        <field name="name">Votaciones</field>
+        <field name="res_model">coop.vote</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

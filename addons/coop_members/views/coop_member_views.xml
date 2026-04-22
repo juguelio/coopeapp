@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_member_form" model="ir.ui.view">
+        <field name="name">coop.member.form</field>
+        <field name="model">coop.member</field>
+        <field name="arch" type="xml">
+            <form string="Socio Cooperativo">
+                <header>
+                    <button name="action_approve" string="Aprobar ingreso" type="object" class="btn-primary" invisible="state != 'prospect'"/>
+                    <button name="action_suspend" string="Suspender" type="object" invisible="state != 'active'"/>
+                    <button name="action_start_leaving" string="Iniciar baja" type="object" invisible="state not in ('active', 'suspended')"/>
+                    <button name="action_confirm_leaving" string="Confirmar baja" type="object" class="btn-danger" invisible="state != 'leaving'"/>
+                    <button name="action_reactivate" string="Reactivar" type="object" invisible="state not in ('suspended', 'leaving')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="prospect,active,former"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group string="Datos personales">
+                            <field name="partner_id"/>
+                            <field name="dni"/>
+                            <field name="cuil"/>
+                            <field name="date_birth"/>
+                            <field name="phone"/>
+                            <field name="email"/>
+                        </group>
+                        <group string="Datos cooperativos">
+                            <field name="role"/>
+                            <field name="date_admission"/>
+                            <field name="date_leaving" invisible="state not in ('leaving', 'former')"/>
+                            <field name="leaving_reason" invisible="state not in ('leaving', 'former')"/>
+                            <field name="employee_id"/>
+                        </group>
+                    </group>
+                    <group string="Capital social" col="4">
+                        <field name="initial_contribution"/>
+                        <field name="total_contributions"/>
+                        <field name="total_withdrawals"/>
+                        <field name="social_capital"/>
+                    </group>
+                    <group string="Horas trabajadas" col="2">
+                        <field name="total_hours_worked"/>
+                        <field name="current_month_hours"/>
+                    </group>
+                    <notebook>
+                        <page string="Aportes y retiros">
+                            <field name="contribution_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="name"/>
+                                    <field name="type"/>
+                                    <field name="amount"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Documentacion">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+    <record id="view_coop_member_tree" model="ir.ui.view">
+        <field name="name">coop.member.list</field>
+        <field name="model">coop.member</field>
+        <field name="arch" type="xml">
+            <list string="Socios"
+                  decoration-muted="state == 'former'"
+                  decoration-warning="state == 'suspended'"
+                  decoration-danger="state == 'leaving'">
+                <field name="name"/>
+                <field name="dni"/>
+                <field name="role"/>
+                <field name="date_admission"/>
+                <field name="social_capital" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-warning="state == 'suspended'"
+                       decoration-danger="state in ('leaving', 'former')"
+                       decoration-info="state == 'prospect'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_member_search" model="ir.ui.view">
+        <field name="name">coop.member.search</field>
+        <field name="model">coop.member</field>
+        <field name="arch" type="xml">
+            <search string="Buscar socios">
+                <field name="name" string="Nombre o DNI"
+                       filter_domain="['|', ('name', 'ilike', self), ('dni', 'ilike', self)]"/>
+                <filter name="active_members" string="Activos"
+                        domain="[('state', '=', 'active')]"/>
+                <filter name="prospects" string="Postulantes"
+                        domain="[('state', '=', 'prospect')]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_state" string="Estado"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_role" string="Rol"
+                            context="{'group_by': 'role'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_coop_member" model="ir.actions.act_window">
+        <field name="name">Socios</field>
+        <field name="res_model">coop.member</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coop_member_search"/>
+        <field name="context">{'search_default_active_members': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registra el primer socio de la cooperativa
+            </p>
+        </field>
+    </record>
+</odoo>

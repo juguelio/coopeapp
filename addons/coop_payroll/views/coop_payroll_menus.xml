@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_coop_payroll"
+              name="Liquidaciones"
+              parent="coop_members.menu_coop_root"
+              sequence="20"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_coop_payroll_list"
+              name="Todas las liquidaciones"
+              parent="menu_coop_payroll"
+              action="action_coop_payroll"
+              sequence="10"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_coop_advance_list"
+              name="Anticipos"
+              parent="menu_coop_payroll"
+              action="action_coop_advance"
+              sequence="20"
+              groups="base.group_user"/>
+</odoo>

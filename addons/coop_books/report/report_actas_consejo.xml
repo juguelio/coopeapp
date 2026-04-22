@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_action_actas_consejo" model="ir.actions.report">
+        <field name="name">Actas del Consejo de Administración</field>
+        <field name="model">coop.book.export</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">coop_books.template_actas_consejo</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <template id="template_actas_consejo">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-set="reuniones" t-value="wizard.get_assemblies('board')"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="text-align:center;">LIBRO DE ACTAS DEL CONSEJO DE ADMINISTRACIÓN</h2>
+                        <p style="text-align:center;">
+                            Período: <t t-esc="wizard.date_from"/> al <t t-esc="wizard.date_to"/>
+                        </p>
+                        <t t-if="not reuniones">
+                            <p>No hay reuniones de Consejo cerradas en el período seleccionado.</p>
+                        </t>
+                        <t t-foreach="reuniones" t-as="reunion">
+                            <div style="margin-bottom:24px; page-break-inside:avoid;">
+                                <h4>Reunión de Consejo N° <t t-esc="reunion_index + 1"/></h4>
+                                <table class="table table-sm" style="width:100%; font-size:11px;">
+                                    <tr>
+                                        <td><strong>Fecha:</strong> <t t-esc="reunion.date"/></td>
+                                        <td><strong>Lugar:</strong> <t t-esc="reunion.location or '—'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Presidente:</strong> <t t-esc="reunion.president_id.name or '—'"/></td>
+                                        <td><strong>Secretario:</strong> <t t-esc="reunion.secretary_id.name or '—'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <strong>Presentes:</strong>
+                                            <t t-esc="', '.join(reunion.attendee_ids.mapped('name')) or '—'"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <t t-if="reunion.agenda">
+                                    <p><strong>Orden del día:</strong></p>
+                                    <p style="white-space:pre-wrap; font-size:11px;"><t t-esc="reunion.agenda"/></p>
+                                </t>
+                                <t t-if="reunion.vote_ids">
+                                    <p><strong>Resoluciones:</strong></p>
+                                    <table class="table table-sm table-bordered" style="width:100%; font-size:11px;">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Punto</th>
+                                                <th>A favor</th>
+                                                <th>En contra</th>
+                                                <th>Abstención</th>
+                                                <th>Resultado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="reunion.vote_ids" t-as="vote">
+                                                <tr>
+                                                    <td><t t-esc="vote.sequence"/></td>
+                                                    <td><t t-esc="vote.name"/></td>
+                                                    <td><t t-esc="vote.votes_yes"/></td>
+                                                    <td><t t-esc="vote.votes_no"/></td>
+                                                    <td><t t-esc="vote.votes_abstain"/></td>
+                                                    <td>
+                                                        <t t-if="vote.approved">APROBADO</t>
+                                                        <t t-else="">RECHAZADO</t>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </t>
+                                <t t-if="reunion.minutes">
+                                    <p><strong>Acta:</strong></p>
+                                    <p style="white-space:pre-wrap; font-size:11px;"><t t-esc="reunion.minutes"/></p>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_action_registro_asociados" model="ir.actions.report">
+        <field name="name">Registro de Asociados</field>
+        <field name="model">coop.book.export</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">coop_books.template_registro_asociados</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <template id="template_registro_asociados">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-set="members" t-value="wizard.get_members()"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="text-align:center;">REGISTRO DE ASOCIADOS</h2>
+                        <p style="text-align:center;">
+                            Período: <t t-esc="wizard.date_from"/> al <t t-esc="wizard.date_to"/>
+                        </p>
+                        <table class="table table-sm table-bordered" style="width:100%; font-size:11px;">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Apellido y Nombre</th>
+                                    <th>DNI</th>
+                                    <th>CUIL</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Ingreso</th>
+                                    <th>Baja</th>
+                                    <th>Capital Social</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="members" t-as="m">
+                                    <tr>
+                                        <td><t t-esc="m_index + 1"/></td>
+                                        <td><t t-esc="m.name"/></td>
+                                        <td><t t-esc="m.dni"/></td>
+                                        <td><t t-esc="m.cuil or '—'"/></td>
+                                        <td><t t-esc="dict(m._fields['role'].selection).get(m.role, m.role)"/></td>
+                                        <td><t t-esc="dict(m._fields['state'].selection).get(m.state, m.state)"/></td>
+                                        <td><t t-esc="m.date_admission"/></td>
+                                        <td><t t-esc="m.date_leaving or '—'"/></td>
+                                        <td style="text-align:right;">
+                                            <t t-esc="'{:,.2f}'.format(m.social_capital)"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="8" style="text-align:right;font-weight:bold;">Total socios:</td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="len(members)"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

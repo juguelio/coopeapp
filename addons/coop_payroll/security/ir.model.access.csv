@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_coop_payroll_member,coop.payroll socio,model_coop_payroll,coop_members.group_coop_member,1,1,0,0
+access_coop_payroll_manager,coop.payroll admin,model_coop_payroll,coop_members.group_coop_manager,1,1,1,0
+access_coop_payroll_syndic,coop.payroll sindico,model_coop_payroll,coop_members.group_coop_syndic,1,0,0,0
+access_coop_advance_member,coop.advance socio,model_coop_advance,coop_members.group_coop_member,1,0,1,0
+access_coop_advance_manager,coop.advance admin,model_coop_advance,coop_members.group_coop_manager,1,1,1,0
+access_coop_advance_syndic,coop.advance sindico,model_coop_advance,coop_members.group_coop_syndic,1,0,0,0
+access_coop_work_entry_member,coop.work.entry socio,model_coop_work_entry,coop_members.group_coop_member,1,0,0,0
+access_coop_work_entry_manager,coop.work.entry admin,model_coop_work_entry,coop_members.group_coop_manager,1,1,1,0

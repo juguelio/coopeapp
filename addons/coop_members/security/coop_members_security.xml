@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Categoría del módulo -->
+        <record id="module_category_cooperative" model="ir.module.category">
+            <field name="name">Cooperativa</field>
+            <field name="description">Gestión cooperativa</field>
+            <field name="sequence">100</field>
+        </record>
+
+        <!-- Grupo: Socio (puede ver sus propios datos) -->
+        <record id="group_coop_member" model="res.groups">
+            <field name="name">Socio</field>
+            <field name="category_id" ref="module_category_cooperative"/>
+            <field name="comment">Puede ver su propia ficha, horas y liquidaciones.</field>
+        </record>
+
+        <!-- Grupo: Administrador cooperativo (ve todo, carga datos) -->
+        <record id="group_coop_manager" model="res.groups">
+            <field name="name">Administrador Cooperativo</field>
+            <field name="category_id" ref="module_category_cooperative"/>
+            <field name="implied_ids" eval="[(4, ref('group_coop_member'))]"/>
+            <field name="comment">Puede gestionar socios, aportes y liquidaciones.</field>
+        </record>
+
+        <!-- Grupo: Síndico (fiscalización, solo lectura) -->
+        <record id="group_coop_syndic" model="res.groups">
+            <field name="name">Síndico</field>
+            <field name="category_id" ref="module_category_cooperative"/>
+            <field name="implied_ids" eval="[(4, ref('group_coop_manager'))]"/>
+            <field name="comment">Acceso de lectura total para fiscalización.</field>
+        </record>
+
+        <!-- Record rule: socio solo ve su propia ficha -->
+        <record id="rule_member_own_record" model="ir.rule">
+            <field name="name">Socio: solo su propia ficha</field>
+            <field name="model_id" ref="model_coop_member"/>
+            <field name="groups" eval="[(4, ref('group_coop_member'))]"/>
+            <field name="domain_force">[('partner_id.user_ids', 'in', [user.id])]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: admin y síndico ven todos los socios -->
+        <record id="rule_manager_all_members" model="ir.rule">
+            <field name="name">Admin/Síndico: todos los socios</field>
+            <field name="model_id" ref="model_coop_member"/>
+            <field name="groups" eval="[(4, ref('group_coop_manager'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+    </data>
+</odoo>

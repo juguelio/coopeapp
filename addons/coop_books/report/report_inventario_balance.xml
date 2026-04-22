@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Nota: este libro registra el capital social cooperativo (aportes y retiros
+    de socios confirmados hasta la fecha de corte). No reemplaza el balance
+    contable de Odoo — ese se genera desde el módulo account estándar.
+-->
+<odoo>
+    <record id="report_action_inventario_balance" model="ir.actions.report">
+        <field name="name">Inventario y Capital Social</field>
+        <field name="model">coop.book.export</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">coop_books.template_inventario_balance</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <template id="template_inventario_balance">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-set="rows" t-value="wizard.get_capital_summary()"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="text-align:center;">INVENTARIO DE CAPITAL SOCIAL</h2>
+                        <p style="text-align:center;">
+                            Al: <t t-esc="wizard.date_to"/>
+                        </p>
+                        <p style="font-size:10px; color:#666;">
+                            Registra aportes y retiros confirmados hasta la fecha de corte.
+                            El balance contable completo se obtiene desde Contabilidad → Informes.
+                        </p>
+                        <table class="table table-sm table-bordered" style="width:100%; font-size:11px;">
+                            <thead>
+                                <tr>
+                                    <th>Socio</th>
+                                    <th>DNI</th>
+                                    <th style="text-align:right;">Total Aportado</th>
+                                    <th style="text-align:right;">Total Retirado</th>
+                                    <th style="text-align:right;">Capital Social</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="rows" t-as="row">
+                                    <tr>
+                                        <td><t t-esc="row['member'].name"/></td>
+                                        <td><t t-esc="row['member'].dni"/></td>
+                                        <td style="text-align:right;"><t t-esc="'{:,.2f}'.format(row['aportado'])"/></td>
+                                        <td style="text-align:right;"><t t-esc="'{:,.2f}'.format(row['retirado'])"/></td>
+                                        <td style="text-align:right;font-weight:bold;"><t t-esc="'{:,.2f}'.format(row['capital'])"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2" style="text-align:right;font-weight:bold;">TOTAL CAPITAL COOPERATIVO:</td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="'{:,.2f}'.format(sum(r['aportado'] for r in rows))"/>
+                                    </td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="'{:,.2f}'.format(sum(r['retirado'] for r in rows))"/>
+                                    </td>
+                                    <td style="text-align:right;font-weight:bold;">
+                                        <t t-esc="'{:,.2f}'.format(sum(r['capital'] for r in rows))"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

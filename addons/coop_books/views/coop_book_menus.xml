@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Se cuelga del menú raíz "Cooperativa" definido en coop_members -->
+    <menuitem id="menu_coop_books"
+              name="Libros INAES"
+              parent="coop_members.menu_coop_root"
+              sequence="50"/>
+
+    <menuitem id="menu_coop_book_generate"
+              name="Generar Libro"
+              parent="menu_coop_books"
+              action="action_coop_book_export"
+              sequence="10"
+              groups="coop_members.group_coop_manager,coop_members.group_coop_syndic"/>
+</odoo>

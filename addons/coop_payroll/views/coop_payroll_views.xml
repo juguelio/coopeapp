@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario -->
+    <record id="view_coop_payroll_form" model="ir.ui.view">
+        <field name="name">coop.payroll.form</field>
+        <field name="model">coop.payroll</field>
+        <field name="arch" type="xml">
+            <form string="Liquidación">
+                <header>
+                    <button name="action_send_to_review" string="Enviar al socio para revisión"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_member_agree" string="Estoy conforme"
+                            type="object" class="btn-primary"
+                            invisible="state != 'review' or member_agrees"/>
+                    <button name="action_approve" string="Aprobar"
+                            type="object"
+                            invisible="state != 'review'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_pay" string="Marcar como pagada"
+                            type="object" class="btn-success"
+                            invisible="state != 'approved'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_cancel" string="Anular"
+                            type="object"
+                            invisible="state in ('paid', 'cancelled')"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_draft" string="Volver a borrador"
+                            type="object"
+                            invisible="state != 'cancelled'"
+                            groups="coop_members.group_coop_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,review,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Datos del período">
+                            <field name="member_id"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="hour_rate"/>
+                        </group>
+                        <group string="Resumen">
+                            <field name="total_hours"/>
+                            <field name="hours_amount"/>
+                            <field name="total_advances"/>
+                            <field name="bonus_amount"/>
+                            <field name="deduction_amount"/>
+                            <field name="gross_amount"/>
+                            <field name="net_amount" class="oe_subtotal_footer_separator"/>
+                        </group>
+                    </group>
+                    <group string="Pago" invisible="state not in ('approved', 'paid')">
+                        <field name="payment_method"/>
+                        <field name="date_paid"/>
+                    </group>
+                    <group string="Conformidad del socio">
+                        <field name="member_agrees" widget="boolean_toggle"/>
+                        <field name="member_observation" placeholder="El socio puede escribir observaciones acá antes de aprobar..."/>
+                    </group>
+                    <notebook>
+                        <page string="Horas trabajadas">
+                            <field name="work_entry_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="work_type"/>
+                                    <field name="hours"/>
+                                    <field name="description"/>
+                                    <field name="verified" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Anticipos descontados">
+                            <field name="advance_ids">
+                                <list>
+                                    <field name="date"/>
+                                    <field name="name"/>
+                                    <field name="amount"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notas internas" groups="coop_members.group_coop_manager">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista lista -->
+    <record id="view_coop_payroll_tree" model="ir.ui.view">
+        <field name="name">coop.payroll.list</field>
+        <field name="model">coop.payroll</field>
+        <field name="arch" type="xml">
+            <list string="Liquidaciones"
+                  decoration-success="state == 'paid'"
+                  decoration-info="state == 'review'"
+                  decoration-warning="state == 'approved'">
+                <field name="name"/>
+                <field name="member_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="total_hours"/>
+                <field name="net_amount"/>
+                <field name="member_agrees" widget="boolean_toggle" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state == 'review'"
+                       decoration-warning="state == 'approved'"
+                       decoration-success="state == 'paid'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista búsqueda -->
+    <record id="view_coop_payroll_search" model="ir.ui.view">
+        <field name="name">coop.payroll.search</field>
+        <field name="model">coop.payroll</field>
+        <field name="arch" type="xml">
+            <search string="Buscar liquidaciones">
+                <field name="member_id" string="Socio"/>
+                <filter name="draft" string="Borradores" domain="[('state', '=', 'draft')]"/>
+                <filter name="review" string="En revisión" domain="[('state', '=', 'review')]"/>
+                <filter name="approved" string="Aprobadas" domain="[('state', '=', 'approved')]"/>
+                <filter name="paid" string="Pagadas" domain="[('state', '=', 'paid')]"/>
+                <filter name="not_agreed" string="Sin conformidad del socio"
+                        domain="[('member_agrees', '=', False), ('state', 'in', ('review', 'approved'))]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_member" string="Socio" context="{'group_by': 'member_id'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>
+                    <filter name="group_period" string="Período" context="{'group_by': 'date_from:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_coop_payroll" model="ir.actions.act_window">
+        <field name="name">Liquidaciones</field>
+        <field name="res_model">coop.payroll</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coop_payroll_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Creá la primera liquidación del período
+            </p>
+        </field>
+    </record>
+</odoo>

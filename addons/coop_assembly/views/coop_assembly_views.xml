@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_assembly_form" model="ir.ui.view">
+        <field name="name">coop.assembly.form</field>
+        <field name="model">coop.assembly</field>
+        <field name="arch" type="xml">
+            <form string="Asamblea">
+                <header>
+                    <button name="action_open" string="Iniciar asamblea" type="object" class="btn-primary" invisible="state != 'draft'" groups="coop_members.group_coop_manager"/>
+                    <button name="action_generate_minutes" string="Generar acta" type="object" invisible="state != 'open'" groups="coop_members.group_coop_manager"/>
+                    <button name="action_close" string="Cerrar asamblea" type="object" invisible="state != 'open'" groups="coop_members.group_coop_manager"/>
+                    <button name="action_cancel" string="Cancelar" type="object" invisible="state in ('closed', 'cancelled')" groups="coop_members.group_coop_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Datos de la asamblea">
+                            <field name="assembly_type"/>
+                            <field name="date"/>
+                            <field name="location"/>
+                            <field name="quorum_required"/>
+                        </group>
+                        <group string="Quorum">
+                            <field name="total_active_members"/>
+                            <field name="attendee_count"/>
+                            <field name="quorum_percentage"/>
+                            <field name="quorum_reached" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Mesa directiva">
+                        <field name="president_id"/>
+                        <field name="secretary_id"/>
+                    </group>
+                    <notebook>
+                        <page string="Orden del dia">
+                            <field name="agenda"/>
+                        </page>
+                        <page string="Socios presentes">
+                            <field name="attendee_ids" widget="many2many_tags"/>
+                        </page>
+                        <page string="Votaciones">
+                            <field name="vote_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="vote_type"/>
+                                    <field name="votes_yes"/>
+                                    <field name="votes_no"/>
+                                    <field name="votes_abstain"/>
+                                    <field name="approved" widget="boolean_toggle"/>
+                                    <field name="result_summary"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Acta">
+                            <field name="minutes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_coop_assembly_tree" model="ir.ui.view">
+        <field name="name">coop.assembly.list</field>
+        <field name="model">coop.assembly</field>
+        <field name="arch" type="xml">
+            <list string="Asambleas"
+                  decoration-success="state == 'closed'"
+                  decoration-info="state == 'open'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="date"/>
+                <field name="name"/>
+                <field name="assembly_type" widget="badge"/>
+                <field name="attendee_count"/>
+                <field name="quorum_reached" widget="boolean_toggle"/>
+                <field name="vote_count"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'draft'"
+                       decoration-info="state == 'open'"
+                       decoration-success="state == 'closed'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_assembly_search" model="ir.ui.view">
+        <field name="name">coop.assembly.search</field>
+        <field name="model">coop.assembly</field>
+        <field name="arch" type="xml">
+            <search string="Buscar asambleas">
+                <field name="name"/>
+                <filter name="open" string="En curso" domain="[('state', '=', 'open')]"/>
+                <filter name="closed" string="Cerradas" domain="[('state', '=', 'closed')]"/>
+                <filter name="ordinary" string="Ordinarias" domain="[('assembly_type', '=', 'ordinary')]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_type" string="Tipo" context="{'group_by': 'assembly_type'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_coop_assembly" model="ir.actions.act_window">
+        <field name="name">Asambleas</field>
+        <field name="res_model">coop.assembly</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coop_assembly_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Convoca la primera asamblea de la cooperativa
+            </p>
+        </field>
+    </record>
+</odoo>
