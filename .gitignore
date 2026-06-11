@@ -6,3 +6,6 @@ __pycache__/
 config/odoo.conf
 *.dump
 *.tar.gz
+
+.env
+.env.local
