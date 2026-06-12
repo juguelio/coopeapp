@@ -89,8 +89,8 @@
 <div class="demo-bar">
   <b>DEMO — rol:</b>
   <button id="r-socio" class="act" onclick="rol('socio')">Socio</button>
-  <button id="r-capataz" onclick="rol('capataz')">Capataz</button>
-  <button id="r-manager" onclick="rol('manager')">Manager</button>
+  <button id="r-coordinador" onclick="rol('coordinador')">Coordinador</button>
+  <button id="r-manager" onclick="rol('manager')">Administrador</button>
   <button id="r-sindico" onclick="rol('sindico')">Síndico</button>
 </div>
 
@@ -107,6 +107,11 @@
     </div>
     <button class="botonazo" onclick="ir('p-cargar-1')">✏️ &nbsp;CARGAR LO QUE HICE</button>
     <div class="card" style="border-left:6px solid var(--amarillo)">
+      <h3>📋 TE ASIGNARON UN RELEVAMIENTO</h3>
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px">Vivienda López — Vega San Martín · medidas para presupuestar pintura</div>
+      <button class="botonazo" style="min-height:50px;font-size:16px;margin:0" onclick="ir('p-relev-1')">CARGAR RELEVAMIENTO</button>
+    </div>
+    <div class="card" style="border-left:6px solid var(--amarillo)">
       <h3>🗳️ ASAMBLEA EN CURSO</h3>
       <div style="font-size:16px;font-weight:700;margin-bottom:10px">Asamblea ordinaria — hoy 10:00</div>
       <button class="botonazo" style="min-height:50px;font-size:16px;margin:0" onclick="ir('p-asamblea')">ENTRAR</button>
@@ -119,24 +124,110 @@
       </div>
       <div class="fila">
         <div>Hoy — Pintura 18 m²</div>
-        <span class="chip espera">⏳ Lo revisa el capataz</span>
+        <span class="chip espera">⏳ Lo revisa el coordinador</span>
       </div>
     </div>
   </div>
 
-  <!-- ============ INICIO CAPATAZ ============ -->
-  <div class="pant" id="p-inicio-capataz">
+  <!-- ============ INICIO COORDINADOR ============ -->
+  <div class="pant" id="p-inicio-coordinador">
     <h1>Hola, Miguel 👋</h1>
-    <div class="sub">Capataz — Barrio Carriqueo</div>
+    <div class="sub">Coordinador — 2 obras a cargo</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="chip ok" style="border:0;cursor:pointer;font-size:14px;padding:8px 14px" id="obra-1"
+              onclick="verObra(this,'Barrio Carriqueo')">🏗️ Carriqueo</button>
+      <button class="chip espera" style="border:0;cursor:pointer;font-size:14px;padding:8px 14px" id="obra-2"
+              onclick="verObra(this,'Cabaña Meliquina')">🏠 Meliquina</button>
+    </div>
+    <div class="sub" id="obra-actual" style="margin-bottom:10px;font-weight:700;color:var(--tinta)">Viendo: Barrio Carriqueo</div>
     <div class="card" style="border-left:6px solid var(--amarillo)">
       <h3>PARA REVISAR</h3>
       <div class="nro">3 <small>avances de tu cuadrilla</small></div>
       <button class="botonazo" style="margin-top:10px" onclick="ir('p-validar')">👍 REVISAR AHORA</button>
     </div>
+    <div class="card" style="border-left:6px solid var(--amarillo)">
+      <h3>🧱 PEDIDOS DE MATERIALES</h3>
+      <div class="nro">2 <small>pedidos esperando</small></div>
+      <button class="botonazo" style="margin-top:10px" onclick="ir('p-pedidos')">📋 REVISAR PEDIDOS</button>
+    </div>
+    <div class="card">
+      <h3>🔧 HERRAMIENTAS EN ESTA OBRA</h3>
+      <div class="fila" style="border:0;padding:0">
+        <div><b>7 asignadas</b> · <span style="color:var(--rojo);font-weight:700">1 con service vencido</span></div>
+        <button class="atras" style="padding:0" onclick="ir('p-herr')">Ver →</button>
+      </div>
+    </div>
+    <button class="botonazo sec" onclick="ir('p-orden')">📲 Orden al corralón (3 ítems)</button>
     <button class="botonazo sec" onclick="ir('p-cargar-1')">✏️ Cargar lo que hice yo</button>
   </div>
 
-  <!-- ============ VALIDAR (capataz/manager) ============ -->
+  <!-- ============ COORDINADOR: HERRAMIENTAS ============ -->
+  <div class="pant" id="p-herr">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Herramientas</h1>
+    <div class="sub">Barrio Carriqueo — 7 asignadas</div>
+
+    <div class="card" style="border-left:6px solid var(--rojo)">
+      <div class="fila" style="border:0;padding:0">
+        <div>
+          <div style="font-weight:800;font-size:16px">Hormigonera Rovi 130L</div>
+          <div style="font-size:13px;color:var(--rojo);font-weight:700">⚠️ Service vencido hace 12 días (cada 90)</div>
+        </div>
+        <button class="atras" style="padding:0" onclick="pedirService(this)">Pedir service</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="fila"><div><b>Amoladora Makita 7"</b><br><span style="font-size:12px;color:var(--gris)">próx. service en 40 días · la tiene Carlos</span></div>
+        <button class="atras" style="padding:0" onclick="devolver(this)">Devolver</button></div>
+      <div class="fila"><div><b>Taladro DW inalámbrico</b><br><span style="font-size:12px;color:var(--gris)">ok · lo tiene Sofía</span></div>
+        <button class="atras" style="padding:0" onclick="devolver(this)">Devolver</button></div>
+      <div class="fila" style="border:0"><div><b>Andamios ×12 cuerpos</b><br><span style="font-size:12px;color:var(--gris)">ok · en obra</span></div>
+        <button class="atras" style="padding:0" onclick="devolver(this)">Devolver</button></div>
+    </div>
+
+    <button class="botonazo" onclick="llevarHerramienta()">➕ LLEVAR HERRAMIENTA A ESTA OBRA</button>
+    <button class="botonazo sec" onclick="ir('p-inc-1')">⚠️ Reportar rotura o pérdida</button>
+  </div>
+
+  <!-- ============ INCIDENTE PASO 1 (socio y coordinador) ============ -->
+  <div class="pant" id="p-inc-1">
+    <button class="atras" onclick="inicio()">← Salir</button>
+    <div class="paso">REPORTAR — PASO 1 DE 2</div>
+    <div class="pregunta">¿Qué pasó?</div>
+    <button class="opcion" onclick="elegirInc(this,'Se rompió una herramienta')"><span class="ico">🔧</span> Se rompió una herramienta</button>
+    <button class="opcion" onclick="elegirInc(this,'Se perdió una herramienta')"><span class="ico">❓</span> Se perdió una herramienta</button>
+    <button class="opcion" onclick="elegirInc(this,'Se rompió/echó a perder material')"><span class="ico">🧱</span> Material roto o echado a perder</button>
+    <button class="opcion" onclick="elegirInc(this,'Falta material')"><span class="ico">📉</span> Falta material (pérdida/robo)</button>
+  </div>
+
+  <!-- ============ INCIDENTE PASO 2 ============ -->
+  <div class="pant" id="p-inc-2">
+    <button class="atras" onclick="ir('p-inc-1')">← Volver</button>
+    <div class="paso">REPORTAR — PASO 2 DE 2</div>
+    <div class="pregunta" id="inc-titulo">¿Cuál y cómo fue?</div>
+    <button class="opcion elegida"><span class="ico">🔧</span> Amoladora Makita 7"</button>
+    <button class="opcion"><span class="ico">🔧</span> Taladro DW</button>
+    <button class="opcion"><span class="ico">🔧</span> Otra…</button>
+    <button class="botonazo sec">📷 Sacar foto</button>
+    <div class="card">
+      <h3>QUÉ PASÓ</h3>
+      <div style="font-size:15px;color:var(--tinta)">"Se quemó el motor cortando hierro, largó humo."</div>
+    </div>
+    <button class="botonazo" onclick="ir('p-inc-listo')">ENVIAR REPORTE ✓</button>
+  </div>
+
+  <!-- ============ INCIDENTE LISTO ============ -->
+  <div class="pant" id="p-inc-listo">
+    <div class="listo">
+      <div class="check">⚠️</div>
+      <h1>Reporte enviado</h1>
+      <p class="sub" style="margin-top:8px">Le avisamos al coordinador y al administrador.<br>La herramienta quedó marcada "rota" y se pidió la reparación.</p>
+      <button class="botonazo" onclick="inicio()">Volver al inicio</button>
+    </div>
+  </div>
+
+  <!-- ============ VALIDAR (coordinador/manager) ============ -->
   <div class="pant" id="p-validar">
     <button class="atras" onclick="inicio()">← Volver</button>
     <h1>Revisar avances</h1>
@@ -161,31 +252,173 @@
 
   <!-- ============ INICIO MANAGER / SINDICO (tablero) ============ -->
   <div class="pant" id="p-inicio-manager">
-    <h1 id="titulo-tablero">Tablero de obra</h1>
-    <div class="sub">Barrio Carriqueo — Etapa 2 en curso</div>
+    <h1 id="titulo-tablero">Administración</h1>
+    <div class="sub">3 obras activas · 4 órdenes de trabajo</div>
+
+    <!-- LO PRINCIPAL: ruta crítica de todas las obras -->
+    <div class="card" style="border:2px solid var(--rojo)" onclick="ir('p-ruta')">
+      <h3>🔴 RUTA CRÍTICA — HOY</h3>
+      <div class="fila"><div><b>Carriqueo:</b> Cañería principal PB</div><span class="chip rojo">vence en 3 días</span></div>
+      <div class="fila"><div><b>Quintriqueo:</b> Platea H°</div><span class="chip rojo">atrasada 2 días</span></div>
+      <div class="fila" style="border:0"><div style="font-size:13px;color:var(--rojo);font-weight:700">↗ Recalculada hoy 08:10 — fin de Quintriqueo se corre +2 días</div>
+        <button class="atras" style="padding:0">Ver →</button></div>
+    </div>
+
+    <div class="card rol-manager" style="display:none;border-left:6px solid var(--amarillo)">
+      <h3>📑 ÓRDENES DE TRABAJO</h3>
+      <div class="fila" style="border:0;padding:0">
+        <div><b>1 para presupuestar</b> · 1 relevando · 1 aprobada sin coordinador</div>
+        <button class="atras" style="padding:0" onclick="ir('p-ots')">Ver →</button>
+      </div>
+    </div>
+
+    <!-- Cartera de obras -->
+    <h3 style="font-size:15px;color:var(--gris);font-weight:600;margin:14px 0 8px">TODAS LAS OBRAS</h3>
+
     <div class="card">
-      <h3>AVANCE FÍSICO DE LA OBRA</h3>
-      <div class="nro">42<small> %</small></div>
+      <div class="fila" style="border:0;padding:0 0 4px">
+        <div style="font-weight:800;font-size:16px">Barrio Carriqueo</div>
+        <span style="font-size:13px;color:var(--gris)">Coord: Miguel</span>
+      </div>
       <div class="barra"><div style="width:42%"></div></div>
-    </div>
-    <div class="semaforo">
-      <div class="card">
-        <h3>SALDO SIN PLANIFICAR</h3>
-        <div class="nro" style="color:var(--verde)">$7,2M</div>
-      </div>
-      <div class="card">
-        <h3>CONTROLADOR</h3>
-        <div class="nro" style="color:var(--amarillo)">$1,1M</div>
+      <div class="fila" style="border:0;padding:2px 0 0;font-size:13px">
+        <div>Avance <b>42%</b></div>
+        <div>S/planificar <b style="color:var(--verde)">$7,2M</b></div>
+        <div>Controlador <b style="color:var(--amarillo)">$1,1M</b></div>
       </div>
     </div>
+
     <div class="card">
-      <h3>⚠️ RUTA CRÍTICA — NO PUEDEN ATRASARSE</h3>
-      <div class="fila"><div>Cañería principal PB</div><span class="chip rojo">vence en 3 días</span></div>
-      <div class="fila"><div>Contrapiso pasillo</div><span class="chip espera">en fecha</span></div>
+      <div class="fila" style="border:0;padding:0 0 4px">
+        <div style="font-weight:800;font-size:16px">Galpón Quintriqueo</div>
+        <span style="font-size:13px;color:var(--gris)">Coord: Sofía</span>
+      </div>
+      <div class="barra"><div style="width:12%"></div></div>
+      <div class="fila" style="border:0;padding:2px 0 0;font-size:13px">
+        <div>Avance <b>12%</b></div>
+        <div>S/planificar <b style="color:var(--rojo)">−$0,4M</b></div>
+        <div>Controlador <b style="color:var(--verde)">$2,3M</b></div>
+      </div>
     </div>
-    <button class="botonazo" id="btn-validar-mgr" onclick="ir('p-validar')">👍 Revisar avances (3)</button>
+
+    <div class="card">
+      <div class="fila" style="border:0;padding:0 0 4px">
+        <div style="font-weight:800;font-size:16px">Cabaña Meliquina</div>
+        <span class="chip espera">sin coordinador</span>
+      </div>
+      <div style="font-size:13px;color:var(--gris)">Obra confirmada ayer — asignar coordinador desde la OT</div>
+    </div>
+
+    <!-- Materiales: la base del presupuesto -->
+    <div class="card rol-manager" style="display:none">
+      <h3>🧱 MATERIALES Y PRECIOS</h3>
+      <div class="fila"><div>Acopios Austral (3)</div><b>$3,1M de saldo</b></div>
+      <div class="fila"><div style="color:var(--rojo);font-size:13px">⚠️ Lista El Andino vieja (18 días) — pedir actualizada</div>
+        <button class="atras" style="padding:0" onclick="ir('p-orden')">Ver →</button></div>
+      <div class="fila" style="border:0"><div style="color:var(--rojo);font-size:13px">🔧 2 services vencidos · 1 incidente sin revisar (amoladora rota)</div></div>
+    </div>
+
+    <button class="botonazo sec" onclick="ir('p-reportes')">📊 Reportes</button>
     <button class="botonazo sec" onclick="ir('p-asamblea')">🗳️ Asamblea en curso</button>
     <button class="botonazo sec">🖥️ Ir al sistema completo</button>
+  </div>
+
+  <!-- ============ ADMIN: REPORTES ============ -->
+  <div class="pant" id="p-reportes">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Reportes</h1>
+    <div class="sub">Todas las operaciones, filtrá como quieras</div>
+
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="repRango(this,'Hoy')">Hoy</button>
+      <button class="chip ok" style="border:0;cursor:pointer" onclick="repRango(this,'7 días')">7 días</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="repRango(this,'Mes')">Mes</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="repRango(this,'05/06 → 12/06')">📅 Elegir</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <button class="chip ok" style="border:0;cursor:pointer" onclick="repTipo(this,'todo')">Todo</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="repTipo(this,'avance')">Avances</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="repTipo(this,'pedido')">Pedidos</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="repTipo(this,'gasto')">Gastos</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="repTipo(this,'orden')">Órdenes</button>
+    </div>
+    <input id="rep-buscar" placeholder="🔍 Buscar por nombre u obra…" oninput="repFiltrar()"
+           style="width:100%;padding:12px;border:2px solid #d7dee5;border-radius:12px;font-size:15px;margin-bottom:10px">
+
+    <div class="card">
+      <h3 id="rep-titulo">ÚLTIMOS 7 DÍAS — 23 OPERACIONES · $2,41M · 96 M²</h3>
+      <div class="fila rep" data-tipo="avance" data-txt="carlos soria carriqueo pintura">
+        <div>✏️ <b>Carlos Soria</b> — 18 m² pintura · Carriqueo<br><span style="font-size:12px;color:var(--gris)">hoy 14:30 · validado por Miguel</span></div>
+      </div>
+      <div class="fila rep" data-tipo="orden" data-txt="miguel austral acopio carriqueo cemento ladrillo">
+        <div>📲 <b>Miguel</b> — retiro acopio #54073 Austral · $743.500 · Carriqueo<br><span style="font-size:12px;color:var(--gris)">hoy 11:05</span></div>
+      </div>
+      <div class="fila rep" data-tipo="pedido" data-txt="sofia rodriguez quintriqueo hierro">
+        <div>🧱 <b>Sofía Rodríguez</b> — pidió hierro 8mm ×40 barras · Quintriqueo<br><span style="font-size:12px;color:var(--gris)">ayer 16:42 · aceptado</span></div>
+      </div>
+      <div class="fila rep" data-tipo="gasto" data-txt="etapa 2 carriqueo mano de obra jornales">
+        <div>💸 Gasto etapa 2 — jornales semana ×$1.180.000 · Carriqueo<br><span style="font-size:12px;color:var(--gris)">ayer · pagado</span></div>
+      </div>
+      <div class="fila rep" data-tipo="avance" data-txt="sofia rodriguez quintriqueo caneria">
+        <div>✏️ <b>Sofía Rodríguez</b> — 24 ml cañería · Quintriqueo<br><span style="font-size:12px;color:var(--gris)">10/06 · validado</span></div>
+      </div>
+      <div class="fila rep" data-tipo="gasto" data-txt="combustible logistica quintriqueo">
+        <div>💸 Logística — combustible camioneta ×$86.000 · Quintriqueo<br><span style="font-size:12px;color:var(--gris)">09/06 · pagado</span></div>
+      </div>
+      <div id="rep-vacio" style="display:none;text-align:center;color:var(--gris);padding:14px">Sin operaciones con ese filtro</div>
+    </div>
+
+    <button class="botonazo sec" id="btn-exportar" onclick="mostrarExport()">📤 Exportar</button>
+    <div id="export-opciones" style="display:none">
+      <div class="dos">
+        <button class="botonazo sec" style="min-height:48px;font-size:15px" onclick="exportar(this,'Excel')">📗 Excel</button>
+        <button class="botonazo sec" style="min-height:48px;font-size:15px" onclick="exportar(this,'PDF')">📄 PDF</button>
+      </div>
+      <div style="font-size:12px;color:var(--gris);text-align:center">Con el filtro aplicado — lo genera Odoo y se descarga al teléfono</div>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN: RUTA CRÍTICA MULTI-OBRA ============ -->
+  <div class="pant" id="p-ruta">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Ruta crítica</h1>
+    <div class="sub">Recalculada hoy 08:10 · lo que no puede atrasarse</div>
+
+    <div class="card" style="border-left:6px solid var(--rojo)">
+      <h3>BARRIO CARRIQUEO — FIN ESTIMADO 28/08 · POR OFICIO</h3>
+
+      <div style="font-size:13px;font-weight:800;color:var(--rojo);margin:6px 0 2px">🧱 ALBAÑILERÍA — cadena crítica, atrasada</div>
+      <div class="fila"><div>Mampostería PB <span style="font-size:12px;color:var(--gris)">(cuadrilla Carlos)</span></div>
+        <div><span class="chip rojo">atrasada 2d</span> <button class="atras rol-manager" style="display:none;padding:0 0 0 6px" onclick="editarTarea(this,'Mampostería PB')">✏️</button></div></div>
+      <div class="fila"><div>Revoque grueso PB</div>
+        <div><span class="chip espera">se corre → 24/6</span> <button class="atras rol-manager" style="display:none;padding:0 0 0 6px" onclick="editarTarea(this,'Revoque grueso')">✏️</button></div></div>
+
+      <div style="font-size:13px;font-weight:800;color:var(--verde);margin:10px 0 2px">⚡ ELECTRICIDAD — no afectada por el atraso de albañilería</div>
+      <div class="fila"><div>Zanjeo + caños exteriores <span style="font-size:12px;color:var(--gris)">(cuadrilla Sofía)</span></div>
+        <div><span class="chip ok">en fecha · holgura 4d</span> <button class="atras rol-manager" style="display:none;padding:0 0 0 6px" onclick="editarTarea(this,'Zanjeo')">✏️</button></div></div>
+      <div class="fila"><div>Cableado PB <span style="font-size:12px;color:var(--amarillo);font-weight:700">⛓ espera Mampostería PB (único cruce)</span></div>
+        <div><span class="chip espera">se corre → 26/6</span> <button class="atras rol-manager" style="display:none;padding:0 0 0 6px" onclick="editarTarea(this,'Cableado PB')">✏️</button></div></div>
+
+      <div style="font-size:13px;font-weight:800;color:var(--verde);margin:10px 0 2px">🚿 SANITARIA — independiente</div>
+      <div class="fila" style="border:0"><div>Cañería principal PB <span style="font-size:12px;color:var(--gris)">(Miguel)</span></div>
+        <div><span class="chip rojo">crítica · vence 15/6</span> <button class="atras rol-manager" style="display:none;padding:0 0 0 6px" onclick="editarTarea(this,'Cañería principal')">✏️</button></div></div>
+
+      <div style="font-size:12px;color:var(--gris);margin-top:8px">El atraso de albañilería corre su cadena y el cruce con cableado. Sanitaria y el resto de electricidad siguen igual.</div>
+      <button class="botonazo sec rol-manager" style="display:none;min-height:46px;font-size:14px" onclick="nuevaDependencia()">⛓ Agregar dependencia entre tareas</button>
+    </div>
+
+    <div class="card" style="border-left:6px solid var(--rojo)">
+      <h3 style="color:var(--rojo)">GALPÓN QUINTRIQUEO — FIN 12/09 → 14/09 (+2 DÍAS) ⚠️</h3>
+      <div class="fila"><div>1. Platea de hormigón <span style="font-size:12px;color:var(--gris)">(Sofía)</span></div><span class="chip rojo">atrasada 2 días</span></div>
+      <div class="fila"><div>2. Montaje steel frame</div><span class="chip espera">se corre → 8/7</span></div>
+      <div class="fila" style="border:0"><div>3. Techo y cerramiento</div><span class="chip espera">se corre → 29/7</span></div>
+      <div style="font-size:13px;color:var(--rojo);font-weight:700;margin-top:6px">Causa: hormigón no entregado. Hablar con Sofía / corralón.</div>
+    </div>
+
+    <div class="card">
+      <h3>CABAÑA MELIQUINA</h3>
+      <div style="font-size:14px;color:var(--gris)">Sin tareas cargadas todavía — la ruta se calcula al planificar la obra.</div>
+    </div>
   </div>
 
   <!-- ============ CARGAR PASO 1 ============ -->
@@ -229,7 +462,7 @@
       <div class="check">✓</div>
       <h1>¡Listo, Carlos!</h1>
       <p class="sub" style="margin-top:8px">Cargaste <b>18 m² de pintura</b> en 1 jornal.<br>
-      Ahora lo revisa el capataz y suma a tu participación.</p>
+      Ahora lo revisa el coordinador y suma a tu participación.</p>
       <button class="botonazo" onclick="inicio()">Volver al inicio</button>
       <button class="atras" onclick="ir('p-cargar-2')">Me equivoqué, corregir</button>
     </div>
@@ -346,12 +579,40 @@
   <div class="pant" id="p-obra">
     <h1>La obra</h1>
     <div class="sub">Remodelación Barrio Carriqueo</div>
+
+    <div class="card" style="border:2px solid var(--verde)">
+      <h3>📋 TRABAJO ASIGNADO PARA VOS</h3>
+      <div style="font-size:17px;font-weight:800">Pintura interior — Planta Alta</div>
+      <div style="font-size:14px;color:var(--gris);margin:2px 0 10px">Desde el lunes 16/6 · aprox. 5 jornales · con Sofía</div>
+      <div class="dos">
+        <button class="botonazo" style="min-height:50px;font-size:16px;margin:0" onclick="aceptarTrabajo(this)">✓ ACEPTO</button>
+        <button class="botonazo sec" style="min-height:50px;font-size:16px;margin:0" onclick="rechazarTrabajo(this)">No puedo</button>
+      </div>
+    </div>
+
+    <button class="botonazo" onclick="ir('p-pedido-1')">🧱 PEDIR MATERIALES</button>
+    <button class="botonazo sec" onclick="ir('p-inc-1')">⚠️ Reportar rotura o pérdida</button>
+    <div class="card">
+      <h3>TUS PEDIDOS</h3>
+      <div class="fila"><div>Cemento ×10 bolsas</div><span class="chip ok">✓ En la orden al corralón</span></div>
+      <div class="fila"><div>Ladrillo hueco ×500</div><span class="chip espera">⏳ Lo revisa el coordinador</span></div>
+    </div>
+
     <div class="card">
       <h3>AVANCE TOTAL</h3>
       <div class="nro">42<small> %</small></div>
       <div class="barra"><div style="width:42%"></div></div>
       <div style="color:var(--gris);font-size:13px">Lo mismo que ve el consejo. Sin secretos.</div>
     </div>
+    <div class="card">
+      <h3>📦 ACOPIOS DE LA OBRA</h3>
+      <div class="fila"><div>Corralón Austral #54073</div><b>$1,82M de $2,53M</b></div>
+      <div class="barra"><div style="width:72%"></div></div>
+      <div class="fila"><div>Don Pedro #1881</div><b>$0,9M de $1,5M</b></div>
+      <div class="barra"><div style="width:60%"></div></div>
+      <div style="color:var(--gris);font-size:13px">Plata ya pagada con precios congelados. Todos lo ven.</div>
+    </div>
+
     <div class="card">
       <h3>ETAPA 2 — EN CURSO</h3>
       <div class="fila"><div>Ingreso de la etapa</div><b>$ 54,0M</b></div>
@@ -365,27 +626,324 @@
     </div>
   </div>
 
-  <!-- ============ NAV ============ -->
-  <div class="nav">
-    <button id="n-inicio" class="viva" onclick="inicio()"><span class="ico">🏠</span>Inicio</button>
-    <button id="n-cargar" onclick="ir('p-cargar-1')"><span class="ico">✏️</span>Cargar</button>
-    <button id="n-plata" onclick="ir('p-plata')"><span class="ico">💵</span>Mi plata</button>
-    <button id="n-obra" onclick="ir('p-obra')"><span class="ico">🏗️</span>Obra</button>
+  <!-- ============ ADMIN: ÓRDENES DE TRABAJO ============ -->
+  <div class="pant" id="p-ots">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Órdenes de trabajo</h1>
+    <div class="sub">Del pedido del cliente a la obra</div>
+
+    <div class="card" style="border:2px solid var(--verde)" onclick="ir('p-ot')">
+      <div class="fila" style="border:0;padding:0">
+        <div>
+          <div style="font-weight:800;font-size:16px">OT-2026-014 · Vivienda López</div>
+          <div style="font-size:13px;color:var(--gris)">Pintura int/ext + reparación techo</div>
+        </div>
+        <span class="chip ok">✓ Relevamiento cargado</span>
+      </div>
+      <div style="font-size:13px;color:var(--verde);font-weight:700;margin-top:6px">→ Listo para presupuestar</div>
+    </div>
+
+    <div class="card">
+      <div class="fila" style="border:0;padding:0">
+        <div>
+          <div style="font-weight:800;font-size:16px">OT-2026-015 · Galpón Quintriqueo</div>
+          <div style="font-size:13px;color:var(--gris)">Platea + estructura steel frame</div>
+        </div>
+        <span class="chip espera">⏳ Relevando (Sofía)</span>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid var(--amarillo)">
+      <div class="fila" style="border:0;padding:0">
+        <div>
+          <div style="font-weight:800;font-size:16px">OT-2026-012 · Cabaña Meliquina</div>
+          <div style="font-size:13px;color:var(--gris)">Cliente aprobó el presupuesto ayer ✓</div>
+        </div>
+        <span class="chip ok">✓ Aprobada</span>
+      </div>
+      <button class="botonazo" style="min-height:48px;font-size:15px;margin-top:8px"
+              onclick="asignarCoordinador(this)">👷 CREAR OBRA Y ASIGNAR COORDINADOR</button>
+    </div>
+    <button class="botonazo sec">➕ Nueva orden de trabajo</button>
   </div>
+
+  <!-- ============ ADMIN: DETALLE OT + PRESUPUESTO ============ -->
+  <div class="pant" id="p-ot">
+    <button class="atras" onclick="ir('p-ots')">← Órdenes</button>
+    <h1>OT-2026-014 · López</h1>
+    <div class="sub">Pintura int/ext + reparación techo — Vega San Martín</div>
+
+    <div class="card">
+      <h3>MEMORIA DESCRIPTIVA</h3>
+      <div class="fila"><div>1. Reparación techo (chapas + babetas)</div><span style="font-size:12px;color:var(--gris)">3 jornales</span></div>
+      <div class="fila"><div>2. Pintura exterior 180 m²</div><span style="font-size:12px;color:var(--gris)">6 jornales</span></div>
+      <div class="fila"><div>3. Pintura interior 120 m²</div><span style="font-size:12px;color:var(--gris)">5 jornales</span></div>
+    </div>
+
+    <div class="card">
+      <h3>RELEVAMIENTO — CARLOS, AYER 17:20 ✓</h3>
+      <div class="fila"><div>Superficie exterior</div><b>182 m²</b></div>
+      <div class="fila"><div>Superficie interior</div><b>118 m²</b></div>
+      <div class="fila"><div>Chapas a cambiar</div><b>6 u</b></div>
+      <div class="fila" style="border:0"><div>📷 4 fotos · "humedad en muro sur, sumar fijador"</div></div>
+    </div>
+
+    <div class="card" style="border:2px solid var(--verde)">
+      <h3>PRESUPUESTO</h3>
+      <div class="fila"><div>Materiales</div><b>$ 1.842.000</b></div>
+      <div class="fila"><div>Mano de obra (14 jornales)</div><b>$ 1.750.000</b></div>
+      <div class="fila"><div>Herramientas y equipos</div><b>$ 180.000</b></div>
+      <div class="fila"><div>Logística</div><b>$ 146.000</b></div>
+      <div class="fila"><div>G. administrativos</div><b>$ 195.000</b></div>
+      <div class="fila"><div>G. impositivos</div><b>$ 312.000</b></div>
+      <div class="fila" style="margin-top:4px">
+        <div><b>Factura</b></div>
+        <div>
+          <button class="atras" id="fact-a" style="padding:0 8px;font-weight:800;color:var(--verde)" onclick="factura('a')">A</button>
+          <button class="atras" id="fact-b" style="padding:0 8px" onclick="factura('b')">B</button>
+        </div>
+      </div>
+      <div class="fila" id="linea-iva"><div>IVA 21% (discriminado)</div><b>$ 889.350</b></div>
+      <div class="fila" style="border:0"><div style="font-weight:800;font-size:17px">TOTAL</div><b style="font-size:19px" id="total-ppto">$ 5.314.350</b></div>
+      <div style="font-size:12px;color:var(--rojo);margin-top:4px">Validez: 10 días (precios atados a inflación)</div>
+    </div>
+
+    <button class="botonazo" onclick="this.outerHTML='<div style=\'text-align:center;padding:12px;color:var(--verde);font-weight:800;font-size:16px\'>📨 Enviado al cliente — PDF + WhatsApp</div>'">📨 ENVIAR AL CLIENTE</button>
+  </div>
+
+  <!-- ============ SOCIO: RELEVAMIENTO PASO 1 ============ -->
+  <div class="pant" id="p-relev-1">
+    <button class="atras" onclick="inicio()">← Salir</button>
+    <div class="paso">RELEVAMIENTO LÓPEZ — PASO 1 DE 2</div>
+    <div class="pregunta">Cargá las medidas</div>
+    <div class="card">
+      <div class="fila"><div>Superficie exterior</div><b>182 m² ✓</b></div>
+      <div class="fila"><div>Superficie interior</div><b>118 m² ✓</b></div>
+      <div class="fila" style="border:0"><div style="color:var(--gris)">Chapas a cambiar</div>
+        <div class="dos" style="gap:6px">
+          <button class="stepper-mini" style="width:40px;height:40px;border-radius:50%;border:0;font-size:20px;font-weight:800;background:var(--verde-claro);color:var(--verde)" onclick="masRelev(-1)">−</button>
+          <b style="font-size:22px;min-width:36px;text-align:center" id="cant-relev">6</b>
+          <button style="width:40px;height:40px;border-radius:50%;border:0;font-size:20px;font-weight:800;background:var(--verde-claro);color:var(--verde)" onclick="masRelev(1)">+</button>
+        </div>
+      </div>
+    </div>
+    <button class="botonazo sec">➕ Agregar otra medida</button>
+    <button class="botonazo" onclick="ir('p-relev-2')">Seguir →</button>
+  </div>
+
+  <!-- ============ SOCIO: RELEVAMIENTO PASO 2 ============ -->
+  <div class="pant" id="p-relev-2">
+    <button class="atras" onclick="ir('p-relev-1')">← Volver</button>
+    <div class="paso">RELEVAMIENTO LÓPEZ — PASO 2 DE 2</div>
+    <div class="pregunta">Fotos y observaciones</div>
+    <button class="botonazo sec">📷 Sacar foto (4 cargadas)</button>
+    <div class="card">
+      <h3>OBSERVACIONES</h3>
+      <div style="font-size:15px;color:var(--tinta)">"Humedad en muro sur, sumar fijador. El techo tiene 6 chapas picadas."</div>
+    </div>
+    <button class="botonazo" onclick="ir('p-relev-listo')">ENVIAR RELEVAMIENTO ✓</button>
+  </div>
+
+  <!-- ============ SOCIO: RELEVAMIENTO LISTO ============ -->
+  <div class="pant" id="p-relev-listo">
+    <div class="listo">
+      <div class="check">📋</div>
+      <h1>Relevamiento enviado</h1>
+      <p class="sub" style="margin-top:8px">Con esto el administrador ya puede armar el presupuesto para el cliente.</p>
+      <button class="botonazo" onclick="inicio()">Volver al inicio</button>
+    </div>
+  </div>
+
+  <!-- ============ PEDIDO MATERIALES PASO 1 ============ -->
+  <div class="pant" id="p-pedido-1">
+    <button class="atras" onclick="ir('p-obra')">← Volver</button>
+    <div class="paso">PEDIR MATERIALES — PASO 1 DE 2</div>
+    <div class="pregunta">¿Qué necesitás?</div>
+    <button class="opcion" onclick="elegirMat(this,'Cemento','bolsas 50kg')"><span class="ico">🪨</span> Cemento <span style="margin-left:auto;color:var(--gris)">bolsa 50kg</span></button>
+    <button class="opcion" onclick="elegirMat(this,'Cal hidratada','bolsas 25kg')"><span class="ico">⚪</span> Cal hidratada <span style="margin-left:auto;color:var(--gris)">bolsa 25kg</span></button>
+    <button class="opcion" onclick="elegirMat(this,'Arena','m³')"><span class="ico">🏖️</span> Arena <span style="margin-left:auto;color:var(--gris)">m³</span></button>
+    <button class="opcion" onclick="elegirMat(this,'Ladrillo hueco 12x18x33','unidades')"><span class="ico">🧱</span> Ladrillo hueco <span style="margin-left:auto;color:var(--gris)">unidad</span></button>
+    <button class="opcion" onclick="elegirMat(this,'Hierro aletado 8mm','barras 12m')"><span class="ico">🔩</span> Hierro 8mm <span style="margin-left:auto;color:var(--gris)">barra 12m</span></button>
+    <button class="opcion" onclick="elegirMat(this,'Pintura látex blanca','latas 20L')"><span class="ico">🎨</span> Pintura látex <span style="margin-left:auto;color:var(--gris)">lata 20L</span></button>
+    <button class="opcion" onclick="elegirMat(this,'Otro material','unidades')"><span class="ico">➕</span> Otro (lo escribís)</button>
+  </div>
+
+  <!-- ============ PEDIDO MATERIALES PASO 2 ============ -->
+  <div class="pant" id="p-pedido-2">
+    <button class="atras" onclick="ir('p-pedido-1')">← Volver</button>
+    <div class="paso">PEDIR MATERIALES — PASO 2 DE 2</div>
+    <div class="pregunta">¿Cuánto necesitás?</div>
+    <div class="stepper">
+      <button onclick="masMat(-1)">−</button>
+      <div><div class="valor" id="cant-mat">10</div><div class="uni" style="text-align:center" id="uni-mat">bolsas 50kg de Cemento</div></div>
+      <button onclick="masMat(1)">+</button>
+    </div>
+    <button class="botonazo" onclick="ir('p-pedido-listo')">PEDIR ✓</button>
+  </div>
+
+  <!-- ============ PEDIDO CONFIRMADO ============ -->
+  <div class="pant" id="p-pedido-listo">
+    <div class="listo">
+      <div class="check">🧱</div>
+      <h1>Pedido enviado</h1>
+      <p class="sub" style="margin-top:8px">Pediste <b id="resumen-mat">10 bolsas de cemento</b>.<br>
+      Lo revisa el coordinador y si está bien va a la orden del corralón.</p>
+      <button class="botonazo" onclick="ir('p-obra')">Volver a la obra</button>
+      <button class="atras" onclick="ir('p-pedido-2')">Me equivoqué, corregir</button>
+    </div>
+  </div>
+
+  <!-- ============ COORDINADOR: REVISAR PEDIDOS ============ -->
+  <div class="pant" id="p-pedidos">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Pedidos de materiales</h1>
+    <div class="sub">Aceptá, corregí o rechazá. Lo aceptado va a la orden.</div>
+
+    <div class="card valida">
+      <div class="quien">Carlos Soria — hoy 09:40</div>
+      <div class="que"><b>Ladrillo hueco ×500 unidades</b> · para mampostería PB</div>
+      <div class="dos" style="margin-bottom:8px">
+        <button class="botonazo" style="min-height:48px;font-size:15px" onclick="pedidoOk(this)">✓ Aceptar</button>
+        <button class="botonazo rojo" style="min-height:48px;font-size:15px" onclick="pedidoNo(this)">✗ Rechazar</button>
+      </div>
+      <button class="botonazo sec" style="min-height:44px;font-size:14px;margin:0" onclick="pedidoEditar(this)">✏️ Corregir cantidad</button>
+    </div>
+
+    <div class="card valida">
+      <div class="quien">Sofía Rodríguez — hoy 08:15</div>
+      <div class="que"><b>Pintura látex ×4 latas 20L</b> · planta alta</div>
+      <div class="dos" style="margin-bottom:8px">
+        <button class="botonazo" style="min-height:48px;font-size:15px" onclick="pedidoOk(this)">✓ Aceptar</button>
+        <button class="botonazo rojo" style="min-height:48px;font-size:15px" onclick="pedidoNo(this)">✗ Rechazar</button>
+      </div>
+      <button class="botonazo sec" style="min-height:44px;font-size:14px;margin:0" onclick="pedidoEditar(this)">✏️ Corregir cantidad</button>
+    </div>
+
+    <button class="botonazo" onclick="ir('p-orden')">📲 ARMAR ORDEN AL CORRALÓN</button>
+  </div>
+
+  <!-- ============ COORDINADOR: ÓRDENES DE COMPRA ============ -->
+  <div class="pant" id="p-orden">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Órdenes de compra</h1>
+    <div class="sub">3 corralones · el sistema asignó al menor costo</div>
+
+    <div class="card" style="border-left:6px solid var(--verde)">
+      <h3>💰 OPTIMIZADO</h3>
+      <div style="font-size:15px">Total <b>$ 1.498.700</b> · Ahorrás <b style="color:var(--verde)">$ 187.300</b> vs. pedir todo al mismo corralón. Tocá "Cambiar" si preferís otra fuente.</div>
+    </div>
+
+    <!-- Corralón Austral: acopio -->
+    <div class="card">
+      <h3>CORRALÓN AUSTRAL — 📦 ACOPIO #54073</h3>
+      <div style="font-size:13px;color:var(--gris);margin-bottom:6px">Saldo: $1,82M de $2,53M · precios congelados 05/06</div>
+      <div class="fila">
+        <div>🪨 Cemento ×10 bolsas<br>
+          <span style="font-size:12px;color:var(--verde);font-weight:700">congelado $11.300 — vs $13.250 (Don Pedro) y $12.800 (Andino)</span>
+        </div>
+        <button class="atras" style="padding:0" onclick="cambiarFuente(this)">Cambiar</button>
+      </div>
+      <div class="fila">
+        <div>🧱 Ladrillo hueco ×500<br>
+          <span style="font-size:12px;color:var(--verde);font-weight:700">congelado $1.262 — el más barato de los 3 acopios</span>
+        </div>
+        <button class="atras" style="padding:0" onclick="cambiarFuente(this)">Cambiar</button>
+      </div>
+      <button class="botonazo" style="min-height:48px;font-size:15px"
+              onclick="enviarWA('austral')">📲 WhatsApp a Austral (retiro de acopio)</button>
+    </div>
+
+    <!-- El Andino: compra -->
+    <div class="card">
+      <h3>CORRALÓN EL ANDINO — 💲 COMPRA</h3>
+      <div style="font-size:13px;color:var(--gris);margin-bottom:6px">Sin acopio para estos ítems · mejor precio actual</div>
+      <div class="fila">
+        <div>🎨 Pintura látex ×4 latas<br>
+          <span style="font-size:12px;color:var(--verde);font-weight:700">$86.400 — vs $93.100 (Austral, sin acopio de pintura)</span>
+        </div>
+        <button class="atras" style="padding:0" onclick="cambiarFuente(this)">Cambiar</button>
+      </div>
+      <div class="fila" style="border:0">
+        <div style="font-size:12px;color:var(--rojo)">⚠️ Precio cargado hace 18 días — confirmar antes de enviar</div>
+      </div>
+      <button class="botonazo" style="min-height:48px;font-size:15px"
+              onclick="enviarWA('andino')">📲 WhatsApp a El Andino (compra)</button>
+    </div>
+
+    <!-- Don Pedro: sin asignación -->
+    <div class="card" style="opacity:.6">
+      <h3>CORRALÓN DON PEDRO — 📦 ACOPIO #1881</h3>
+      <div style="font-size:13px;color:var(--gris)">Saldo $0,9M · sin ítems asignados esta vez (precios congelados más caros). El saldo queda para la próxima.</div>
+    </div>
+  </div>
+
+  <!-- ============ NAV (dinámica por rol) ============ -->
+  <div class="nav" id="nav"></div>
 </div>
 
 <script>
 let rolActual = 'socio';
-const homes = {socio:'p-inicio-socio', capataz:'p-inicio-capataz',
+const homes = {socio:'p-inicio-socio', coordinador:'p-inicio-coordinador',
                manager:'p-inicio-manager', sindico:'p-inicio-manager'};
 
+// La barra son "las 4 cosas que hacés todos los días" — distintas por rol
+const navPorRol = {
+  socio: [                                  // produce y cobra
+    {ico:'🏠', txt:'Inicio',   t:'HOME'},
+    {ico:'✏️', txt:'Cargar',   t:'p-cargar-1'},   // su acción diaria nº1
+    {ico:'💵', txt:'Mi plata', t:'p-plata'},
+    {ico:'🏗️', txt:'Obra',     t:'p-obra'},
+  ],
+  coordinador: [                            // revisa y abastece
+    {ico:'🏠', txt:'Inicio',   t:'HOME'},
+    {ico:'👍', txt:'Avances',  t:'p-validar'},    // bandeja de validación
+    {ico:'🧱', txt:'Pedidos',  t:'p-pedidos'},    // bandeja de materiales
+    {ico:'📲', txt:'Corralón', t:'p-orden'},      // órdenes de compra
+  ],
+  manager: [                                // decide y presupuesta
+    {ico:'🏠', txt:'Inicio',     t:'HOME'},
+    {ico:'🔴', txt:'Ruta',       t:'p-ruta'},     // SU vista principal
+    {ico:'📑', txt:'OTs',        t:'p-ots'},      // pipeline comercial
+    {ico:'🧱', txt:'Materiales', t:'p-orden'},    // precios/acopios p/presupuestar
+  ],
+  sindico: [                                // fiscaliza
+    {ico:'🏠', txt:'Inicio',   t:'HOME'},
+    {ico:'🔴', txt:'Ruta',     t:'p-ruta'},
+    {ico:'🗳️', txt:'Asamblea', t:'p-asamblea'},   // actas y certificaciones
+    {ico:'💰', txt:'Economía', t:'p-obra'},       // etapas, gastos, acopios
+  ],
+};
+
+// sub-pantallas → a qué botón de la barra pertenecen
+const padre = {
+  'p-cargar-2':'p-cargar-1','p-cargar-3':'p-cargar-1','p-listo':'p-cargar-1',
+  'p-pedido-1':'p-obra','p-pedido-2':'p-obra','p-pedido-listo':'p-obra',
+  'p-votar':'p-asamblea','p-votado':'p-asamblea',
+  'p-relev-1':'HOME','p-relev-2':'HOME','p-relev-listo':'HOME',
+  'p-ot':'p-ots',
+};
+
+function pintarNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = '';
+  navPorRol[rolActual].forEach(item => {
+    const b = document.createElement('button');
+    b.dataset.target = item.t;
+    b.innerHTML = '<span class="ico">' + item.ico + '</span>' + item.txt;
+    b.onclick = () => item.t === 'HOME' ? inicio() : ir(item.t);
+    nav.appendChild(b);
+  });
+}
 function ir(id){
   document.querySelectorAll('.pant').forEach(p => p.classList.remove('viva'));
   document.getElementById(id).classList.add('viva');
-  const mapa = {'p-cargar-1':'n-cargar','p-cargar-2':'n-cargar','p-cargar-3':'n-cargar',
-                'p-listo':'n-cargar','p-plata':'n-plata','p-obra':'n-obra'};
-  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('viva'));
-  document.getElementById(mapa[id] || 'n-inicio').classList.add('viva');
+  let destino = padre[id] || id;
+  if (destino === homes[rolActual]) destino = 'HOME';
+  document.querySelectorAll('.nav button').forEach(b => {
+    b.classList.toggle('viva', b.dataset.target === destino);
+  });
+  if (![...document.querySelectorAll('.nav button')].some(b => b.classList.contains('viva')))
+    document.querySelector('.nav button').classList.add('viva');
 }
 function inicio(){ ir(homes[rolActual]); }
 function rol(r){
@@ -393,12 +951,167 @@ function rol(r){
   document.querySelectorAll('.demo-bar button').forEach(b => b.classList.remove('act'));
   document.getElementById('r-'+r).classList.add('act');
   document.getElementById('titulo-tablero').textContent =
-    r === 'sindico' ? 'Tablero (síndico — solo lectura)' : 'Tablero de obra';
-  document.getElementById('btn-validar-mgr').style.display =
-    r === 'sindico' ? 'none' : 'flex';
+    r === 'sindico' ? 'Administración (síndico — lectura)' : 'Administración';
   document.querySelectorAll('.rol-manager').forEach(el =>
-    el.style.display = (r === 'manager') ? 'block' : 'none');
+    el.style.display = (r === 'manager') ? '' : 'none');
+  pintarNav();
   inicio();
+}
+pintarNav();
+let matNombre = 'Cemento', matUnidad = 'bolsas 50kg';
+function elegirMat(el, nombre, unidad){
+  matNombre = nombre; matUnidad = unidad;
+  document.getElementById('uni-mat').textContent = unidad + ' de ' + nombre;
+  el.classList.add('elegida');
+  setTimeout(() => { ir('p-pedido-2'); el.classList.remove('elegida'); }, 180);
+}
+function editarTarea(btn, nombre){
+  const d = prompt('Editar "' + nombre + '"\nDuración en días (hoy: 5):', '5');
+  if (d) {
+    const fila = btn.closest('.fila');
+    fila.querySelector('.chip').outerHTML =
+      '<span class="chip ok">✓ recalculado</span>';
+    alert('Ruta recalculada:\n• ' + nombre + ' → ' + d + ' días\n• Albañilería: fin se corre a 26/6\n• ⚡ Electricidad: SIN CAMBIOS (salvo cableado, cruce declarado)\n• 🚿 Sanitaria: SIN CAMBIOS\n• Fin de obra: 28/08 (sin cambios — había holgura)');
+  }
+}
+function nuevaDependencia(){
+  const r = prompt('Nueva dependencia:\n¿Qué tarea tiene que ESPERAR a otra?\n\n1 = Cableado PB espera Revoque grueso\n2 = Pintura espera Cableado PB\n3 = otra…', '1');
+  if (r === '1') alert('⚠️ Estás cruzando oficios: ELECTRICIDAD esperaría a ALBAÑILERÍA.\n\n¿El cableado realmente necesita el revoque terminado? Las dependencias flojas hacen que un atraso contagie a toda la obra.\n\n(Confirmar / Cancelar)');
+  else alert('Dependencia agregada. Ruta recalculada.');
+}
+function elegirInc(el, tipo){
+  el.classList.add('elegida');
+  setTimeout(() => {
+    document.getElementById('inc-titulo').textContent = tipo + ' — ¿cuál?';
+    ir('p-inc-2'); el.classList.remove('elegida');
+  }, 180);
+}
+function pedirService(btn){
+  btn.closest('.card').innerHTML =
+    '<div style="text-align:center;padding:10px;color:var(--verde);font-weight:800;font-size:15px">✓ Service pedido — la hormigonera queda marcada "en service" y el gasto va al rubro Herramientas</div>';
+}
+function devolver(btn){
+  const fila = btn.closest('.fila');
+  fila.innerHTML = '<div style="color:var(--verde);font-weight:700;font-size:14px;padding:4px 0">✓ Devuelta al depósito — disponible para otra obra</div>';
+}
+function llevarHerramienta(){
+  const h = prompt('Disponibles en depósito:\n1 = Vibrador de hormigón (ok)\n2 = Cortadora de cerámica (service en 10 días)\n3 = Grupo electrógeno (⚠️ SERVICE VENCIDO)', '1');
+  if (h === '3') alert('⚠️ El grupo electrógeno tiene el service vencido.\nPodés llevarlo igual, pero quedó registrado el aviso.');
+  else if (h) alert('✓ Asignada a Barrio Carriqueo a tu nombre.');
+}
+function mostrarExport(){
+  document.getElementById('btn-exportar').style.display = 'none';
+  document.getElementById('export-opciones').style.display = 'block';
+}
+function exportar(btn, formato){
+  document.getElementById('export-opciones').innerHTML =
+    '<div style="text-align:center;padding:10px;color:var(--verde);font-weight:800;font-size:15px">✓ ' +
+    formato + ' descargado con el filtro aplicado</div>';
+}
+let repTipoActual = 'todo';
+function repFiltrar(){
+  const q = document.getElementById('rep-buscar').value.toLowerCase();
+  let visibles = 0;
+  document.querySelectorAll('.rep').forEach(f => {
+    const ok = (repTipoActual === 'todo' || f.dataset.tipo === repTipoActual)
+            && f.dataset.txt.includes(q);
+    f.style.display = ok ? 'flex' : 'none';
+    if (ok) visibles++;
+  });
+  document.getElementById('rep-vacio').style.display = visibles ? 'none' : 'block';
+}
+function repTipo(el, tipo){
+  repTipoActual = tipo;
+  el.parentElement.querySelectorAll('.chip').forEach(c => c.className = 'chip espera');
+  el.className = 'chip ok';
+  repFiltrar();
+}
+function repRango(el, rango){
+  el.parentElement.querySelectorAll('.chip').forEach(c => c.className = 'chip espera');
+  el.className = 'chip ok';
+  document.getElementById('rep-titulo').textContent =
+    rango.toUpperCase() + ' — 23 OPERACIONES · $2,41M · 96 M²';
+}
+function verObra(el, nombre){
+  document.getElementById('obra-actual').textContent = 'Viendo: ' + nombre;
+  document.getElementById('obra-1').className = 'chip espera';
+  document.getElementById('obra-2').className = 'chip espera';
+  el.className = 'chip ok';
+  ['obra-1','obra-2'].forEach(id => {
+    const b = document.getElementById(id);
+    b.style.cssText = 'border:0;cursor:pointer;font-size:14px;padding:8px 14px';
+  });
+}
+function asignarCoordinador(btn){
+  const c = prompt('¿Quién coordina Cabaña Meliquina?\n1 = Miguel (2 obras: Carriqueo + esta)\n2 = Sofía (2 obras: Quintriqueo + esta)\n3 = Carlos (sin obras a cargo)', '3');
+  if (c) btn.closest('.card').innerHTML =
+    '<div style="text-align:center;padding:10px;color:var(--verde);font-weight:800;font-size:15px">✓ Obra creada con sus etapas. Coordinador asignado — le llegó la obra a su app.</div>';
+}
+function masRelev(d){
+  const v = document.getElementById('cant-relev');
+  v.textContent = Math.max(0, parseInt(v.textContent) + d);
+}
+function factura(tipo){
+  const iva = document.getElementById('linea-iva');
+  const total = document.getElementById('total-ppto');
+  const a = document.getElementById('fact-a'), b = document.getElementById('fact-b');
+  if (tipo === 'a') {
+    iva.style.display = 'flex';
+    iva.innerHTML = '<div>IVA 21% (discriminado)</div><b>$ 889.350</b>';
+    total.textContent = '$ 5.314.350';
+    a.style.cssText = 'padding:0 8px;font-weight:800;color:var(--verde)';
+    b.style.cssText = 'padding:0 8px';
+  } else {
+    iva.style.display = 'flex';
+    iva.innerHTML = '<div>IVA incluido (consumidor final)</div><b>—</b>';
+    total.textContent = '$ 5.314.350';
+    b.style.cssText = 'padding:0 8px;font-weight:800;color:var(--verde)';
+    a.style.cssText = 'padding:0 8px';
+  }
+}
+function masMat(d){
+  const v = document.getElementById('cant-mat');
+  v.textContent = Math.max(1, parseInt(v.textContent) + d);
+  document.getElementById('resumen-mat').textContent =
+    v.textContent + ' ' + matUnidad + ' de ' + matNombre.toLowerCase();
+}
+function aceptarTrabajo(btn){
+  btn.closest('.card').innerHTML =
+    '<div style="text-align:center;padding:10px;color:var(--verde);font-weight:800;font-size:17px">✓ Trabajo aceptado — arrancás el lunes 16/6</div>';
+}
+function rechazarTrabajo(btn){
+  btn.closest('.card').innerHTML =
+    '<div style="text-align:center;padding:10px;color:var(--rojo);font-weight:800;font-size:16px">Avisamos al coordinador para reasignar</div>';
+}
+function pedidoOk(btn){
+  btn.closest('.card').innerHTML =
+    '<div style="text-align:center;padding:8px;color:var(--verde);font-weight:800;font-size:16px">✓ Aceptado — agregado a la orden del corralón</div>';
+}
+function pedidoNo(btn){
+  btn.closest('.card').innerHTML =
+    '<div style="text-align:center;padding:8px;color:var(--rojo);font-weight:800;font-size:16px">Rechazado — le avisamos al socio</div>';
+}
+function pedidoEditar(btn){
+  const n = prompt('Nueva cantidad:', '500');
+  if (n) btn.closest('.card').innerHTML =
+    '<div style="text-align:center;padding:8px;color:var(--verde);font-weight:800;font-size:16px">✏️ Corregido a ×' + n + ' y agregado a la orden</div>';
+}
+const mensajesCorralon = {
+  austral: 'Hola! Coop. Unión de los Andes Patagónicos — RETIRO DE ACOPIO #54073, Obra Barrio Carriqueo:\n• Cemento Loma Negra x25kg ×10 bolsas (cód 9790)\n• Ladrillo hueco 12x18x33 ×500 u (cód 1523)\nPrecios congelados según carta compromiso. Entrega en obra. Confirmar día.\nMiguel — Coordinador',
+  andino: 'Hola! Pedido de Coop. Unión de los Andes Patagónicos — Obra Barrio Carriqueo (COMPRA):\n• Pintura látex blanca ×4 latas 20L\nConfirmar precio vigente y día de entrega. Gracias!\nMiguel — Coordinador',
+};
+function enviarWA(corralon){
+  const txt = encodeURIComponent(mensajesCorralon[corralon] || '');
+  window.open('https://wa.me/5492972000000?text=' + txt, '_blank');
+}
+function cambiarFuente(btn){
+  const alt = prompt('¿De dónde lo sacamos?\n1 = Corralón Austral (acopio, congelado)\n2 = El Andino (compra)\n3 = Don Pedro (acopio #1881)', '1');
+  if (alt) {
+    const fila = btn.closest('.fila');
+    fila.querySelector('span').innerHTML =
+      '✏️ elegido a mano por el coordinador — costo extra vs óptimo: $38.000';
+    fila.querySelector('span').style.color = 'var(--amarillo)';
+  }
 }
 function presente(){
   const b = document.getElementById('btn-presente');

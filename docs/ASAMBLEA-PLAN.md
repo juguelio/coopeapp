@@ -3,6 +3,10 @@
 **Fecha:** 2026-06-12 · **Insumo:** foto del Acta N°32 del libro de la Coop. Unión
 de los Andes Patagónicos (todo manuscrito) + módulo `coop_assembly` existente.
 
+> **DECISIÓN 2026-06-12:** el audio + transcripción (sección 4) queda para una
+> **futura actualización**. Alcance actual: pasos 1-3 (puntos, ballots,
+> asistencia, acta legal, firmas con hash).
+
 ## Qué hacen hoy a mano (y qué automatizamos)
 
 | Hoy (a mano) | Con la app |
