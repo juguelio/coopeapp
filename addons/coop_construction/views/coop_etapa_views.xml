@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== coop.etapa ===================== -->
+
+    <!-- Vista formulario -->
+    <record id="view_coop_etapa_form" model="ir.ui.view">
+        <field name="name">coop.etapa.form</field>
+        <field name="model">coop.etapa</field>
+        <field name="arch" type="xml">
+            <form string="Proyección de Etapa">
+                <header>
+                    <button name="action_en_curso" string="Iniciar etapa"
+                            type="object" class="btn-primary"
+                            invisible="state != 'planificacion'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_cerrar" string="Cerrar etapa"
+                            type="object" class="btn-success"
+                            invisible="state != 'en_curso'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_planificacion" string="Volver a planificación"
+                            type="object"
+                            invisible="state != 'en_curso'"
+                            groups="coop_members.group_coop_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="planificacion,en_curso,cerrada"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Etapa">
+                            <field name="obra_id"/>
+                            <field name="numero"/>
+                            <field name="name"/>
+                            <field name="fecha_certificacion"/>
+                            <field name="meses_espera"/>
+                        </group>
+                        <group string="Disponible">
+                            <field name="ingreso"/>
+                            <field name="saldo_etapa_anterior"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Control de uso">
+                            <field name="total_planificado"/>
+                            <field name="total_pagado"/>
+                        </group>
+                        <group string="Saldos">
+                            <field name="saldo_sin_planificar"/>
+                            <field name="controlador"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Gastos planificados" name="gastos">
+                            <field name="gasto_ids">
+                                <list editable="bottom"
+                                      decoration-success="state == 'pagado'">
+                                    <field name="name"/>
+                                    <field name="periodo"/>
+                                    <field name="rubro"/>
+                                    <field name="importe"/>
+                                    <field name="presupuesto_confirmado"
+                                           widget="boolean_toggle"/>
+                                    <field name="state" widget="badge"
+                                           decoration-muted="state == 'pendiente'"
+                                           decoration-success="state == 'pagado'"/>
+                                    <field name="fecha_pago" optional="hide"/>
+                                    <field name="observaciones" optional="show"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <button name="action_pagar" string="Pagar"
+                                            type="object" icon="fa-check"
+                                            invisible="state == 'pagado'"
+                                            groups="coop_members.group_coop_manager"/>
+                                    <button name="action_pendiente" string="Revertir"
+                                            type="object" icon="fa-undo"
+                                            invisible="state == 'pendiente'"
+                                            groups="coop_members.group_coop_manager"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Cuadrilla (mano de obra)" name="cuadrilla">
+                            <field name="cuadrilla_ids">
+                                <list editable="bottom">
+                                    <field name="rol"/>
+                                    <field name="cantidad"/>
+                                    <field name="tarifa_diaria"/>
+                                    <field name="dias"/>
+                                    <field name="subtotal"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="total_cuadrilla"/>
+                            </group>
+                        </page>
+                        <page string="Observaciones" name="notes">
+                            <field name="notes" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista lista -->
+    <record id="view_coop_etapa_list" model="ir.ui.view">
+        <field name="name">coop.etapa.list</field>
+        <field name="model">coop.etapa</field>
+        <field name="arch" type="xml">
+            <list string="Etapas"
+                  decoration-info="state == 'en_curso'"
+                  decoration-muted="state == 'cerrada'">
+                <field name="obra_id"/>
+                <field name="numero"/>
+                <field name="name"/>
+                <field name="fecha_certificacion"/>
+                <field name="ingreso"/>
+                <field name="total_planificado"/>
+                <field name="total_pagado"/>
+                <field name="saldo_sin_planificar"/>
+                <field name="controlador" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'planificacion'"
+                       decoration-info="state == 'en_curso'"
+                       decoration-success="state == 'cerrada'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista búsqueda -->
+    <record id="view_coop_etapa_search" model="ir.ui.view">
+        <field name="name">coop.etapa.search</field>
+        <field name="model">coop.etapa</field>
+        <field name="arch" type="xml">
+            <search string="Buscar etapas">
+                <field name="obra_id" string="Obra"/>
+                <field name="name" string="Etapa"/>
+                <filter name="planificacion" string="En planificación"
+                        domain="[('state', '=', 'planificacion')]"/>
+                <filter name="en_curso" string="En curso"
+                        domain="[('state', '=', 'en_curso')]"/>
+                <filter name="cerradas" string="Cerradas"
+                        domain="[('state', '=', 'cerrada')]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_obra" string="Obra"
+                            context="{'group_by': 'obra_id'}"/>
+                    <filter name="group_state" string="Estado"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_coop_etapa" model="ir.actions.act_window">
+        <field name="name">Proyección por Etapas</field>
+        <field name="res_model">coop.etapa</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coop_etapa_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Creá la primera proyección de pagos por etapa
+            </p>
+            <p>
+                Cargá el ingreso de la etapa y los gastos planificados por rubro.
+                Todos los socios pueden ver la proyección.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================== coop.proyeccion.gasto ===================== -->
+
+    <!-- Vista lista de gastos (acceso directo, agrupable por rubro) -->
+    <record id="view_coop_proyeccion_gasto_list" model="ir.ui.view">
+        <field name="name">coop.proyeccion.gasto.list</field>
+        <field name="model">coop.proyeccion.gasto</field>
+        <field name="arch" type="xml">
+            <list string="Gastos planificados"
+                  decoration-success="state == 'pagado'">
+                <field name="obra_id"/>
+                <field name="etapa_id"/>
+                <field name="name"/>
+                <field name="periodo"/>
+                <field name="rubro"/>
+                <field name="importe" sum="Total"/>
+                <field name="presupuesto_confirmado" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'pendiente'"
+                       decoration-success="state == 'pagado'"/>
+                <field name="fecha_pago" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista pivot: resumen por rubro (equivalente al cuadro del Excel) -->
+    <record id="view_coop_proyeccion_gasto_pivot" model="ir.ui.view">
+        <field name="name">coop.proyeccion.gasto.pivot</field>
+        <field name="model">coop.proyeccion.gasto</field>
+        <field name="arch" type="xml">
+            <pivot string="Resumen por rubro">
+                <field name="rubro" type="row"/>
+                <field name="state" type="col"/>
+                <field name="importe" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista búsqueda de gastos -->
+    <record id="view_coop_proyeccion_gasto_search" model="ir.ui.view">
+        <field name="name">coop.proyeccion.gasto.search</field>
+        <field name="model">coop.proyeccion.gasto</field>
+        <field name="arch" type="xml">
+            <search string="Buscar gastos">
+                <field name="name" string="Descripción"/>
+                <field name="obra_id" string="Obra"/>
+                <field name="etapa_id" string="Etapa"/>
+                <filter name="pendientes" string="Pendientes"
+                        domain="[('state', '=', 'pendiente')]"/>
+                <filter name="pagados" string="Pagados"
+                        domain="[('state', '=', 'pagado')]"/>
+                <filter name="confirmados" string="Presupuesto confirmado"
+                        domain="[('presupuesto_confirmado', '=', True)]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_rubro" string="Rubro"
+                            context="{'group_by': 'rubro'}"/>
+                    <filter name="group_etapa" string="Etapa"
+                            context="{'group_by': 'etapa_id'}"/>
+                    <filter name="group_obra" string="Obra"
+                            context="{'group_by': 'obra_id'}"/>
+                    <filter name="group_state" string="Estado"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción de gastos -->
+    <record id="action_coop_proyeccion_gasto" model="ir.actions.act_window">
+        <field name="name">Gastos Planificados</field>
+        <field name="res_model">coop.proyeccion.gasto</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_coop_proyeccion_gasto_search"/>
+        <field name="context">{'search_default_group_rubro': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Todavía no hay gastos planificados
+            </p>
+            <p>
+                Los gastos se cargan desde la proyección de cada etapa.
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -21,7 +21,8 @@ addons/
 # Correr desde ~/Documents/coopeapp/
 scp -r addons/MODULO/ odoo-admin@178.105.15.189:~/odoo-coop/addons/
 ssh odoo-admin@178.105.15.189
-cd ~/odoo-coop && docker compose run --rm odoo odoo -u MODULO -d coop_piloto --stop-after-init && docker compose up -d
+cd ~/odoo-coop && docker compose run --rm odoo odoo -u MODULO -d coop_piloto --stop-after-init && docker compose restart odoo
+# Importante: "up -d" NO reinicia un contenedor ya corriendo → el Python viejo queda en memoria (modelos nuevos dan 404 RPC_ERROR). Siempre "restart".
 
 ## Reglas de comportamiento
 

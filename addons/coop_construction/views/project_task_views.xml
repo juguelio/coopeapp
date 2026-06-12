@@ -14,6 +14,11 @@
                 <field name="socio_tarea_ids" widget="many2many_tags"
                        string="Cuadrilla asignada"
                        invisible="not project_id.is_coop_obra"/>
+                <field name="duracion_dias"
+                       invisible="not project_id.is_coop_obra"/>
+                <field name="holgura" invisible="not project_id.is_coop_obra"/>
+                <field name="es_critica"
+                       invisible="not project_id.is_coop_obra"/>
             </xpath>
         </field>
     </record>

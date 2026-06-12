@@ -38,6 +38,24 @@
                     <group string="Plantel asignado">
                         <field name="socio_obra_ids" widget="many2many_tags" nolabel="1"/>
                     </group>
+                    <group string="Proyección por etapas">
+                        <field name="etapa_count" string="Etapas cargadas"/>
+                    </group>
+                    <field name="etapa_ids">
+                        <list>
+                            <field name="numero"/>
+                            <field name="name"/>
+                            <field name="fecha_certificacion"/>
+                            <field name="ingreso"/>
+                            <field name="total_planificado"/>
+                            <field name="total_pagado"/>
+                            <field name="saldo_sin_planificar"/>
+                            <field name="state" widget="badge"
+                                   decoration-muted="state == 'planificacion'"
+                                   decoration-info="state == 'en_curso'"
+                                   decoration-success="state == 'cerrada'"/>
+                        </list>
+                    </field>
                     <field name="certificado_ids">
                         <list>
                             <field name="numero"/>
@@ -50,6 +68,37 @@
                                    decoration-warning="state == 'aprobado'"
                                    decoration-success="state == 'cobrado'"
                                    decoration-danger="state == 'rechazado'"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Foja de Medición" name="foja_medicion"
+                      invisible="not is_coop_obra">
+                    <group>
+                        <group string="Avance físico">
+                            <field name="avance_fisico" widget="progressbar"/>
+                        </group>
+                        <group string="Hoja de ruta">
+                            <button name="action_calcular_ruta_critica"
+                                    string="Calcular ruta crítica"
+                                    type="object" class="btn-primary"
+                                    groups="coop_members.group_coop_manager"/>
+                        </group>
+                    </group>
+                    <field name="foja_item_ids">
+                        <list editable="bottom">
+                            <field name="etapa_id" optional="show"/>
+                            <field name="item"/>
+                            <field name="name"/>
+                            <field name="unidad_produccion_id" optional="show"/>
+                            <field name="uom"/>
+                            <field name="cantidad"/>
+                            <field name="precio_unitario"/>
+                            <field name="precio_total" sum="Total"/>
+                            <field name="incidencia" string="Incid. %"/>
+                            <field name="cantidad_ejecutada"/>
+                            <field name="avance_pct" widget="progressbar"/>
+                            <field name="task_id" optional="hide"/>
+                            <field name="currency_id" column_invisible="1"/>
                         </list>
                     </field>
                 </page>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>coopeapp — mockup app de socios</title>
+<style>
+  :root{
+    --verde:#1a7f4e; --verde-claro:#e6f4ec; --amarillo:#f5a623; --rojo:#d0413b;
+    --tinta:#1d2733; --gris:#6b7785; --fondo:#f4f6f8; --blanco:#fff;
+    --radio:14px; --sombra:0 1px 4px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif; background:#d8dde2;
+       display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:12px}
+  .demo-bar{max-width:400px; width:100%; margin-bottom:10px; background:var(--tinta);
+            border-radius:10px; padding:8px 12px; color:#fff; font-size:13px;
+            display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+  .demo-bar b{margin-right:4px}
+  .demo-bar button{border:0; border-radius:8px; padding:6px 10px; font-size:13px;
+                   background:#3a4757; color:#fff; cursor:pointer}
+  .demo-bar button.act{background:var(--verde)}
+  .tel{max-width:400px; width:100%; height:78vh; min-height:560px; background:var(--fondo);
+       border-radius:24px; box-shadow:0 8px 30px rgba(0,0,0,.25); overflow:hidden;
+       display:flex; flex-direction:column; position:relative}
+  .pant{flex:1; overflow-y:auto; padding:18px 16px 90px; display:none}
+  .pant.viva{display:block}
+  h1{font-size:22px; color:var(--tinta); margin-bottom:4px}
+  .sub{color:var(--gris); font-size:15px; margin-bottom:18px}
+  .card{background:var(--blanco); border-radius:var(--radio); box-shadow:var(--sombra);
+        padding:16px; margin-bottom:12px}
+  .card h3{font-size:15px; color:var(--gris); font-weight:600; margin-bottom:6px}
+  .nro{font-size:34px; font-weight:800; color:var(--tinta)}
+  .nro small{font-size:16px; color:var(--gris); font-weight:600}
+  .botonazo{display:flex; align-items:center; justify-content:center; gap:10px; width:100%;
+            min-height:64px; border:0; border-radius:var(--radio); background:var(--verde);
+            color:#fff; font-size:19px; font-weight:700; cursor:pointer; margin:6px 0}
+  .botonazo.sec{background:var(--blanco); color:var(--tinta); border:2px solid #d7dee5}
+  .botonazo.rojo{background:var(--rojo)}
+  .botonazo:active{transform:scale(.98)}
+  .chip{display:inline-block; padding:4px 10px; border-radius:20px; font-size:13px; font-weight:700}
+  .chip.ok{background:var(--verde-claro); color:var(--verde)}
+  .chip.espera{background:#fdf3e0; color:#a36b00}
+  .chip.rojo{background:#fdecea; color:var(--rojo)}
+  .barra{height:18px; background:#e2e8ee; border-radius:10px; overflow:hidden; margin:8px 0}
+  .barra div{height:100%; background:var(--verde); border-radius:10px}
+  .nav{position:absolute; bottom:0; left:0; right:0; background:var(--blanco);
+       border-top:1px solid #e2e8ee; display:flex; padding:6px 4px 10px}
+  .nav button{flex:1; border:0; background:none; display:flex; flex-direction:column;
+              align-items:center; gap:2px; font-size:12px; font-weight:600;
+              color:var(--gris); cursor:pointer; padding:6px 0}
+  .nav button.viva{color:var(--verde)}
+  .nav .ico{font-size:22px; line-height:1}
+  .paso{font-size:14px; color:var(--gris); font-weight:700; margin-bottom:6px}
+  .pregunta{font-size:24px; font-weight:800; color:var(--tinta); margin-bottom:18px}
+  .opcion{display:flex; align-items:center; gap:12px; width:100%; background:var(--blanco);
+          border:2px solid #d7dee5; border-radius:var(--radio); padding:18px 14px;
+          font-size:17px; font-weight:600; color:var(--tinta); cursor:pointer;
+          margin-bottom:10px; text-align:left}
+  .opcion .ico{font-size:26px}
+  .opcion.elegida{border-color:var(--verde); background:var(--verde-claro)}
+  .stepper{display:flex; align-items:center; justify-content:center; gap:18px; margin:24px 0}
+  .stepper button{width:64px; height:64px; border-radius:50%; border:0; font-size:30px;
+                  font-weight:800; background:var(--verde-claro); color:var(--verde); cursor:pointer}
+  .stepper .valor{font-size:52px; font-weight:800; color:var(--tinta); min-width:120px; text-align:center}
+  .stepper .uni{font-size:18px; color:var(--gris); font-weight:700}
+  .listo{display:flex; flex-direction:column; align-items:center; justify-content:center;
+         height:100%; text-align:center; padding:0 20px}
+  .listo .check{width:110px; height:110px; border-radius:50%; background:var(--verde);
+                color:#fff; font-size:60px; display:flex; align-items:center;
+                justify-content:center; margin-bottom:20px}
+  .fila{display:flex; justify-content:space-between; align-items:center; padding:10px 0;
+        border-bottom:1px solid #eef2f5; font-size:15px}
+  .fila:last-child{border:0}
+  .fila b{font-size:16px}
+  .valida .quien{font-size:17px; font-weight:800; margin-bottom:2px}
+  .valida .que{font-size:15px; color:var(--gris); margin-bottom:12px}
+  .dos{display:flex; gap:10px}
+  .dos .botonazo{min-height:54px; font-size:16px}
+  .semaforo{display:flex; gap:10px}
+  .semaforo .card{flex:1; text-align:center; margin:0}
+  .semaforo .nro{font-size:24px}
+  .atras{background:none; border:0; color:var(--gris); font-size:15px; font-weight:700;
+         cursor:pointer; padding:0 0 14px}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <b>DEMO — rol:</b>
+  <button id="r-socio" class="act" onclick="rol('socio')">Socio</button>
+  <button id="r-capataz" onclick="rol('capataz')">Capataz</button>
+  <button id="r-manager" onclick="rol('manager')">Manager</button>
+  <button id="r-sindico" onclick="rol('sindico')">Síndico</button>
+</div>
+
+<div class="tel">
+
+  <!-- ============ INICIO SOCIO ============ -->
+  <div class="pant" id="p-inicio-socio">
+    <h1>Hola, Carlos 👋</h1>
+    <div class="sub">Obra: Remodelación Barrio Carriqueo</div>
+    <div class="card">
+      <h3>TU TAREA DE HOY</h3>
+      <div style="font-size:18px;font-weight:700">Pintura interior — Planta Baja</div>
+      <div style="color:var(--gris);font-size:14px;margin-top:4px">con Sofía y Miguel</div>
+    </div>
+    <button class="botonazo" onclick="ir('p-cargar-1')">✏️ &nbsp;CARGAR LO QUE HICE</button>
+    <div class="card" style="border-left:6px solid var(--amarillo)">
+      <h3>🗳️ ASAMBLEA EN CURSO</h3>
+      <div style="font-size:16px;font-weight:700;margin-bottom:10px">Asamblea ordinaria — hoy 10:00</div>
+      <button class="botonazo" style="min-height:50px;font-size:16px;margin:0" onclick="ir('p-asamblea')">ENTRAR</button>
+    </div>
+    <div class="card">
+      <h3>TU ÚLTIMA CARGA</h3>
+      <div class="fila">
+        <div>Ayer — Pintura 32 m²</div>
+        <span class="chip ok">✓ Validado</span>
+      </div>
+      <div class="fila">
+        <div>Hoy — Pintura 18 m²</div>
+        <span class="chip espera">⏳ Lo revisa el capataz</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INICIO CAPATAZ ============ -->
+  <div class="pant" id="p-inicio-capataz">
+    <h1>Hola, Miguel 👋</h1>
+    <div class="sub">Capataz — Barrio Carriqueo</div>
+    <div class="card" style="border-left:6px solid var(--amarillo)">
+      <h3>PARA REVISAR</h3>
+      <div class="nro">3 <small>avances de tu cuadrilla</small></div>
+      <button class="botonazo" style="margin-top:10px" onclick="ir('p-validar')">👍 REVISAR AHORA</button>
+    </div>
+    <button class="botonazo sec" onclick="ir('p-cargar-1')">✏️ Cargar lo que hice yo</button>
+  </div>
+
+  <!-- ============ VALIDAR (capataz/manager) ============ -->
+  <div class="pant" id="p-validar">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Revisar avances</h1>
+    <div class="sub">Uno por uno. Si está mal, vuelve al socio.</div>
+    <div class="card valida" id="card-validar">
+      <div class="quien">Carlos Soria</div>
+      <div class="que">Pintura interior PB — <b>18 m²</b> en 1 jornal · hoy 14:30</div>
+      <div class="dos">
+        <button class="botonazo" onclick="validado(this)">✓ Está bien</button>
+        <button class="botonazo rojo sec" style="border:0;color:#fff" onclick="rechazado(this)">✗ Corregir</button>
+      </div>
+    </div>
+    <div class="card valida">
+      <div class="quien">Sofía Rodríguez</div>
+      <div class="que">Colocación cañería — <b>24 ml</b> en 6 horas · hoy 13:10</div>
+      <div class="dos">
+        <button class="botonazo" onclick="validado(this)">✓ Está bien</button>
+        <button class="botonazo rojo sec" style="border:0;color:#fff" onclick="rechazado(this)">✗ Corregir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INICIO MANAGER / SINDICO (tablero) ============ -->
+  <div class="pant" id="p-inicio-manager">
+    <h1 id="titulo-tablero">Tablero de obra</h1>
+    <div class="sub">Barrio Carriqueo — Etapa 2 en curso</div>
+    <div class="card">
+      <h3>AVANCE FÍSICO DE LA OBRA</h3>
+      <div class="nro">42<small> %</small></div>
+      <div class="barra"><div style="width:42%"></div></div>
+    </div>
+    <div class="semaforo">
+      <div class="card">
+        <h3>SALDO SIN PLANIFICAR</h3>
+        <div class="nro" style="color:var(--verde)">$7,2M</div>
+      </div>
+      <div class="card">
+        <h3>CONTROLADOR</h3>
+        <div class="nro" style="color:var(--amarillo)">$1,1M</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>⚠️ RUTA CRÍTICA — NO PUEDEN ATRASARSE</h3>
+      <div class="fila"><div>Cañería principal PB</div><span class="chip rojo">vence en 3 días</span></div>
+      <div class="fila"><div>Contrapiso pasillo</div><span class="chip espera">en fecha</span></div>
+    </div>
+    <button class="botonazo" id="btn-validar-mgr" onclick="ir('p-validar')">👍 Revisar avances (3)</button>
+    <button class="botonazo sec" onclick="ir('p-asamblea')">🗳️ Asamblea en curso</button>
+    <button class="botonazo sec">🖥️ Ir al sistema completo</button>
+  </div>
+
+  <!-- ============ CARGAR PASO 1 ============ -->
+  <div class="pant" id="p-cargar-1">
+    <button class="atras" onclick="inicio()">← Salir</button>
+    <div class="paso">PASO 1 DE 3</div>
+    <div class="pregunta">¿En qué trabajaste?</div>
+    <button class="opcion" onclick="elegir(this,'p-cargar-2')"><span class="ico">🎨</span> Pintura interior <span style="margin-left:auto;color:var(--gris)">m²</span></button>
+    <button class="opcion" onclick="elegir(this,'p-cargar-2')"><span class="ico">🧱</span> Albañilería — mampostería <span style="margin-left:auto;color:var(--gris)">m²</span></button>
+    <button class="opcion" onclick="elegir(this,'p-cargar-2')"><span class="ico">🔧</span> Colocación cañería <span style="margin-left:auto;color:var(--gris)">ml</span></button>
+    <button class="opcion" onclick="elegir(this,'p-cargar-2')"><span class="ico">⛏️</span> Excavación <span style="margin-left:auto;color:var(--gris)">m³</span></button>
+  </div>
+
+  <!-- ============ CARGAR PASO 2 ============ -->
+  <div class="pant" id="p-cargar-2">
+    <button class="atras" onclick="ir('p-cargar-1')">← Volver</button>
+    <div class="paso">PASO 2 DE 3</div>
+    <div class="pregunta">¿Cuánto hiciste?</div>
+    <div class="stepper">
+      <button onclick="mas(-1)">−</button>
+      <div><div class="valor" id="cant">18</div><div class="uni" style="text-align:center">m² de pintura</div></div>
+      <button onclick="mas(1)">+</button>
+    </div>
+    <button class="botonazo" onclick="ir('p-cargar-3')">Seguir →</button>
+  </div>
+
+  <!-- ============ CARGAR PASO 3 ============ -->
+  <div class="pant" id="p-cargar-3">
+    <button class="atras" onclick="ir('p-cargar-2')">← Volver</button>
+    <div class="paso">PASO 3 DE 3</div>
+    <div class="pregunta">¿Cuánto trabajo te llevó?</div>
+    <button class="opcion elegida"><span class="ico">📅</span> 1 jornal (el día)</button>
+    <button class="opcion"><span class="ico">⏰</span> Por horas</button>
+    <button class="opcion"><span class="ico">✅</span> Tarea completa</button>
+    <button class="botonazo" onclick="ir('p-listo')">CONFIRMAR ✓</button>
+  </div>
+
+  <!-- ============ CONFIRMACIÓN ============ -->
+  <div class="pant" id="p-listo">
+    <div class="listo">
+      <div class="check">✓</div>
+      <h1>¡Listo, Carlos!</h1>
+      <p class="sub" style="margin-top:8px">Cargaste <b>18 m² de pintura</b> en 1 jornal.<br>
+      Ahora lo revisa el capataz y suma a tu participación.</p>
+      <button class="botonazo" onclick="inicio()">Volver al inicio</button>
+      <button class="atras" onclick="ir('p-cargar-2')">Me equivoqué, corregir</button>
+    </div>
+  </div>
+
+  <!-- ============ ASAMBLEA (detalle) ============ -->
+  <div class="pant" id="p-asamblea">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <h1>Asamblea ordinaria</h1>
+    <div class="sub">Hoy 10:00 — Sede, Sarmiento 310</div>
+
+    <div class="card">
+      <h3>QUÓRUM</h3>
+      <div class="fila" style="border:0;padding:0 0 4px">
+        <div><b>14 de 18</b> socios presentes</div>
+        <span class="chip ok">✓ Hay quórum</span>
+      </div>
+      <div class="barra"><div style="width:78%"></div></div>
+      <button class="botonazo" id="btn-presente" style="min-height:50px;font-size:16px"
+              onclick="presente()">✋ ESTOY PRESENTE</button>
+    </div>
+
+    <!-- Controles del secretario (solo manager) -->
+    <div class="card rol-manager" style="display:none;border-left:6px solid var(--rojo)">
+      <h3>🎙️ GRABANDO PUNTO 2</h3>
+      <div class="fila" style="border:0;padding:0">
+        <div class="nro" style="font-size:26px" id="rec-timer">12:47</div>
+        <button class="botonazo rojo" style="min-height:46px;font-size:15px;max-width:170px;margin:0"
+                onclick="this.closest('.card').innerHTML='<div style=\'text-align:center;padding:8px;font-weight:800;color:var(--verde)\'>✓ Audio guardado — se transcribe solo</div>'">
+          ⏹️ CERRAR PUNTO</button>
+      </div>
+    </div>
+
+    <h3 style="font-size:15px;color:var(--gris);font-weight:600;margin:14px 0 8px">ORDEN DEL DÍA</h3>
+
+    <div class="card">
+      <div class="fila" style="border:0;padding:0">
+        <div>
+          <div style="font-weight:800;font-size:16px">1. Memoria y balance 2025</div>
+          <div style="font-size:13px;color:var(--gris)">Aprobado — 13 a favor, 1 abstención</div>
+        </div>
+        <span class="chip ok">✓ Resuelto</span>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid var(--verde)">
+      <div style="font-weight:800;font-size:16px;margin-bottom:2px">2. Compra de andamios ($4,5M)</div>
+      <div style="font-size:13px;color:var(--gris);margin-bottom:10px">🔴 En debate ahora — votación abierta</div>
+      <button class="botonazo" style="min-height:50px;font-size:16px;margin:0" onclick="ir('p-votar')">VOTAR ESTE PUNTO</button>
+    </div>
+
+    <div class="card" style="opacity:.65">
+      <div class="fila" style="border:0;padding:0">
+        <div style="font-weight:800;font-size:16px">3. Firmantes cuenta corriente BPN</div>
+        <span class="chip espera">⏳ Pendiente</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📄 ACTA</h3>
+      <div style="font-size:14px;color:var(--gris)">Se arma sola al cerrar: asistencia, votos y
+      resoluciones con el formato del libro. El secretario la revisa y firma.</div>
+      <button class="botonazo sec rol-manager" style="display:none;min-height:46px;font-size:15px;margin-top:10px">
+        ✍️ Generar borrador de acta</button>
+    </div>
+  </div>
+
+  <!-- ============ VOTAR ============ -->
+  <div class="pant" id="p-votar">
+    <button class="atras" onclick="inicio()">← Volver</button>
+    <div class="paso">ASAMBLEA — DOMINGO 15/6</div>
+    <div class="pregunta">¿Aprobás la compra de andamios nuevos por $4,5M?</div>
+    <button class="opcion" onclick="voto(this)"><span class="ico">👍</span> Sí, apruebo</button>
+    <button class="opcion" onclick="voto(this)"><span class="ico">👎</span> No apruebo</button>
+    <button class="opcion" onclick="voto(this)"><span class="ico">🤷</span> Me abstengo</button>
+    <div class="card" style="margin-top:14px">
+      <h3>ANTES DE VOTAR</h3>
+      <div style="font-size:14px;color:var(--gris)">Propuesta del consejo: renovar 12 cuerpos de andamio.
+      Presupuesto adjunto en el acta. Tu voto es secreto.</div>
+    </div>
+  </div>
+
+  <!-- ============ VOTO CONFIRMADO ============ -->
+  <div class="pant" id="p-votado">
+    <div class="listo">
+      <div class="check">🗳️</div>
+      <h1>Voto registrado</h1>
+      <p class="sub" style="margin-top:8px">Gracias por participar.<br>El resultado se publica al cierre de la asamblea.</p>
+      <button class="botonazo" onclick="ir('p-asamblea')">Volver a la asamblea</button>
+    </div>
+  </div>
+
+  <!-- ============ MI PLATA ============ -->
+  <div class="pant" id="p-plata">
+    <h1>Mi plata</h1>
+    <div class="sub">Junio 2026</div>
+    <div class="card">
+      <h3>TU PARTICIPACIÓN DEL MES</h3>
+      <div class="nro">$ 485.000</div>
+      <div style="color:var(--gris);font-size:14px;margin-top:4px">12 jornales validados</div>
+    </div>
+    <div class="card">
+      <h3>TU PRODUCCIÓN</h3>
+      <div class="fila"><div>🎨 Pintura</div><b>164 m² en 9 jornales</b></div>
+      <div class="fila"><div>🔧 Cañería</div><b>48 ml en 3 jornales</b></div>
+    </div>
+    <div class="card">
+      <h3>ÚLTIMA LIQUIDACIÓN</h3>
+      <div class="fila"><div>Mayo 2026</div><span class="chip ok">✓ Pagada</span></div>
+    </div>
+  </div>
+
+  <!-- ============ OBRA (transparencia) ============ -->
+  <div class="pant" id="p-obra">
+    <h1>La obra</h1>
+    <div class="sub">Remodelación Barrio Carriqueo</div>
+    <div class="card">
+      <h3>AVANCE TOTAL</h3>
+      <div class="nro">42<small> %</small></div>
+      <div class="barra"><div style="width:42%"></div></div>
+      <div style="color:var(--gris);font-size:13px">Lo mismo que ve el consejo. Sin secretos.</div>
+    </div>
+    <div class="card">
+      <h3>ETAPA 2 — EN CURSO</h3>
+      <div class="fila"><div>Ingreso de la etapa</div><b>$ 54,0M</b></div>
+      <div class="fila"><div>Gastado</div><b>$ 31,3M</b></div>
+      <div class="fila"><div>Saldo</div><b style="color:var(--verde)">$ 22,7M</b></div>
+    </div>
+    <div class="card">
+      <h3>PRÓXIMO EN LA OBRA</h3>
+      <div class="fila"><div>Cañería principal PB</div><span class="chip rojo">crítica</span></div>
+      <div class="fila"><div>Contrapiso pasillo</div><span class="chip ok">en fecha</span></div>
+    </div>
+  </div>
+
+  <!-- ============ NAV ============ -->
+  <div class="nav">
+    <button id="n-inicio" class="viva" onclick="inicio()"><span class="ico">🏠</span>Inicio</button>
+    <button id="n-cargar" onclick="ir('p-cargar-1')"><span class="ico">✏️</span>Cargar</button>
+    <button id="n-plata" onclick="ir('p-plata')"><span class="ico">💵</span>Mi plata</button>
+    <button id="n-obra" onclick="ir('p-obra')"><span class="ico">🏗️</span>Obra</button>
+  </div>
+</div>
+
+<script>
+let rolActual = 'socio';
+const homes = {socio:'p-inicio-socio', capataz:'p-inicio-capataz',
+               manager:'p-inicio-manager', sindico:'p-inicio-manager'};
+
+function ir(id){
+  document.querySelectorAll('.pant').forEach(p => p.classList.remove('viva'));
+  document.getElementById(id).classList.add('viva');
+  const mapa = {'p-cargar-1':'n-cargar','p-cargar-2':'n-cargar','p-cargar-3':'n-cargar',
+                'p-listo':'n-cargar','p-plata':'n-plata','p-obra':'n-obra'};
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('viva'));
+  document.getElementById(mapa[id] || 'n-inicio').classList.add('viva');
+}
+function inicio(){ ir(homes[rolActual]); }
+function rol(r){
+  rolActual = r;
+  document.querySelectorAll('.demo-bar button').forEach(b => b.classList.remove('act'));
+  document.getElementById('r-'+r).classList.add('act');
+  document.getElementById('titulo-tablero').textContent =
+    r === 'sindico' ? 'Tablero (síndico — solo lectura)' : 'Tablero de obra';
+  document.getElementById('btn-validar-mgr').style.display =
+    r === 'sindico' ? 'none' : 'flex';
+  document.querySelectorAll('.rol-manager').forEach(el =>
+    el.style.display = (r === 'manager') ? 'block' : 'none');
+  inicio();
+}
+function presente(){
+  const b = document.getElementById('btn-presente');
+  b.textContent = '✓ Presente registrado';
+  b.style.background = 'var(--verde-claro)'; b.style.color = 'var(--verde)';
+  b.disabled = true;
+}
+setInterval(() => {
+  const t = document.getElementById('rec-timer');
+  if (!t) return;
+  const p = t.textContent.split(':');
+  let s = parseInt(p[0]) * 60 + parseInt(p[1]) + 1;
+  t.textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}, 1000);
+function elegir(el, destino){
+  el.classList.add('elegida');
+  setTimeout(() => { ir(destino); el.classList.remove('elegida'); }, 180);
+}
+function mas(d){
+  const v = document.getElementById('cant');
+  v.textContent = Math.max(1, parseInt(v.textContent) + d);
+}
+function voto(el){
+  el.classList.add('elegida');
+  setTimeout(() => { ir('p-votado'); el.classList.remove('elegida'); }, 250);
+}
+function validado(btn){
+  const card = btn.closest('.card');
+  card.innerHTML = '<div style="text-align:center;padding:8px;color:var(--verde);font-weight:800;font-size:17px">✓ Validado — ya suma al avance</div>';
+}
+function rechazado(btn){
+  const card = btn.closest('.card');
+  card.innerHTML = '<div style="text-align:center;padding:8px;color:var(--rojo);font-weight:800;font-size:16px">Devuelto al socio para corregir</div>';
+}
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@
 <odoo>
     <menuitem id="menu_coop_construction_root"
               name="Construcción"
+              web_icon="project,static/description/icon.png"
               sequence="50"/>
 
     <menuitem id="menu_coop_obras"
@@ -10,9 +11,63 @@
               action="action_coop_obras"
               sequence="10"/>
 
+    <menuitem id="menu_coop_hoja_ruta"
+              name="Hoja de Ruta"
+              parent="menu_coop_construction_root"
+              action="action_coop_hoja_ruta"
+              sequence="20"/>
+
+    <!-- Medición: avance físico de la obra -->
+    <menuitem id="menu_coop_medicion"
+              name="Medición"
+              parent="menu_coop_construction_root"
+              sequence="30"/>
+
+    <menuitem id="menu_coop_avance_medicion"
+              name="Avances de Medición"
+              parent="menu_coop_medicion"
+              action="action_coop_avance_medicion"
+              sequence="10"/>
+
+    <menuitem id="menu_coop_foja_medicion"
+              name="Foja de Medición"
+              parent="menu_coop_medicion"
+              action="action_coop_foja_item"
+              sequence="20"/>
+
+    <!-- Economía: plata de la obra -->
+    <menuitem id="menu_coop_economia"
+              name="Economía"
+              parent="menu_coop_construction_root"
+              sequence="40"/>
+
+    <menuitem id="menu_coop_etapas"
+              name="Proyección por Etapas"
+              parent="menu_coop_economia"
+              action="action_coop_etapa"
+              sequence="10"/>
+
+    <menuitem id="menu_coop_proyeccion_gastos"
+              name="Gastos Planificados"
+              parent="menu_coop_economia"
+              action="action_coop_proyeccion_gasto"
+              sequence="20"/>
+
     <menuitem id="menu_coop_certificados"
               name="Certificados de Avance"
-              parent="menu_coop_construction_root"
+              parent="menu_coop_economia"
               action="action_coop_certificado"
-              sequence="20"/>
+              sequence="30"/>
+
+    <!-- Configuración -->
+    <menuitem id="menu_coop_config"
+              name="Configuración"
+              parent="menu_coop_construction_root"
+              sequence="50"/>
+
+    <menuitem id="menu_coop_unidad_produccion"
+              name="Unidades de Producción"
+              parent="menu_coop_config"
+              action="action_coop_unidad_produccion"
+              sequence="10"/>
 </odoo>

@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 
 class ProjectProject(models.Model):
@@ -46,6 +47,16 @@ class ProjectProject(models.Model):
         currency_field='currency_id', store=True)
     certificado_ids = fields.One2many(
         'coop.certificado', 'obra_id', string='Certificados')
+    etapa_ids = fields.One2many(
+        'coop.etapa', 'obra_id', string='Etapas')
+    etapa_count = fields.Integer(
+        string='Etapas', compute='_compute_etapa_count')
+    foja_item_ids = fields.One2many(
+        'coop.foja.item', 'obra_id', string='Foja de medición')
+    avance_fisico = fields.Float(
+        string='Avance físico (%)', compute='_compute_avance_fisico',
+        store=True, digits=(5, 2),
+        help='Suma del avance de cada ítem ponderado por su incidencia')
     certificado_count = fields.Integer(
         string='Certificados', compute='_compute_certificado_count')
     total_certificado = fields.Monetary(
@@ -69,6 +80,93 @@ class ProjectProject(models.Model):
             cobrados = record.certificado_ids.filtered(
                 lambda c: c.state in ('aprobado', 'cobrado'))
             record.total_certificado = sum(cobrados.mapped('monto_certificado'))
+
+    @api.depends('etapa_ids')
+    def _compute_etapa_count(self) -> None:
+        for record in self:
+            record.etapa_count = len(record.etapa_ids)
+
+    @api.depends('foja_item_ids.aporte_pct')
+    def _compute_avance_fisico(self) -> None:
+        for record in self:
+            record.avance_fisico = sum(
+                record.foja_item_ids.mapped('aporte_pct'))
+
+    def action_calcular_ruta_critica(self) -> None:
+        """Calcula la ruta crítica (CPM) sobre las tareas de la obra.
+
+        Usa las dependencias entre tareas (depend_on_ids) y duracion_dias.
+        Marca es_critica, holgura, inicio y fin temprano de cada tarea.
+        """
+        self.ensure_one()
+        tasks = self.task_ids
+        if not tasks:
+            raise UserError('La obra no tiene tareas para calcular.')
+
+        # Forward pass (orden topológico)
+        early = {}  # task.id -> (inicio_temprano, fin_temprano)
+        pending = set(tasks.ids)
+        while pending:
+            progress = False
+            for task in tasks:
+                if task.id not in pending:
+                    continue
+                deps = task.depend_on_ids.filtered(lambda t: t.id in tasks.ids)
+                if any(d.id in pending for d in deps):
+                    continue
+                start = max(
+                    (early[d.id][1] for d in deps), default=0.0)
+                early[task.id] = (start, start + (task.duracion_dias or 0.0))
+                pending.discard(task.id)
+                progress = True
+            if not progress:
+                raise UserError(
+                    'Hay dependencias circulares entre las tareas: '
+                    'revisá las tareas bloqueadas entre sí.')
+
+        fin_obra = max(ef for _, ef in early.values())
+
+        # Backward pass
+        late_finish = {}
+        for task in tasks:
+            successors = tasks.filtered(lambda t: task in t.depend_on_ids)
+            late_finish[task.id] = None if successors else fin_obra
+        pending = {tid for tid, lf in late_finish.items() if lf is None}
+        while pending:
+            progress = False
+            for task in tasks:
+                if task.id not in pending:
+                    continue
+                successors = tasks.filtered(lambda t: task in t.depend_on_ids)
+                if any(s.id in pending for s in successors):
+                    continue
+                late_finish[task.id] = min(
+                    late_finish[s.id] - (s.duracion_dias or 0.0)
+                    for s in successors)
+                pending.discard(task.id)
+                progress = True
+            if not progress:
+                break
+
+        for task in tasks:
+            es, ef = early[task.id]
+            holgura = late_finish[task.id] - ef
+            task.write({
+                'inicio_temprano': es,
+                'fin_temprano': ef,
+                'holgura': holgura,
+                'es_critica': abs(holgura) < 0.01,
+            })
+
+    def action_open_etapas(self) -> dict:
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Proyección por Etapas',
+            'res_model': 'coop.etapa',
+            'view_mode': 'list,form',
+            'domain': [('obra_id', '=', self.id)],
+            'context': {'default_obra_id': self.id},
+        }
 
     def action_open_certificados(self) -> dict:
         return {

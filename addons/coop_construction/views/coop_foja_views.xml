@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== coop.unidad.produccion ===================== -->
+
+    <record id="view_coop_unidad_produccion_list" model="ir.ui.view">
+        <field name="name">coop.unidad.produccion.list</field>
+        <field name="model">coop.unidad.produccion</field>
+        <field name="arch" type="xml">
+            <list string="Unidades de producción" editable="bottom">
+                <field name="code" optional="show"/>
+                <field name="name"/>
+                <field name="uom"/>
+                <field name="precio_referencia"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="descripcion" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_unidad_produccion" model="ir.actions.act_window">
+        <field name="name">Unidades de Producción</field>
+        <field name="res_model">coop.unidad.produccion</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Creá la primera unidad de producción
+            </p>
+            <p>
+                Ej: Pintura (m²), Pintura en altura (m²), Excavación (m³).
+                El precio es de referencia: cada obra lo ajusta en su foja.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================== coop.foja.item ===================== -->
+
+    <record id="view_coop_foja_item_list" model="ir.ui.view">
+        <field name="name">coop.foja.item.list</field>
+        <field name="model">coop.foja.item</field>
+        <field name="arch" type="xml">
+            <list string="Foja de medición" editable="bottom">
+                <field name="obra_id"/>
+                <field name="etapa_id" optional="show"/>
+                <field name="item"/>
+                <field name="name"/>
+                <field name="unidad_produccion_id" optional="show"/>
+                <field name="uom"/>
+                <field name="cantidad"/>
+                <field name="precio_unitario"/>
+                <field name="precio_total" sum="Total"/>
+                <field name="incidencia" string="Incid. %"/>
+                <field name="cantidad_ejecutada"/>
+                <field name="avance_pct" widget="progressbar"/>
+                <field name="aporte_pct" string="Aporte %" optional="show"/>
+                <field name="task_id" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_foja_item_search" model="ir.ui.view">
+        <field name="name">coop.foja.item.search</field>
+        <field name="model">coop.foja.item</field>
+        <field name="arch" type="xml">
+            <search string="Buscar ítems">
+                <field name="name" string="Descripción"/>
+                <field name="item" string="Ítem"/>
+                <field name="obra_id" string="Obra"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_obra" string="Obra"
+                            context="{'group_by': 'obra_id'}"/>
+                    <filter name="group_etapa" string="Etapa"
+                            context="{'group_by': 'etapa_id'}"/>
+                    <filter name="group_unidad" string="Unidad de producción"
+                            context="{'group_by': 'unidad_produccion_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_coop_foja_item" model="ir.actions.act_window">
+        <field name="name">Foja de Medición</field>
+        <field name="res_model">coop.foja.item</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_coop_foja_item_search"/>
+        <field name="context">{'search_default_group_obra': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cargá el primer ítem de la foja de medición
+            </p>
+            <p>
+                Cada ítem tiene cantidad, precio unitario e incidencia sobre
+                el total de la obra. El avance se registra por mediciones.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================== coop.avance.medicion ===================== -->
+
+    <record id="view_coop_avance_medicion_form" model="ir.ui.view">
+        <field name="name">coop.avance.medicion.form</field>
+        <field name="model">coop.avance.medicion</field>
+        <field name="arch" type="xml">
+            <form string="Avance de medición">
+                <header>
+                    <button name="action_validar" string="Validar"
+                            type="object" class="btn-success"
+                            invisible="state != 'borrador'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_borrador" string="Volver a borrador"
+                            type="object"
+                            invisible="state != 'validado'"
+                            groups="coop_members.group_coop_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="borrador,validado"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Qué se produjo">
+                            <field name="foja_item_id"/>
+                            <field name="obra_id"/>
+                            <field name="cantidad"/>
+                            <field name="uom"/>
+                            <field name="fecha"/>
+                        </group>
+                        <group string="Quién y cuánto trabajo">
+                            <field name="member_id"/>
+                            <field name="medida_trabajo"/>
+                            <field name="cantidad_trabajo"/>
+                            <field name="productividad"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="observaciones"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_coop_avance_medicion_list" model="ir.ui.view">
+        <field name="name">coop.avance.medicion.list</field>
+        <field name="model">coop.avance.medicion</field>
+        <field name="arch" type="xml">
+            <list string="Avances de medición"
+                  decoration-success="state == 'validado'">
+                <field name="fecha"/>
+                <field name="obra_id"/>
+                <field name="foja_item_id"/>
+                <field name="member_id"/>
+                <field name="cantidad" sum="Total"/>
+                <field name="uom"/>
+                <field name="medida_trabajo"/>
+                <field name="cantidad_trabajo" sum="Total"/>
+                <field name="productividad" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'borrador'"
+                       decoration-success="state == 'validado'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Pivot: productividad por socio y unidad de medida -->
+    <record id="view_coop_avance_medicion_pivot" model="ir.ui.view">
+        <field name="name">coop.avance.medicion.pivot</field>
+        <field name="model">coop.avance.medicion</field>
+        <field name="arch" type="xml">
+            <pivot string="Productividad por socio">
+                <field name="member_id" type="row"/>
+                <field name="medida_trabajo" type="col"/>
+                <field name="cantidad" type="measure"/>
+                <field name="cantidad_trabajo" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_coop_avance_medicion_search" model="ir.ui.view">
+        <field name="name">coop.avance.medicion.search</field>
+        <field name="model">coop.avance.medicion</field>
+        <field name="arch" type="xml">
+            <search string="Buscar avances">
+                <field name="foja_item_id" string="Ítem"/>
+                <field name="obra_id" string="Obra"/>
+                <field name="member_id" string="Socio"/>
+                <filter name="mis_avances" string="Mis avances"
+                        domain="[('member_id.partner_id.user_ids', 'in', [uid])]"/>
+                <filter name="borradores" string="Borradores"
+                        domain="[('state', '=', 'borrador')]"/>
+                <filter name="validados" string="Validados"
+                        domain="[('state', '=', 'validado')]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_member" string="Socio"
+                            context="{'group_by': 'member_id'}"/>
+                    <filter name="group_obra" string="Obra"
+                            context="{'group_by': 'obra_id'}"/>
+                    <filter name="group_item" string="Ítem"
+                            context="{'group_by': 'foja_item_id'}"/>
+                    <filter name="group_medida" string="Unidad de medida"
+                            context="{'group_by': 'medida_trabajo'}"/>
+                    <filter name="group_fecha" string="Mes"
+                            context="{'group_by': 'fecha:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_coop_avance_medicion" model="ir.actions.act_window">
+        <field name="name">Avances de Medición</field>
+        <field name="res_model">coop.avance.medicion</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="search_view_id" ref="view_coop_avance_medicion_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registrá el primer avance de medición
+            </p>
+            <p>
+                Cada socio carga lo que produjo (m², ml, unidades…) y el trabajo
+                insumido (jornales, horas o tareas). Un responsable lo valida
+                y suma al avance físico de la obra.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================== Tareas: ruta crítica ===================== -->
+
+    <record id="view_task_list_coop_critica" model="ir.ui.view">
+        <field name="name">project.task.list.coop.critica</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Hoja de ruta" decoration-danger="es_critica"
+                  default_order="inicio_temprano">
+                <field name="name" string="Tarea"/>
+                <field name="categoria_tarea" optional="show"/>
+                <field name="duracion_dias"/>
+                <field name="inicio_temprano"/>
+                <field name="fin_temprano"/>
+                <field name="holgura"/>
+                <field name="es_critica" widget="boolean_toggle" readonly="1"/>
+                <field name="socio_tarea_ids" widget="many2many_tags"
+                       optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_hoja_ruta" model="ir.actions.act_window">
+        <field name="name">Hoja de Ruta</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('project_id.is_coop_obra', '=', True)]</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_task_list_coop_critica')}),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay tareas de obra todavía
+            </p>
+            <p>
+                Cargá tareas con duración y dependencias, y calculá la ruta
+                crítica desde la ficha de la obra.
+            </p>
+        </field>
+    </record>
+</odoo>
