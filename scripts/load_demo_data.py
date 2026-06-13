@@ -528,6 +528,119 @@ print("  ✓ 20 registros de horas en obra creados", file=sys.stderr)
 
 
 # ══════════════════════════════════════════════════════════════════
+# 5b. DATOS DEL PORTAL (/app): usuario, foja, etapas, avances
+# ══════════════════════════════════════════════════════════════════
+# Para probar la app de socios end-to-end. Carlos (members[0]) recibe un
+# usuario para loguearse; la obra recibe foja de medición y etapas; y se
+# cargan avances (validados + uno en borrador) que se ven en /app.
+
+Users = env['res.users'].sudo()
+Unidad = env['coop.unidad.produccion'].sudo()
+Foja = env['coop.foja.item'].sudo()
+Etapa = env['coop.etapa'].sudo()
+Avance = env['coop.avance.medicion'].sudo()
+
+for m in ('coop.unidad.produccion', 'coop.foja.item', 'coop.etapa',
+          'coop.avance.medicion', 'res.users'):
+    created.setdefault(m, [])
+
+# ── Usuario para Carlos (login: carlos / pass: carlos1234) ──────────
+carlos = members[0]
+existing = Users.search([('login', '=', 'carlos')], limit=1)
+if not existing:
+    carlos_user = track(Users.create({
+        'name': carlos.name,
+        'login': 'carlos',
+        'password': 'carlos1234',
+        'partner_id': carlos.partner_id.id,
+        'groups_id': [(6, 0, [
+            env.ref('base.group_user').id,
+            env.ref('coop_members.group_coop_member').id,
+        ])],
+    }))
+    print("  ✓ Usuario portal: carlos / carlos1234 (probar en /app)", file=sys.stderr)
+else:
+    carlos_user = existing
+
+# ── Catálogo de unidades de producción ──────────────────────────────
+UNIDADES = [
+    ('Pintura interior', 'm2', 8500.0),
+    ('Pintura en altura', 'm2', 14200.0),
+    ('Mampostería ladrillo hueco', 'm2', 32000.0),
+    ('Colocación cañería', 'ml', 9800.0),
+    ('Contrapiso', 'm2', 18500.0),
+]
+unidades = {}
+for nombre, uom, precio in UNIDADES:
+    u = track(Unidad.create({
+        'name': nombre, 'uom': uom, 'precio_referencia': precio,
+    }))
+    unidades[nombre] = u
+
+# ── Foja de medición de la obra ─────────────────────────────────────
+FOJA = [
+    ('1.0', 'Mampostería planta baja', 'Mampostería ladrillo hueco', 'm2', 180.0, 32000.0),
+    ('2.0', 'Contrapiso pasillo', 'Contrapiso', 'm2', 95.0, 18500.0),
+    ('3.0', 'Cañería principal', 'Colocación cañería', 'ml', 120.0, 9800.0),
+    ('4.0', 'Pintura interior PB', 'Pintura interior', 'm2', 220.0, 8500.0),
+    ('5.0', 'Pintura exterior en altura', 'Pintura en altura', 'm2', 160.0, 14200.0),
+]
+foja_items = {}
+for item, nombre, unidad_nombre, uom, cant, precio in FOJA:
+    fi = track(Foja.create({
+        'obra_id': obra.id,
+        'unidad_produccion_id': unidades[unidad_nombre].id,
+        'item': item, 'name': nombre, 'uom': uom,
+        'cantidad': cant, 'precio_unitario': precio,
+    }))
+    foja_items[item] = fi
+
+print("  ✓ Foja de medición: 5 ítems con incidencia", file=sys.stderr)
+
+# ── Etapas (1 cerrada, 1 en curso) ──────────────────────────────────
+etapa1 = track(Etapa.create({
+    'obra_id': obra.id, 'numero': 1, 'name': 'Etapa 1 — Estructura',
+    'fecha_certificacion': date(2026, 2, 28), 'ingreso': 18000000.0,
+    'saldo_etapa_anterior': 0.0, 'state': 'cerrada',
+}))
+etapa2 = track(Etapa.create({
+    'obra_id': obra.id, 'numero': 2, 'name': 'Etapa 2 — Terminaciones',
+    'fecha_certificacion': date(2026, 5, 31), 'ingreso': 27000000.0,
+    'saldo_etapa_anterior': 3200000.0, 'state': 'en_curso',
+}))
+# gastos planificados de la etapa en curso (para que controlador/saldo no sean 0)
+for desc, periodo, rubro, importe, est in [
+    ('Mano de obra terminaciones', 'mayo', 'mano_obra', 9500000.0, 'pagado'),
+    ('Materiales pintura y revoque', 'mayo', 'materiales', 6200000.0, 'pagado'),
+    ('Alquiler andamios', 'mayo', 'maquinarias', 1800000.0, 'pendiente'),
+]:
+    env['coop.proyeccion.gasto'].sudo().create({
+        'etapa_id': etapa2.id, 'name': desc, 'periodo': periodo,
+        'rubro': rubro, 'importe': importe, 'state': est,
+    })
+
+print("  ✓ 2 etapas (1 cerrada, 1 en curso con gastos)", file=sys.stderr)
+
+# ── Avances de medición de Carlos (2 validados + 1 en borrador) ─────
+AVANCES = [
+    ('1.0', 32.0, 'jornal', 1.0, 'validado', date(2026, 5, 20)),
+    ('4.0', 45.0, 'jornal', 1.0, 'validado', date(2026, 5, 22)),
+    ('4.0', 18.0, 'jornal', 1.0, 'borrador', date(2026, 5, 26)),
+]
+for item, cant, medida, trabajo, estado, fecha in AVANCES:
+    av = track(Avance.create({
+        'foja_item_id': foja_items[item].id,
+        'member_id': carlos.id,
+        'cantidad': cant, 'medida_trabajo': medida,
+        'cantidad_trabajo': trabajo, 'fecha': fecha,
+    }))
+    if estado == 'validado':
+        av.action_validar()
+
+print("  ✓ 3 avances de Carlos (2 validados, 1 en borrador)", file=sys.stderr)
+
+
+# ══════════════════════════════════════════════════════════════════
 # 6. COMMIT + CLEANUP SQL
 # ══════════════════════════════════════════════════════════════════
 
@@ -538,6 +651,10 @@ print("", file=sys.stderr)
 
 # Generar SQL de cleanup (orden inverso por dependencias FK)
 cleanup_order = [
+    'coop.avance.medicion',
+    'coop.foja.item',
+    'coop.etapa',
+    'coop.unidad.produccion',
     'coop.work.entry',
     'coop.certificado',
     'coop.advance',
@@ -545,6 +662,7 @@ cleanup_order = [
     'coop.vote',
     'coop.assembly',
     'coop.contribution',
+    'res.users',
     'coop.member',
     'project.project',
     'res.partner',

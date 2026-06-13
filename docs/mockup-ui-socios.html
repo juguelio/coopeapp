@@ -94,6 +94,12 @@
   <button id="r-sindico" onclick="rol('sindico')">Síndico</button>
 </div>
 
+<div style="max-width:400px;width:100%;margin-bottom:10px;background:var(--verde-claro);
+            border:1px solid #b9e0cb;border-radius:10px;padding:8px 12px;font-size:12.5px;color:#155">
+  Esto es la <b>maqueta</b> para ver y opinar. Lo que ves <b>ya funciona de verdad</b> en
+  <b>coopeapp.com.ar/app</b>, con datos reales y conectado al sistema.
+</div>
+
 <div class="tel">
 
   <!-- ============ INICIO SOCIO ============ -->
@@ -877,6 +883,156 @@
     </div>
   </div>
 
+  <!-- ============ SÍNDICO: PANEL DE FISCALIZACIÓN ============ -->
+  <div class="pant" id="p-inicio-sindico">
+    <h1>🛡️ Control</h1>
+    <div class="sub">Síndico — Coop. Unión de los Andes · junio 2026</div>
+
+    <div class="card" style="border-left:6px solid var(--amarillo)">
+      <h3>QUÉ REVISAR ESTE MES</h3>
+      <div class="fila"><div>💸 Gastos sin comprobante</div><span class="chip espera">3 pendientes</span></div>
+      <div class="fila"><div>✍️ Certificados esperando tu firma</div>
+        <div><span class="chip espera">2</span> <button class="atras" style="padding:0 0 0 6px" onclick="ir('p-certificados')">Ver →</button></div></div>
+      <div class="fila"><div>🗳️ Asambleas sin acta cerrada</div><span class="chip ok">0 ✓</span></div>
+      <div class="fila"><div>🔴 Obras con controlador en rojo</div><span class="chip espera">1 (Quintriqueo)</span></div>
+      <div class="fila" style="border:0"><div>💰 Movimientos &gt; $1M (revisión obligatoria)</div>
+        <div><span class="chip espera">4</span> <button class="atras" style="padding:0 0 0 6px" onclick="ir('p-auditoria')">Ver →</button></div></div>
+    </div>
+
+    <div class="card" style="border-left:6px solid var(--verde)">
+      <h3>LO QUE NO SE PUEDE TOCAR</h3>
+      <div style="font-size:14px;color:var(--tinta)">Cada operación queda registrada con autor y hora, y <b>nadie la puede editar ni borrar</b> — ni el consejo. Vos auditás todo desde acá.</div>
+      <button class="botonazo sec" style="min-height:46px;font-size:15px;margin-top:10px" onclick="ir('p-auditoria')">🔎 Abrir pista de auditoría</button>
+    </div>
+
+    <div class="card">
+      <h3>TRANSPARENCIA HACIA LOS SOCIOS</h3>
+      <div class="fila" style="border:0;padding:0"><div>El avance y la plata que ve el consejo</div><span class="chip ok">= la que ve cada socio</span></div>
+      <div style="font-size:13px;color:var(--gris);margin-top:6px">Principio ACI 5. La app no le da más poder al consejo: le da más control a vos y a los socios.</div>
+    </div>
+
+    <button class="botonazo sec" onclick="ir('p-ruta')">🔴 Ver ruta crítica (lectura)</button>
+    <button class="botonazo sec" onclick="ir('p-federacion')">🌐 Vista de federación</button>
+  </div>
+
+  <!-- ============ SÍNDICO: PISTA DE AUDITORÍA ============ -->
+  <div class="pant" id="p-auditoria">
+    <a class="atras" onclick="inicio()" style="cursor:pointer">← Volver</a>
+    <h1>🔎 Auditoría</h1>
+    <div class="sub">Todo lo que pasó. Registro inmutable.</div>
+
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <button class="chip ok" style="border:0;cursor:pointer" onclick="audTipo(this,'todo')">Todo</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="audTipo(this,'gasto')">Gastos</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="audTipo(this,'orden')">Órdenes</button>
+      <button class="chip espera" style="border:0;cursor:pointer" onclick="audTipo(this,'firma')">Firmas</button>
+    </div>
+    <input id="aud-buscar" placeholder="🔍 Buscar por persona u obra…" oninput="audFiltrar()"
+           style="width:100%;padding:12px;border:2px solid #d7dee5;border-radius:12px;font-size:15px;margin-bottom:10px"/>
+
+    <div class="card">
+      <div class="fila aud" data-tipo="gasto" data-txt="miguel austral acopio carriqueo">
+        <div>💸 <b>Miguel Paillalef</b> — retiro acopio #54073 · $743.500 · Carriqueo
+          <br/><span style="font-size:12px;color:var(--gris)">12/06 11:05 · 🔒 registro #4821 · no editable</span></div>
+      </div>
+      <div class="fila aud" data-tipo="firma" data-txt="juan sindico certificado carriqueo">
+        <div>✍️ <b>Juan A. (síndico)</b> — firmó Certificado N°3 · Carriqueo
+          <br/><span style="font-size:12px;color:var(--gris)">11/06 18:40 · 🔒 hash a1f9…3e2 · inviolable</span></div>
+      </div>
+      <div class="fila aud" data-tipo="orden" data-txt="sofia quintriqueo hierro andino">
+        <div>📲 <b>Sofía Rodríguez</b> — orden a El Andino · hierro 8mm ×40 · $662.000 · Quintriqueo
+          <br/><span style="font-size:12px;color:var(--gris)">11/06 16:42 · 🔒 registro #4818</span></div>
+      </div>
+      <div class="fila aud" data-tipo="gasto" data-txt="etapa quintriqueo jornales mano de obra">
+        <div>💸 <b>Liquidación etapa 2</b> — jornales semana · $1.180.000 · Carriqueo
+          <br/><span style="font-size:12px;color:var(--gris)">10/06 · 🔒 registro #4801 · aprobó: P. Curihuinca</span></div>
+      </div>
+      <div id="aud-vacio" style="display:none;text-align:center;color:var(--gris);padding:14px">Sin operaciones con ese filtro</div>
+    </div>
+    <div style="font-size:12px;color:var(--gris);text-align:center">Mismo dato que en el sistema. Vos solo lees: nada se modifica desde acá.</div>
+  </div>
+
+  <!-- ============ SÍNDICO: CERTIFICADOS A FIRMAR ============ -->
+  <div class="pant" id="p-certificados">
+    <a class="atras" onclick="inicio()" style="cursor:pointer">← Volver</a>
+    <h1>✍️ Certificados</h1>
+    <div class="sub">Firmá desde el celular. Sin imprimir, sin escanear.</div>
+
+    <div class="card" style="border:2px solid var(--verde)">
+      <div style="font-weight:800;font-size:16px;margin-bottom:2px">Certificado N°3 · Barrio Carriqueo</div>
+      <div class="fila"><div>Avance acumulado</div><b>42%</b></div>
+      <div class="fila"><div>Monto a certificar</div><b>$ 8.400.000</b></div>
+      <div class="fila" style="border:0"><div>Presentado por</div><b>Miguel (coordinador)</b></div>
+      <button class="botonazo" style="min-height:50px;font-size:16px;margin-top:8px" onclick="ir('p-firmar-cert')">✍️ REVISAR Y FIRMAR</button>
+    </div>
+
+    <div class="card">
+      <div class="fila" style="border:0;padding:0">
+        <div><b>Certificado N°1 · Galpón Quintriqueo</b><br><span style="font-size:12px;color:var(--gris)">12% · $2.100.000</span></div>
+        <span class="chip espera">esperando firma</span>
+      </div>
+    </div>
+
+    <div class="card" style="opacity:.7">
+      <div class="fila" style="border:0;padding:0">
+        <div><b>Certificado N°2 · Carriqueo</b><br><span style="font-size:12px;color:var(--gris)">28% · firmado 28/05 · hash 7c1d…9b</span></div>
+        <span class="chip ok">✓ Firmado</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SÍNDICO: ACTO DE FIRMA ============ -->
+  <div class="pant" id="p-firmar-cert">
+    <a class="atras" onclick="ir('p-certificados')" style="cursor:pointer">← Volver</a>
+    <h1>Firmar Certificado N°3</h1>
+    <div class="sub">Barrio Carriqueo · revisá antes de firmar</div>
+
+    <div class="card">
+      <h3>LO QUE VAS A FIRMAR</h3>
+      <div class="fila"><div>Avance certificado</div><b>42% acumulado</b></div>
+      <div class="fila"><div>Monto</div><b>$ 8.400.000</b></div>
+      <div class="fila"><div>Foja de medición</div><b>respaldo: 6 ítems</b></div>
+      <div class="fila" style="border:0"><div>Avances de socios validados</div><b>96 m² esta etapa</b></div>
+    </div>
+
+    <div class="card" style="background:#f0f7f3">
+      <h3>QUÉ PASA AL FIRMAR</h3>
+      <div style="font-size:14px;color:var(--tinta)">Queda tu firma con <b>fecha, hora y un código único (hash)</b> del contenido. Si alguien cambia un número después, la firma se invalida sola y se nota. El comitente lo recibe en PDF — no hay que imprimir nada.</div>
+    </div>
+
+    <button class="botonazo" onclick="firmarCert(this)">✍️ FIRMAR AHORA</button>
+    <button class="botonazo sec" onclick="ir('p-certificados')">Todavía no — tengo dudas</button>
+  </div>
+
+  <!-- ============ SÍNDICO: VISTA DE FEDERACIÓN (visión) ============ -->
+  <div class="pant" id="p-federacion">
+    <a class="atras" onclick="inicio()" style="cursor:pointer">← Volver</a>
+    <h1>🌐 Federación</h1>
+    <div class="sub">Síndico de federación — todas las cooperativas</div>
+
+    <div class="card" style="border-left:6px solid var(--amarillo)">
+      <div style="font-size:13px;font-weight:700;color:#a36b00">🔭 HACIA DÓNDE VAMOS</div>
+      <div style="font-size:14px;color:var(--tinta);margin-top:4px">Así vería el síndico de la federación las coops que usan la app. Hoy cada cooperativa tiene su propio sistema; esta vista es el próximo paso, no algo que ya funcione.</div>
+    </div>
+
+    <div class="card">
+      <div class="fila"><div><b>Unión de los Andes</b> · construcción</div><span class="chip ok">✓ al día</span></div>
+      <div style="font-size:12px;color:var(--gris);padding:0 0 8px">3 obras · asambleas ✓ · controlador ok</div>
+      <div class="fila"><div><b>El Progreso</b> · construcción</div><span class="chip espera">⚠ asamblea vencida</span></div>
+      <div style="font-size:12px;color:var(--gris);padding:0 0 8px">2 obras · acta de mayo pendiente</div>
+      <div class="fila"><div><b>Newen Mapu</b> · servicios</div><span class="chip ok">✓ al día</span></div>
+      <div style="font-size:12px;color:var(--gris);padding:0 0 8px">controlador ok · 18 socios</div>
+      <div class="fila" style="border:0"><div><b>27 de Mayo</b> · textil</div><span class="chip espera">🔴 controlador en rojo</span></div>
+      <div style="font-size:12px;color:var(--gris);padding:0">revisar con su síndico</div>
+    </div>
+
+    <div class="card">
+      <h3>SALUD DE LA RED</h3>
+      <div class="fila"><div>Coops al día</div><b style="color:var(--verde)">5 de 7</b></div>
+      <div class="fila" style="border:0"><div>Necesitan atención</div><b style="color:var(--amarillo)">2</b></div>
+    </div>
+  </div>
+
   <!-- ============ NAV (dinámica por rol) ============ -->
   <div class="nav" id="nav"></div>
 </div>
@@ -884,7 +1040,7 @@
 <script>
 let rolActual = 'socio';
 const homes = {socio:'p-inicio-socio', coordinador:'p-inicio-coordinador',
-               manager:'p-inicio-manager', sindico:'p-inicio-manager'};
+               manager:'p-inicio-manager', sindico:'p-inicio-sindico'};
 
 // La barra son "las 4 cosas que hacés todos los días" — distintas por rol
 const navPorRol = {
@@ -906,11 +1062,11 @@ const navPorRol = {
     {ico:'📑', txt:'OTs',        t:'p-ots'},      // pipeline comercial
     {ico:'🧱', txt:'Materiales', t:'p-orden'},    // precios/acopios p/presupuestar
   ],
-  sindico: [                                // fiscaliza
-    {ico:'🏠', txt:'Inicio',   t:'HOME'},
-    {ico:'🔴', txt:'Ruta',     t:'p-ruta'},
-    {ico:'🗳️', txt:'Asamblea', t:'p-asamblea'},   // actas y certificaciones
-    {ico:'💰', txt:'Economía', t:'p-obra'},       // etapas, gastos, acopios
+  sindico: [                                // fiscaliza: control distribuido
+    {ico:'🛡️', txt:'Control',   t:'HOME'},      // su checklist de fiscalización
+    {ico:'🔎', txt:'Auditoría', t:'p-auditoria'},// pista inmutable de operaciones
+    {ico:'🗳️', txt:'Asamblea',  t:'p-asamblea'}, // actas con hash
+    {ico:'✍️', txt:'Firmar',    t:'p-certificados'},// certificados a firmar
   ],
 };
 
@@ -921,6 +1077,7 @@ const padre = {
   'p-votar':'p-asamblea','p-votado':'p-asamblea',
   'p-relev-1':'HOME','p-relev-2':'HOME','p-relev-listo':'HOME',
   'p-ot':'p-ots',
+  'p-federacion':'HOME','p-firmar-cert':'p-certificados',
 };
 
 function pintarNav(){
@@ -950,8 +1107,8 @@ function rol(r){
   rolActual = r;
   document.querySelectorAll('.demo-bar button').forEach(b => b.classList.remove('act'));
   document.getElementById('r-'+r).classList.add('act');
-  document.getElementById('titulo-tablero').textContent =
-    r === 'sindico' ? 'Administración (síndico — lectura)' : 'Administración';
+  const tit = document.getElementById('titulo-tablero');
+  if (tit) tit.textContent = 'Administración';
   document.querySelectorAll('.rol-manager').forEach(el =>
     el.style.display = (r === 'manager') ? '' : 'none');
   pintarNav();
@@ -1007,6 +1164,35 @@ function exportar(btn, formato){
   document.getElementById('export-opciones').innerHTML =
     '<div style="text-align:center;padding:10px;color:var(--verde);font-weight:800;font-size:15px">✓ ' +
     formato + ' descargado con el filtro aplicado</div>';
+}
+let audTipoActual = 'todo';
+function audFiltrar(){
+  const q = document.getElementById('aud-buscar').value.toLowerCase();
+  let visibles = 0;
+  document.querySelectorAll('.aud').forEach(f => {
+    const ok = (audTipoActual === 'todo' || f.dataset.tipo === audTipoActual)
+            && f.dataset.txt.includes(q);
+    f.style.display = ok ? 'flex' : 'none';
+    if (ok) visibles++;
+  });
+  document.getElementById('aud-vacio').style.display = visibles ? 'none' : 'block';
+}
+function audTipo(el, tipo){
+  audTipoActual = tipo;
+  el.parentElement.querySelectorAll('.chip').forEach(c => c.className = 'chip espera');
+  el.className = 'chip ok';
+  audFiltrar();
+}
+function firmarCert(btn){
+  btn.parentElement.querySelectorAll('.botonazo').forEach(b => b.style.display = 'none');
+  const c = document.createElement('div');
+  c.className = 'listo';
+  c.style.paddingTop = '20px';
+  c.innerHTML = '<div class="check">✍️</div>' +
+    '<h1>Certificado firmado</h1>' +
+    '<p class="sub" style="margin-top:8px">Quedó tu firma con fecha, hora y hash <b>a1f9…3e2</b>.<br>' +
+    'El comitente ya lo recibe en PDF. Sin imprimir, sin escanear.</p>';
+  btn.parentElement.appendChild(c);
 }
 let repTipoActual = 'todo';
 function repFiltrar(){
