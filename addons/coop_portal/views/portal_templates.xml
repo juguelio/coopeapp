@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============ LAYOUT ============ -->
+    <template id="layout" name="App socios: layout">
+        <t t-set="nav_activo" t-value="nav_activo or 'inicio'"/>
+        &lt;!DOCTYPE html&gt;
+        <html lang="es">
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+            <meta name="theme-color" content="#1a7f4e"/>
+            <title>coopeapp</title>
+            <style>
+                :root{--verde:#1a7f4e;--verde-claro:#e6f4ec;--amarillo:#f5a623;--rojo:#d0413b;
+                      --tinta:#1d2733;--gris:#6b7785;--fondo:#f4f6f8;--blanco:#fff;--radio:14px}
+                *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+                body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--fondo);
+                     color:var(--tinta);padding:18px 16px 92px;max-width:480px;margin:0 auto}
+                h1{font-size:22px;margin-bottom:4px}
+                .sub{color:var(--gris);font-size:15px;margin-bottom:18px}
+                .card{background:var(--blanco);border-radius:var(--radio);
+                      box-shadow:0 1px 4px rgba(0,0,0,.08);padding:16px;margin-bottom:12px}
+                .card h3{font-size:14px;color:var(--gris);font-weight:600;margin-bottom:6px}
+                .nro{font-size:32px;font-weight:800}
+                .botonazo{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+                          min-height:60px;border:0;border-radius:var(--radio);background:var(--verde);
+                          color:#fff;font-size:18px;font-weight:700;margin:6px 0;text-decoration:none;
+                          cursor:pointer}
+                .botonazo.sec{background:var(--blanco);color:var(--tinta);border:2px solid #d7dee5}
+                .chip{display:inline-block;padding:4px 10px;border-radius:20px;font-size:13px;font-weight:700}
+                .chip.ok{background:var(--verde-claro);color:var(--verde)}
+                .chip.espera{background:#fdf3e0;color:#a36b00}
+                .barra{height:18px;background:#e2e8ee;border-radius:10px;overflow:hidden;margin:8px 0}
+                .barra div{height:100%;background:var(--verde);border-radius:10px}
+                .fila{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+                      border-bottom:1px solid #eef2f5;font-size:15px;gap:8px}
+                .fila:last-child{border:0}
+                .opcion{display:flex;align-items:center;gap:12px;width:100%;background:var(--blanco);
+                        border:2px solid #d7dee5;border-radius:var(--radio);padding:18px 14px;
+                        font-size:17px;font-weight:600;color:var(--tinta);margin-bottom:10px;
+                        text-decoration:none;cursor:pointer;text-align:left}
+                .paso{font-size:14px;color:var(--gris);font-weight:700;margin-bottom:6px}
+                .pregunta{font-size:24px;font-weight:800;margin-bottom:18px}
+                .numero-grande{width:100%;font-size:46px;font-weight:800;text-align:center;
+                               border:2px solid #d7dee5;border-radius:var(--radio);padding:14px;margin:10px 0}
+                .listo{display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 10px}
+                .check{width:110px;height:110px;border-radius:50%;background:var(--verde);color:#fff;
+                       font-size:60px;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+                .atras{color:var(--gris);font-size:15px;font-weight:700;text-decoration:none;
+                       display:inline-block;padding-bottom:14px}
+                .nav{position:fixed;bottom:0;left:0;right:0;background:var(--blanco);
+                     border-top:1px solid #e2e8ee;display:flex;padding:6px 4px 12px;max-width:480px;
+                     margin:0 auto}
+                .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+                       font-size:12px;font-weight:600;color:var(--gris);text-decoration:none;padding:6px 0}
+                .nav a.viva{color:var(--verde)}
+                .nav .ico{font-size:22px;line-height:1}
+                label.radio{display:flex;align-items:center;gap:12px;width:100%;background:var(--blanco);
+                        border:2px solid #d7dee5;border-radius:var(--radio);padding:16px 14px;
+                        font-size:17px;font-weight:600;margin-bottom:10px;cursor:pointer}
+                label.radio input{width:22px;height:22px;accent-color:var(--verde)}
+            </style>
+        </head>
+        <body>
+            <t t-out="0"/>
+            <div class="nav">
+                <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
+                <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><span class="ico">✏️</span>Cargar</a>
+                <a href="/app/plata" t-att-class="'viva' if nav_activo == 'plata' else None"><span class="ico">💵</span>Mi plata</a>
+                <a href="/app/obra" t-att-class="'viva' if nav_activo == 'obra' else None"><span class="ico">🏗️</span>Obra</a>
+            </div>
+        </body>
+        </html>
+    </template>
+
+    <!-- ============ AVISOS ============ -->
+    <template id="sin_socio" name="App: usuario sin socio">
+        <t t-call="coop_portal.layout">
+            <div class="listo">
+                <div class="check" style="background:#a36b00">!</div>
+                <h1>Tu usuario no está vinculado a un socio</h1>
+                <p class="sub" style="margin-top:8px">Pedile al administrador que asocie tu usuario al padrón de socios.</p>
+            </div>
+        </t>
+    </template>
+
+    <template id="sin_obra" name="App: socio sin obra">
+        <t t-call="coop_portal.layout">
+            <div class="listo">
+                <div class="check" style="background:#a36b00">🏗️</div>
+                <h1>Todavía no estás asignado a una obra</h1>
+                <p class="sub" style="margin-top:8px">Cuando el coordinador te sume al plantel, acá vas a ver tu obra.</p>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ INICIO ============ -->
+    <template id="home" name="App: inicio socio">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <h1>Hola, <t t-esc="member.name.split(' ')[0]"/> 👋</h1>
+            <div class="sub" t-if="obras">Obra: <t t-esc="obras[0].name"/></div>
+            <div class="sub" t-else="">Sin obra asignada por ahora</div>
+
+            <a class="botonazo" href="/app/cargar">✏️ CARGAR LO QUE HICE</a>
+
+            <div class="card" t-if="avances">
+                <h3>TUS ÚLTIMAS CARGAS</h3>
+                <div class="fila" t-foreach="avances" t-as="a">
+                    <div>
+                        <t t-esc="a.fecha.strftime('%d/%m')"/> —
+                        <t t-esc="a.foja_item_id.name"/>
+                        <b><t t-esc="'%g' % a.cantidad"/> <t t-esc="uom_labels.get(a.uom, a.uom)"/></b>
+                    </div>
+                    <span t-if="a.state == 'validado'" class="chip ok">✓ Validado</span>
+                    <span t-else="" class="chip espera">⏳ Lo revisa el coordinador</span>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ CARGAR PASO 1 ============ -->
+    <template id="cargar_paso1" name="App: cargar paso 1">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'cargar'"/>
+            <a class="atras" href="/app">← Salir</a>
+            <div class="paso">PASO 1 DE 3 · <t t-esc="obra.name"/></div>
+            <div class="pregunta">¿En qué trabajaste?</div>
+            <t t-if="len(obras) &gt; 1">
+                <div class="sub">Otra obra:
+                    <t t-foreach="obras" t-as="o">
+                        <a t-if="o.id != obra.id" t-attf-href="/app/cargar?obra_id={{o.id}}"
+                           style="font-weight:700"><t t-esc="o.name"/> </a>
+                    </t>
+                </div>
+            </t>
+            <a class="opcion" t-foreach="items" t-as="i"
+               t-attf-href="/app/cargar/cantidad?item_id={{i.id}}">
+                <span><t t-esc="i.item"/> · <t t-esc="i.name"/></span>
+                <span style="margin-left:auto;color:var(--gris)">
+                    <t t-esc="uom_labels.get(i.uom, i.uom)"/>
+                </span>
+            </a>
+            <div class="card" t-if="not items">
+                <h3>SIN ÍTEMS</h3>
+                <div>La obra todavía no tiene foja de medición cargada. Avisale al coordinador.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ CARGAR PASO 2 ============ -->
+    <template id="cargar_paso2" name="App: cargar paso 2">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'cargar'"/>
+            <a class="atras" href="/app/cargar">← Volver</a>
+            <div class="paso">PASO 2 DE 3</div>
+            <div class="pregunta">¿Cuánto hiciste?</div>
+            <div class="sub"><t t-esc="item.name"/></div>
+            <form action="/app/cargar/trabajo" method="get">
+                <input type="hidden" name="item_id" t-att-value="item.id"/>
+                <input class="numero-grande" type="number" name="cantidad" step="any"
+                       min="0.01" required="required" inputmode="decimal"
+                       t-attf-placeholder="{{uom_labels.get(item.uom, item.uom)}}"/>
+                <button class="botonazo" type="submit">Seguir →</button>
+            </form>
+        </t>
+    </template>
+
+    <!-- ============ CARGAR PASO 3 ============ -->
+    <template id="cargar_paso3" name="App: cargar paso 3">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'cargar'"/>
+            <a class="atras" t-attf-href="/app/cargar/cantidad?item_id={{item.id}}">← Volver</a>
+            <div class="paso">PASO 3 DE 3</div>
+            <div class="pregunta">¿Cuánto trabajo te llevó?</div>
+            <form action="/app/cargar/confirmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="item_id" t-att-value="item.id"/>
+                <input type="hidden" name="cantidad" t-att-value="cantidad"/>
+                <label class="radio" t-foreach="medidas" t-as="m">
+                    <input type="radio" name="medida_trabajo" t-att-value="m[0]"
+                           t-att-checked="'checked' if m[0] == 'jornal' else None" required="required"/>
+                    <span><t t-esc="m[2]"/> <t t-esc="m[1]"/></span>
+                </label>
+                <div class="paso" style="margin-top:10px">¿CUÁNTOS? (jornales / horas / tareas)</div>
+                <input class="numero-grande" type="number" name="cantidad_trabajo" step="any"
+                       min="0.1" value="1" required="required" inputmode="decimal"/>
+                <button class="botonazo" type="submit">CONFIRMAR ✓</button>
+            </form>
+        </t>
+    </template>
+
+    <!-- ============ CARGAR LISTO ============ -->
+    <template id="cargar_listo" name="App: avance cargado">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'cargar'"/>
+            <div class="listo">
+                <div class="check">✓</div>
+                <h1>¡Listo, <t t-esc="member.name.split(' ')[0]"/>!</h1>
+                <p class="sub" style="margin-top:8px">
+                    Cargaste <b><t t-esc="'%g' % avance.cantidad"/></b> de
+                    "<t t-esc="item.name"/>".<br/>
+                    Ahora lo revisa el coordinador y suma a tu participación.
+                </p>
+                <a class="botonazo" href="/app">Volver al inicio</a>
+                <a class="atras" t-attf-href="/app/cargar/cantidad?item_id={{item.id}}">Cargar otro</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ MI PLATA ============ -->
+    <template id="plata" name="App: mi plata">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'plata'"/>
+            <h1>Mi plata</h1>
+            <div class="sub">Tus liquidaciones y tu producción</div>
+
+            <div class="card" t-if="payrolls">
+                <h3>ÚLTIMA LIQUIDACIÓN</h3>
+                <div class="nro">$ <t t-esc="'{:,.0f}'.format(payrolls[0].net_amount).replace(',', '.')"/></div>
+                <div class="sub" style="margin:4px 0 0">
+                    <t t-esc="payrolls[0].date_from.strftime('%d/%m')"/> al
+                    <t t-esc="payrolls[0].date_to.strftime('%d/%m')"/> ·
+                    <t t-esc="payroll_state_labels.get(payrolls[0].state, payrolls[0].state)"/>
+                </div>
+            </div>
+            <div class="card" t-if="len(payrolls) &gt; 1">
+                <h3>ANTERIORES</h3>
+                <div class="fila" t-foreach="payrolls[1:]" t-as="p">
+                    <div><t t-esc="p.date_to.strftime('%m/%Y')"/></div>
+                    <b>$ <t t-esc="'{:,.0f}'.format(p.net_amount).replace(',', '.')"/></b>
+                </div>
+            </div>
+            <div class="card" t-if="not payrolls">
+                <h3>LIQUIDACIONES</h3>
+                <div>Todavía no tenés liquidaciones cargadas.</div>
+            </div>
+
+            <div class="card" t-if="validados">
+                <h3>TU PRODUCCIÓN VALIDADA</h3>
+                <div class="fila" t-foreach="validados" t-as="v">
+                    <div><t t-esc="v.foja_item_id.name"/></div>
+                    <b><t t-esc="'%g' % v.cantidad"/> en <t t-esc="'%g' % v.cantidad_trabajo"/>
+                       <t t-esc="medida_labels.get(v.medida_trabajo, v.medida_trabajo)"/></b>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ LA OBRA ============ -->
+    <template id="obra" name="App: la obra">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'obra'"/>
+            <h1>La obra</h1>
+            <div class="sub"><t t-esc="obra.name"/></div>
+            <t t-if="len(obras) &gt; 1">
+                <div class="sub">Otra obra:
+                    <t t-foreach="obras" t-as="o">
+                        <a t-if="o.id != obra.id" t-attf-href="/app/obra?obra_id={{o.id}}"
+                           style="font-weight:700"><t t-esc="o.name"/> </a>
+                    </t>
+                </div>
+            </t>
+
+            <div class="card">
+                <h3>AVANCE TOTAL</h3>
+                <div class="nro"><t t-esc="'%.0f' % obra.avance_fisico"/><span style="font-size:16px;color:var(--gris)"> %</span></div>
+                <div class="barra"><div t-attf-style="width:{{min(obra.avance_fisico, 100.0)}}%"/></div>
+                <div style="color:var(--gris);font-size:13px">Lo mismo que ve el consejo. Sin secretos.</div>
+            </div>
+
+            <div class="card" t-if="etapa">
+                <h3>ETAPA <t t-esc="etapa.numero"/> — <t t-esc="etapa_state_labels.get(etapa.state, etapa.state)"/></h3>
+                <div class="fila"><div>Ingreso de la etapa</div>
+                    <b>$ <t t-esc="'{:,.0f}'.format(etapa.ingreso).replace(',', '.')"/></b></div>
+                <div class="fila"><div>Gastado</div>
+                    <b>$ <t t-esc="'{:,.0f}'.format(etapa.total_pagado).replace(',', '.')"/></b></div>
+                <div class="fila"><div>Saldo sin planificar</div>
+                    <b style="color:var(--verde)">$ <t t-esc="'{:,.0f}'.format(etapa.saldo_sin_planificar).replace(',', '.')"/></b></div>
+            </div>
+        </t>
+    </template>
+
+</odoo>
