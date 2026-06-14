@@ -14,6 +14,69 @@ env = env  # noqa: F841 — inyectado por odoo shell
 
 print("=== Cargando datos de demostración ===", file=sys.stderr)
 
+# ══════════════════════════════════════════════════════════════════
+# 0. LIMPIEZA IDEMPOTENTE — borra los datos demo de una corrida previa
+#    para poder re-ejecutar el script sin chocar con uniques (DNI, login).
+#    Todo lo demo se identifica por marcadores: email @demo.coop,
+#    logins carlos/lucas, obra "Obra Piloto San Martín de los Andes".
+# ══════════════════════════════════════════════════════════════════
+
+def _safe_unlink(records):
+    if records:
+        try:
+            records.sudo().unlink()
+        except Exception as e:  # noqa: BLE001
+            print(f"  (aviso) no se pudo borrar {records._name}: {e}",
+                  file=sys.stderr)
+
+def _search(model, domain):
+    if model in env:
+        return env[model].sudo().search(domain)
+    return env['res.partner'].sudo().browse()  # vacío si el modelo no existe
+
+print("--- Limpiando datos demo previos (si los hay) ---", file=sys.stderr)
+_demo_partners = env['res.partner'].sudo().search([('email', 'like', '@demo.coop')])
+_demo_members = env['coop.member'].sudo().search(
+    [('partner_id', 'in', _demo_partners.ids)]) if _demo_partners else \
+    env['coop.member'].sudo().browse()
+_demo_obras = env['project.project'].sudo().search(
+    [('name', '=', 'Obra Piloto San Martín de los Andes')])
+_demo_users = env['res.users'].sudo().search([('login', 'in', ['carlos', 'lucas'])])
+
+if _demo_obras:
+    _safe_unlink(_search('coop.pedido.material', [('obra_id', 'in', _demo_obras.ids)]))
+    _safe_unlink(_search('coop.avance.medicion', [('obra_id', 'in', _demo_obras.ids)]))
+    _safe_unlink(_search('coop.foja.item', [('obra_id', 'in', _demo_obras.ids)]))
+    _safe_unlink(_search('coop.etapa', [('obra_id', 'in', _demo_obras.ids)]))
+    _safe_unlink(_search('coop.certificado', [('obra_id', 'in', _demo_obras.ids)]))
+    _safe_unlink(_search('coop.work.entry', [('obra_id', 'in', _demo_obras.ids)]))
+
+_safe_unlink(_search('coop.material', [('name', 'in', [
+    'Cemento', 'Cal hidratada', 'Arena', 'Ladrillo hueco 12x18x33',
+    'Hierro aletado 8mm', 'Pintura látex blanca'])]))
+_safe_unlink(_search('coop.unidad.produccion', [('name', 'in', [
+    'Pintura interior', 'Pintura en altura', 'Mampostería ladrillo hueco',
+    'Colocación cañería', 'Contrapiso'])]))
+
+if _demo_members:
+    _safe_unlink(_search('coop.advance', [('member_id', 'in', _demo_members.ids)]))
+    _safe_unlink(_search('coop.payroll', [('member_id', 'in', _demo_members.ids)]))
+    _safe_unlink(_search('coop.work.entry', [('member_id', 'in', _demo_members.ids)]))
+    _safe_unlink(_search('coop.contribution', [('member_id', 'in', _demo_members.ids)]))
+    _demo_assemblies = env['coop.assembly'].sudo().search(
+        ['|', ('president_id', 'in', _demo_members.ids),
+              ('attendee_ids', 'in', _demo_members.ids)])
+    _safe_unlink(_search('coop.vote', [('assembly_id', 'in', _demo_assemblies.ids)]))
+    _safe_unlink(_demo_assemblies)
+
+_safe_unlink(_demo_users)
+_safe_unlink(_demo_obras)
+_safe_unlink(_demo_members)
+_safe_unlink(_demo_partners)
+env.cr.commit()
+print("--- Limpieza lista ---", file=sys.stderr)
+
+
 # ── Tracking de IDs para cleanup ──────────────────────────────────
 created = {
     'res.partner': [],
@@ -226,6 +289,43 @@ assembly.action_close()
 assembly.action_generate_minutes()
 
 print("  ✓ Asamblea con 3 votaciones creada y cerrada", file=sys.stderr)
+
+# ── Asamblea ABIERTA con votaciones abiertas (para votar desde /app) ──
+asamblea_viva = track(Assembly.create({
+    'name': 'Asamblea Extraordinaria - Junio 2026',
+    'assembly_type': 'extraordinary',
+    'date': datetime(2026, 6, 15, 10, 0, 0),
+    'location': 'Sede social - San Martín de los Andes',
+    'quorum_required': 50,
+    'attendee_ids': [(6, 0, attendees.ids)],
+    'president_id': members[0].id,   # Carlos
+    'secretary_id': members[1].id,   # María
+    'agenda': '<ol><li>Compra de andamios</li><li>Nuevo coordinador para Quintriqueo</li></ol>',
+    'state': 'draft',
+}))
+asamblea_viva.action_open()
+
+voto_andamios = track(Vote.create({
+    'name': 'Compra de andamios nuevos por $4,5M',
+    'assembly_id': asamblea_viva.id,
+    'vote_type': 'absolute',
+    'sequence': 1,
+    'description': 'Renovar 12 cuerpos de andamio. Presupuesto en el acta.',
+    'state': 'pending',
+}))
+voto_andamios.action_open_vote()
+
+voto_coord = track(Vote.create({
+    'name': 'Designar a Sofía coordinadora de Quintriqueo',
+    'assembly_id': asamblea_viva.id,
+    'vote_type': 'simple',
+    'sequence': 2,
+    'description': 'Propuesta del consejo de administración.',
+    'state': 'pending',
+}))
+voto_coord.action_open_vote()
+
+print("  ✓ Asamblea ABIERTA con 2 votaciones para votar en /app", file=sys.stderr)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -564,9 +664,20 @@ def demo_user(member, login, password):
 # Carlos (members[0]) es capataz/coordinador de la obra; Lucas (members[2]) socio
 carlos = members[0]                       # coordinador (capataz_id de la obra)
 lucas = members[2]                        # socio puro
+analia = members[5]                       # síndico (role 'syndic')
 demo_user(carlos, 'carlos', 'carlos1234')
 demo_user(lucas, 'lucas', 'lucas1234')
-print("  ✓ Usuarios portal: carlos/carlos1234 (coordinador), lucas/lucas1234 (socio)", file=sys.stderr)
+
+# Analía: síndico → grupo síndico (implica manager + member)
+if not Users.search([('login', '=', 'analia')], limit=1):
+    track(Users.create({
+        'name': analia.name, 'login': 'analia', 'password': 'analia1234',
+        'partner_id': analia.partner_id.id,
+        'groups_id': [(6, 0, [
+            user_group, env.ref('coop_members.group_coop_syndic').id])],
+    }))
+print("  ✓ Usuarios portal: carlos (coordinador), lucas (socio), analia (síndico) — pass <login>1234",
+      file=sys.stderr)
 
 # ── Catálogo de unidades de producción ──────────────────────────────
 UNIDADES = [
@@ -689,6 +800,7 @@ print("", file=sys.stderr)
 
 # Generar SQL de cleanup (orden inverso por dependencias FK)
 cleanup_order = [
+    'coop.ballot',
     'coop.pedido.material',
     'coop.material',
     'coop.avance.medicion',

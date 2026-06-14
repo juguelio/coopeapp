@@ -53,6 +53,9 @@ class CoopPortal(http.Controller):
         member = self._member()
         if not member:
             return request.render('coop_portal.sin_socio')
+        # el síndico tiene su propio panel de control
+        if member.role == 'syndic':
+            return request.redirect('/app/control')
         obras = self._obras(member)
         avances = request.env['coop.avance.medicion'].sudo().search(
             [('member_id', '=', member.id)], order='fecha desc, id desc', limit=3)
@@ -69,10 +72,14 @@ class CoopPortal(http.Controller):
                 ('state', '=', 'borrador')])
             n_pedidos = request.env['coop.pedido.material'].sudo().search_count([
                 ('obra_id', 'in', obras_coord.ids), ('state', '=', 'pendiente')])
+        # asamblea en curso (votación abierta)
+        asamblea = request.env['coop.assembly'].sudo().search(
+            [('state', '=', 'open')], order='date desc', limit=1)
         return self._render('coop_portal.home', {
             'member': member, 'obras': obras, 'avances': avances,
             'es_coordinador': bool(obras_coord),
             'n_validar': n_validar, 'n_pedidos': n_pedidos,
+            'asamblea': asamblea,
         })
 
     # ── cargar avance (wizard 3 pasos) ───────────────────────────────

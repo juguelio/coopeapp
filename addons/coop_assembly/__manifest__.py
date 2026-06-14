@@ -1,7 +1,7 @@
 {
     'name': 'Cooperativa - Asambleas y Votaciones',
-    'version': '18.0.1.0.0',
-    'summary': 'Gestión de asambleas, votaciones y actas automáticas para cooperativas',
+    'version': '18.0.1.1.0',
+    'summary': 'Gestión de asambleas, votaciones (con voto secreto desde el celular) y actas para cooperativas',
     'author': 'Plataforma Cooperativa',
     'category': 'Cooperative',
     'license': 'AGPL-3',

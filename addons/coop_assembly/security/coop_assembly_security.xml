@@ -22,5 +22,20 @@
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
         </record>
+
+        <!-- Voto secreto: NADIE ve el voto de otro, solo el propio.
+             Los totales se ven en coop.vote (agregado). Aplica a todos
+             los grupos (socio, admin, síndico) — ni el consejo ve quién
+             votó qué. El sync de contadores usa sudo. -->
+        <record id="rule_ballot_solo_propio" model="ir.rule">
+            <field name="name">Voto secreto: solo el propio</field>
+            <field name="model_id" ref="model_coop_ballot"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_member')), (4, ref('coop_members.group_coop_manager')), (4, ref('coop_members.group_coop_syndic'))]"/>
+            <field name="domain_force">[('member_id.partner_id.user_ids', 'in', [user.id])]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
     </data>
 </odoo>

@@ -64,7 +64,13 @@
         </head>
         <body>
             <t t-out="0"/>
-            <div class="nav">
+            <div class="nav" t-if="nav_rol == 'sindico'">
+                <a href="/app/control" t-att-class="'viva' if nav_activo == 'control' else None"><span class="ico">🛡️</span>Control</a>
+                <a href="/app/auditoria" t-att-class="'viva' if nav_activo == 'auditoria' else None"><span class="ico">🔎</span>Auditoría</a>
+                <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><span class="ico">🗳️</span>Asamblea</a>
+                <a href="/app/certificados" t-att-class="'viva' if nav_activo == 'firmar' else None"><span class="ico">✍️</span>Firmar</a>
+            </div>
+            <div class="nav" t-else="">
                 <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
                 <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><span class="ico">✏️</span>Cargar</a>
                 <a href="/app/plata" t-att-class="'viva' if nav_activo == 'plata' else None"><span class="ico">💵</span>Mi plata</a>
@@ -104,6 +110,12 @@
             <div class="sub" t-else="">Sin obra asignada por ahora</div>
 
             <a class="botonazo" href="/app/cargar">✏️ CARGAR LO QUE HICE</a>
+
+            <div class="card" t-if="asamblea" style="border-left:6px solid #f5a623">
+                <h3>🗳️ ASAMBLEA EN CURSO</h3>
+                <div style="font-size:16px;font-weight:700;margin-bottom:10px"><t t-esc="asamblea.name"/></div>
+                <a class="botonazo" style="min-height:50px;font-size:16px;margin:0" href="/app/asamblea">ENTRAR Y VOTAR</a>
+            </div>
 
             <div class="card" t-if="es_coordinador" style="border-left:6px solid #f5a623">
                 <h3>SOS COORDINADOR</h3>
@@ -446,6 +458,247 @@
                 <a class="botonazo" href="/app/obra">Volver a la obra</a>
                 <a class="atras" href="/app/pedir">Pedir otro</a>
             </div>
+        </t>
+    </template>
+
+    <!-- ============ ASAMBLEA: SIN ASAMBLEA ABIERTA ============ -->
+    <template id="asamblea_ninguna" name="App: sin asamblea">
+        <t t-call="coop_portal.layout">
+            <div class="listo">
+                <div class="check" style="background:#a36b00">🗳️</div>
+                <h1>No hay asamblea en curso</h1>
+                <p class="sub" style="margin-top:8px">Cuando se abra una votación, vas a poder votar desde acá.</p>
+                <a class="botonazo" href="/app">Volver al inicio</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ASAMBLEA: PUNTOS A VOTAR ============ -->
+    <template id="asamblea" name="App: asamblea en curso">
+        <t t-call="coop_portal.layout">
+            <a class="atras" href="/app">← Volver</a>
+            <h1>🗳️ <t t-esc="asamblea.name"/></h1>
+            <div class="sub">
+                <t t-if="asamblea.location"><t t-esc="asamblea.location"/> · </t>
+                Tu voto es secreto.
+            </div>
+
+            <div class="card" t-foreach="votos" t-as="v">
+                <div style="font-weight:800;font-size:16px;margin-bottom:2px"><t t-esc="v['vote'].name"/></div>
+                <div t-if="v['vote'].description" style="font-size:14px;color:var(--gris);margin-bottom:10px">
+                    <t t-esc="v['vote'].description"/>
+                </div>
+
+                <t t-if="v['mi_voto']">
+                    <div class="fila" style="border:0;padding:4px 0">
+                        <div>Tu voto</div>
+                        <span class="chip ok">✓ <t t-esc="choice_labels.get(v['mi_voto'].choice, v['mi_voto'].choice)"/></span>
+                    </div>
+                </t>
+                <t t-elif="v['vote'].state == 'open'">
+                    <a class="botonazo" style="min-height:50px;font-size:16px;margin:0"
+                       t-attf-href="/app/votar?vote_id={{v['vote'].id}}">VOTAR ESTE PUNTO</a>
+                </t>
+                <t t-elif="v['vote'].state == 'closed'">
+                    <div class="fila" style="border:0;padding:4px 0">
+                        <div>Resultado</div>
+                        <span t-attf-class="chip {{'ok' if v['vote'].approved else 'espera'}}">
+                            <t t-esc="'Aprobada' if v['vote'].approved else 'Rechazada'"/>
+                        </span>
+                    </div>
+                    <div style="font-size:13px;color:var(--gris)">
+                        <t t-esc="v['vote'].votes_yes"/> a favor ·
+                        <t t-esc="v['vote'].votes_no"/> en contra ·
+                        <t t-esc="v['vote'].votes_abstain"/> abstenciones
+                    </div>
+                </t>
+                <t t-else="">
+                    <span class="chip espera">⏳ Todavía no se abrió</span>
+                </t>
+            </div>
+
+            <div class="card" t-if="not votos">
+                <h3>SIN PUNTOS</h3>
+                <div>La asamblea está abierta pero todavía no hay votaciones cargadas.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ASAMBLEA: VOTAR (3 opciones) ============ -->
+    <template id="votar" name="App: votar">
+        <t t-call="coop_portal.layout">
+            <a class="atras" href="/app/asamblea">← Volver</a>
+            <div class="paso">VOTACIÓN SECRETA</div>
+            <div class="pregunta"><t t-esc="vote.name"/></div>
+            <div class="sub" t-if="vote.description"><t t-esc="vote.description"/></div>
+            <form action="/app/votar/confirmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="vote_id" t-att-value="vote.id"/>
+                <button class="opcion" name="choice" value="yes" type="submit"><span class="ico">👍</span> A favor</button>
+                <button class="opcion" name="choice" value="no" type="submit"><span class="ico">👎</span> En contra</button>
+                <button class="opcion" name="choice" value="abstain" type="submit"><span class="ico">🤷</span> Me abstengo</button>
+            </form>
+            <div class="card">
+                <h3>ANTES DE VOTAR</h3>
+                <div style="font-size:14px;color:var(--gris)">Tu voto queda registrado de forma secreta. Nadie —ni el consejo— ve qué votaste; solo se publican los totales.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ASAMBLEA: VOTO REGISTRADO ============ -->
+    <template id="votado" name="App: voto registrado">
+        <t t-call="coop_portal.layout">
+            <div class="listo">
+                <div class="check">🗳️</div>
+                <h1>Voto registrado</h1>
+                <p class="sub" style="margin-top:8px">Gracias por participar.<br/>El resultado se publica al cerrar la votación.</p>
+                <a class="botonazo" href="/app/asamblea">Volver a la asamblea</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ SÍNDICO: PANEL DE CONTROL ============ -->
+    <template id="sindico_control" name="App: panel del síndico">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'sindico'"/>
+            <t t-set="nav_activo" t-value="'control'"/>
+            <h1>🛡️ Control</h1>
+            <div class="sub">Síndico · <t t-esc="member.name"/></div>
+
+            <div class="card" style="border-left:6px solid #f5a623">
+                <h3>QUÉ REVISAR</h3>
+                <a class="fila" href="/app/certificados" style="text-decoration:none;color:inherit">
+                    <div>✍️ Certificados esperando tu firma</div>
+                    <span t-attf-class="chip {{'espera' if n_certs else 'ok'}}">
+                        <t t-esc="n_certs"/> <t t-if="not n_certs">✓</t></span>
+                </a>
+                <a class="fila" href="/app/asamblea" style="text-decoration:none;color:inherit" t-if="asamblea">
+                    <div>🗳️ Asamblea en curso</div>
+                    <span class="chip espera">votar</span>
+                </a>
+                <div class="fila" style="border:0">
+                    <div>🔴 Obras con saldo en rojo</div>
+                    <span t-attf-class="chip {{'espera' if en_rojo else 'ok'}}">
+                        <t t-esc="en_rojo"/> <t t-if="not en_rojo">✓</t></span>
+                </div>
+            </div>
+
+            <div class="card" style="border-left:6px solid var(--verde)">
+                <h3>LO QUE NO SE PUEDE TOCAR</h3>
+                <div style="font-size:14px">Cada operación queda registrada con autor y hora, y nadie la puede editar ni borrar — ni el consejo.</div>
+                <a class="botonazo sec" style="min-height:46px;font-size:15px;margin-top:10px" href="/app/auditoria">🔎 Abrir pista de auditoría</a>
+            </div>
+
+            <div class="card">
+                <h3>TRANSPARENCIA</h3>
+                <div class="fila" style="border:0;padding:0">
+                    <div>Lo que ve el consejo</div><span class="chip ok">= lo que ve cada socio</span>
+                </div>
+                <div style="font-size:13px;color:var(--gris);margin-top:6px">Principio ACI 5. <t t-esc="n_obras"/> obras activas.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ SÍNDICO: CERTIFICADOS A FIRMAR ============ -->
+    <template id="sindico_certificados" name="App: certificados a firmar">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'sindico'"/>
+            <t t-set="nav_activo" t-value="'firmar'"/>
+            <h1>✍️ Certificados</h1>
+            <div class="sub">Firmá desde el celular. Sin imprimir, sin escanear.</div>
+
+            <div class="card" t-foreach="pendientes" t-as="c" style="border:2px solid var(--verde)">
+                <div style="font-weight:800;font-size:16px;margin-bottom:2px">
+                    N°<t t-esc="c.numero"/> · <t t-esc="c.obra_id.name"/></div>
+                <div class="fila"><div>Avance acumulado</div><b><t t-esc="'%g' % c.porcentaje_avance"/>%</b></div>
+                <div class="fila"><div>Monto</div><b>$ <t t-esc="'{:,.0f}'.format(c.monto_certificado).replace(',', '.')"/></b></div>
+                <a class="botonazo" style="min-height:50px;font-size:16px;margin-top:8px"
+                   t-attf-href="/app/firmar?cert_id={{c.id}}">✍️ REVISAR Y FIRMAR</a>
+            </div>
+
+            <div class="listo" t-if="not pendientes" style="padding:24px 10px">
+                <div class="check">✓</div>
+                <h1>Nada para firmar</h1>
+            </div>
+
+            <div class="card" t-if="firmados">
+                <h3>YA FIRMADOS</h3>
+                <div class="fila" t-foreach="firmados" t-as="f">
+                    <div>N°<t t-esc="f.numero"/> · <t t-esc="f.obra_id.name"/>
+                        <br/><span style="font-size:12px;color:var(--gris)">hash <t t-esc="(f.hash_firma or '')[:8]"/></span></div>
+                    <span t-attf-class="chip {{'ok' if f.firma_valida else 'espera'}}">
+                        <t t-if="f.firma_valida">✓ válida</t><t t-else="">⚠ alterado</t></span>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ SÍNDICO: ACTO DE FIRMA ============ -->
+    <template id="sindico_firmar" name="App: firmar certificado">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'sindico'"/>
+            <t t-set="nav_activo" t-value="'firmar'"/>
+            <a class="atras" href="/app/certificados">← Volver</a>
+            <h1>Firmar Certificado N°<t t-esc="cert.numero"/></h1>
+            <div class="sub"><t t-esc="cert.obra_id.name"/> · revisá antes de firmar</div>
+
+            <div class="card">
+                <h3>LO QUE VAS A FIRMAR</h3>
+                <div class="fila"><div>Avance certificado</div><b><t t-esc="'%g' % cert.porcentaje_avance"/>% acumulado</b></div>
+                <div class="fila"><div>Monto</div><b>$ <t t-esc="'{:,.0f}'.format(cert.monto_certificado).replace(',', '.')"/></b></div>
+                <div class="fila" style="border:0"><div>Fecha de presentación</div><b><t t-esc="cert.date.strftime('%d/%m/%Y')"/></b></div>
+            </div>
+
+            <div class="card" style="background:#f0f7f3">
+                <h3>QUÉ PASA AL FIRMAR</h3>
+                <div style="font-size:14px;color:var(--tinta)">Queda tu firma con fecha, hora y un código único (hash) del contenido. Si después alguien cambia un número, la firma se invalida sola y se nota. El comitente lo recibe sin imprimir nada.</div>
+            </div>
+
+            <form action="/app/firmar/confirmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="cert_id" t-att-value="cert.id"/>
+                <button class="botonazo" type="submit">✍️ FIRMAR AHORA</button>
+            </form>
+            <a class="botonazo sec" href="/app/certificados">Todavía no — tengo dudas</a>
+        </t>
+    </template>
+
+    <!-- ============ SÍNDICO: FIRMADO ============ -->
+    <template id="sindico_firmado" name="App: certificado firmado">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'sindico'"/>
+            <t t-set="nav_activo" t-value="'firmar'"/>
+            <div class="listo">
+                <div class="check">✍️</div>
+                <h1>Certificado firmado</h1>
+                <p class="sub" style="margin-top:8px">
+                    Quedó tu firma con fecha, hora y hash <b><t t-esc="(cert.hash_firma or '')[:8]"/></b>.<br/>
+                    Sin imprimir, sin escanear.
+                </p>
+                <a class="botonazo" href="/app/certificados">Volver a certificados</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ SÍNDICO: AUDITORÍA ============ -->
+    <template id="sindico_auditoria" name="App: pista de auditoría">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'sindico'"/>
+            <t t-set="nav_activo" t-value="'auditoria'"/>
+            <h1>🔎 Auditoría</h1>
+            <div class="sub">Todo lo que pasó. Registro inmutable.</div>
+
+            <div class="card">
+                <div class="fila" t-foreach="ops" t-as="o">
+                    <div><t t-esc="o['icono']"/> <b><t t-esc="o['quien']"/></b> — <t t-esc="o['detalle']"/>
+                        <br/><span style="font-size:12px;color:var(--gris)">
+                            <t t-esc="o['fecha'].strftime('%d/%m')"/> · <t t-esc="o['obra']"/> · 🔒 no editable</span></div>
+                </div>
+                <div t-if="not ops" style="text-align:center;color:var(--gris);padding:14px">
+                    Todavía no hay operaciones registradas.
+                </div>
+            </div>
+            <div style="font-size:12px;color:var(--gris);text-align:center">Solo lectura. Nada se modifica desde acá.</div>
         </t>
     </template>
 

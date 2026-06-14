@@ -31,6 +31,9 @@ class CoopVote(models.Model):
     votes_no = fields.Integer(string='Votos en contra', default=0)
     votes_abstain = fields.Integer(string='Abstenciones', default=0)
 
+    ballot_ids = fields.One2many('coop.ballot', 'vote_id', string='Votos individuales')
+    ballot_count = fields.Integer(string='Votaron', compute='_compute_ballot_count')
+
     total_votes = fields.Integer(string='Total votos', compute='_compute_results', store=True)
     approved = fields.Boolean(string='Aprobada', compute='_compute_results', store=True)
     result_summary = fields.Char(string='Resultado', compute='_compute_results', store=True)
@@ -66,6 +69,21 @@ class CoopVote(models.Model):
                 f'{vote.votes_no} en contra, '
                 f'{vote.votes_abstain} abstenciones'
             )
+
+    def _compute_ballot_count(self):
+        for vote in self:
+            vote.ballot_count = len(vote.ballot_ids)
+
+    def _sync_counters(self):
+        """Recalcula los contadores agregados desde los votos individuales.
+        Con sudo: necesita ver todos los ballots (que son secretos por rule)."""
+        for vote in self:
+            ballots = vote.sudo().ballot_ids
+            vote.sudo().write({
+                'votes_yes': len(ballots.filtered(lambda b: b.choice == 'yes')),
+                'votes_no': len(ballots.filtered(lambda b: b.choice == 'no')),
+                'votes_abstain': len(ballots.filtered(lambda b: b.choice == 'abstain')),
+            })
 
     def action_open_vote(self):
         self.write({'state': 'open'})

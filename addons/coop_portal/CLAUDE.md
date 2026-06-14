@@ -14,6 +14,23 @@ Socio (`controllers/portal.py`):
 - `/app/pedir` → `/cantidad` → POST `/confirmar` — wizard pedir material,
   crea `coop.pedido.material` en pendiente
 
+Síndico (`controllers/sindico.py`, rol = `member.role == 'syndic'`):
+- `/app` redirige a `/app/control` si el usuario es síndico (nav propia:
+  Control · Auditoría · Asamblea · Firmar)
+- `/app/control` — panel de fiscalización (certs a firmar, asamblea, obras en rojo)
+- `/app/certificados` + `/app/firmar` + POST `/confirmar` — firma digital de
+  certificados (`coop.certificado.action_firmar`, hash SHA-256; `firma_valida`
+  se invalida si cambia un número)
+- `/app/auditoria` — pista inmutable: avances validados + pedidos + firmas,
+  ordenado por fecha, solo lectura
+
+Asamblea (`controllers/asamblea.py`):
+- `/app/asamblea` — asamblea en curso (state open) con sus puntos; muestra
+  estado de cada votación y si ya votaste
+- `/app/votar` (vote_id) + POST `/confirmar` — voto secreto: crea `coop.ballot`
+  (único por socio/votación). Nadie ve el voto de otro (record rule); los
+  totales viven en `coop.vote`, sincronizados desde los ballots con sudo.
+
 Coordinador (`controllers/coordinador.py`):
 - `/app/validar` + POST `/accion` — bandeja de avances en borrador de SUS obras
   (las que coordina = `capataz_id`); valida o devuelve al socio

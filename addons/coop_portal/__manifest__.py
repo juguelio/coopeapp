@@ -1,9 +1,9 @@
 {
     'name': 'Cooperativa - App de Socios',
-    'version': '18.0.0.1.0',
-    'summary': 'Portal mobile-first para socios: cargar avances, ver participación y obra',
+    'version': '18.0.0.2.0',
+    'summary': 'Portal mobile-first para socios: cargar avances, ver participación, obra y votar en asamblea',
     'author': 'Coopeapp',
-    'depends': ['coop_construction'],
+    'depends': ['coop_construction', 'coop_assembly'],
     'data': [
         'views/portal_templates.xml',
     ],

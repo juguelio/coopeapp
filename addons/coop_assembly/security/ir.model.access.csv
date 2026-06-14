@@ -5,3 +5,6 @@ access_coop_assembly_syndic,coop.assembly sindico,model_coop_assembly,coop_membe
 access_coop_vote_member,coop.vote socio,model_coop_vote,coop_members.group_coop_member,1,0,0,0
 access_coop_vote_manager,coop.vote admin,model_coop_vote,coop_members.group_coop_manager,1,1,1,0
 access_coop_vote_syndic,coop.vote sindico,model_coop_vote,coop_members.group_coop_syndic,1,0,0,0
+access_coop_ballot_member,coop.ballot socio,model_coop_ballot,coop_members.group_coop_member,1,0,1,0
+access_coop_ballot_manager,coop.ballot admin,model_coop_ballot,coop_members.group_coop_manager,1,0,0,0
+access_coop_ballot_syndic,coop.ballot sindico,model_coop_ballot,coop_members.group_coop_syndic,1,0,0,0

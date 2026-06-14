@@ -46,6 +46,16 @@
                     <group string="Observaciones">
                         <field name="notes" nolabel="1"/>
                     </group>
+                    <group string="Firma digital" invisible="not firmado">
+                        <field name="firmado_por_id"/>
+                        <field name="fecha_firma"/>
+                        <field name="hash_firma"/>
+                        <field name="firma_valida"/>
+                        <div class="text-danger" colspan="2"
+                             invisible="firma_valida or not firmado">
+                            ⚠️ El contenido cambió desde la firma — la firma ya no es válida.
+                        </div>
+                    </group>
                 </sheet>
                 <div class="oe_chatter">
                     <field name="message_follower_ids"/>
