@@ -24,7 +24,10 @@ print("=== Cargando datos de demostración ===", file=sys.stderr)
 def _safe_unlink(records):
     if records:
         try:
-            records.sudo().unlink()
+            # savepoint: si el unlink falla, solo se revierte esto —
+            # la transacción global sigue usable (no se aborta).
+            with env.cr.savepoint():
+                records.sudo().unlink()
         except Exception as e:  # noqa: BLE001
             print(f"  (aviso) no se pudo borrar {records._name}: {e}",
                   file=sys.stderr)
@@ -169,6 +172,13 @@ Partner = env['res.partner'].sudo()
 Contribution = env['coop.contribution'].sudo()
 
 for s in SOCIOS:
+    # red de seguridad: si la limpieza no pudo borrar el socio, reusarlo
+    existente = Member.search([('dni', '=', s['dni'])], limit=1)
+    if existente:
+        existente.write({'state': 'active'})
+        members += existente
+        continue
+
     partner = track(Partner.create({
         'name': s['name'],
         'email': s['email'],
@@ -664,9 +674,19 @@ def demo_user(member, login, password):
 # Carlos (members[0]) es capataz/coordinador de la obra; Lucas (members[2]) socio
 carlos = members[0]                       # coordinador (capataz_id de la obra)
 lucas = members[2]                        # socio puro
+sofia = members[3]                        # administrador (role 'manager')
 analia = members[5]                       # síndico (role 'syndic')
 demo_user(carlos, 'carlos', 'carlos1234')
 demo_user(lucas, 'lucas', 'lucas1234')
+
+# Sofía: administrador → grupo manager (implica member)
+if not Users.search([('login', '=', 'sofia')], limit=1):
+    track(Users.create({
+        'name': sofia.name, 'login': 'sofia', 'password': 'sofia1234',
+        'partner_id': sofia.partner_id.id,
+        'groups_id': [(6, 0, [
+            user_group, env.ref('coop_members.group_coop_manager').id])],
+    }))
 
 # Analía: síndico → grupo síndico (implica manager + member)
 if not Users.search([('login', '=', 'analia')], limit=1):
@@ -676,7 +696,7 @@ if not Users.search([('login', '=', 'analia')], limit=1):
         'groups_id': [(6, 0, [
             user_group, env.ref('coop_members.group_coop_syndic').id])],
     }))
-print("  ✓ Usuarios portal: carlos (coordinador), lucas (socio), analia (síndico) — pass <login>1234",
+print("  ✓ Usuarios portal: carlos (coordinador), lucas (socio), sofia (admin), analia (síndico) — pass <login>1234",
       file=sys.stderr)
 
 # ── Catálogo de unidades de producción ──────────────────────────────
