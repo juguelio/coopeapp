@@ -51,6 +51,7 @@ _demo_users = env['res.users'].sudo().search(
 # paso (evita orphans: si la obra no se borra por un FK, se ve en el aviso).
 for _o in _demo_obras:
     _safe_unlink(_search('coop.orden.corralon', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('coop.acopio', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.pedido.material', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.avance.medicion', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.foja.item', [('obra_id', '=', _o.id)]))
@@ -66,7 +67,7 @@ _safe_unlink(_search('coop.unidad.produccion', [('name', 'in', [
     'Pintura interior', 'Pintura en altura', 'Mampostería ladrillo hueco',
     'Colocación cañería', 'Contrapiso'])]))
 _safe_unlink(_search('coop.corralon', [('name', 'in', [
-    'Corralón Austral', 'Corralón El Roble'])]))
+    'Corralón Austral', 'Corralón El Roble', 'Corralón Don Pedro'])]))
 
 if _demo_members:
     _safe_unlink(_search('coop.advance', [('member_id', 'in', _demo_members.ids)]))
@@ -805,6 +806,7 @@ for nombre, uom, detalle, icono in MATERIALES:
 CORRALONES = [
     ('Corralón Austral', '5492944111222', 'Av. Koessler 1500, SMA'),
     ('Corralón El Roble', '5492944333444', 'Ruta 40 km 2200, SMA'),
+    ('Corralón Don Pedro', '5492944555666', 'Pérez 820, SMA'),
 ]
 corralones = {}
 for nombre, tel, direccion in CORRALONES:
@@ -848,6 +850,59 @@ for nombre, cant, nota, corr in ACEPTADOS:
 print("  ✓ Catálogo (6 materiales) + 2 pedidos pendientes + 3 aceptados "
       "(2 con corralón para consolidar)", file=sys.stderr)
 
+# ── Acopios de Austral + listas congeladas + precios actuales (M2) ───
+Acopio = env['coop.acopio'].sudo()
+AcopioPrecio = env['coop.acopio.precio'].sudo()
+ListaPrecio = env['coop.lista.precio'].sudo()
+for m in ('coop.acopio', 'coop.acopio.precio', 'coop.lista.precio'):
+    created.setdefault(m, [])
+
+# 3 acopios reales de Austral (cronológico: el más viejo = más barato).
+# precios congelados por material en cada acopio (ene < abr < jun).
+ACOPIOS = [
+    ('51584', date(2026, 1, 7), 2770000.0, {
+        'Cemento': 7800.0, 'Arena': 42000.0, 'Ladrillo hueco 12x18x33': 480.0,
+        'Hierro aletado 8mm': 9500.0, 'Pintura látex blanca': 28000.0,
+        'Cal hidratada': 6200.0}),
+    ('53683', date(2026, 4, 1), 4750000.0, {
+        'Cemento': 9100.0, 'Arena': 49000.0, 'Ladrillo hueco 12x18x33': 560.0,
+        'Hierro aletado 8mm': 11200.0, 'Pintura látex blanca': 33000.0,
+        'Cal hidratada': 7300.0}),
+    ('54073', date(2026, 6, 5), 2531110.0, {
+        'Cemento': 10400.0, 'Arena': 55000.0, 'Ladrillo hueco 12x18x33': 640.0,
+        'Hierro aletado 8mm': 12800.0, 'Pintura látex blanca': 38000.0,
+        'Cal hidratada': 8400.0}),
+]
+austral = corralones['Corralón Austral']
+for numero, fecha, monto, precios in ACOPIOS:
+    ac = track(Acopio.create({
+        'numero': numero, 'obra_id': obra.id, 'corralon_id': austral.id,
+        'fecha': fecha, 'monto_total': monto, 'state': 'vigente',
+    }))
+    for mat_nombre, precio in precios.items():
+        track(AcopioPrecio.create({
+            'acopio_id': ac.id, 'material_id': materiales[mat_nombre].id,
+            'precio_congelado': precio,
+        }))
+
+# Precios actuales (compra directa) de los 3 corralones (~hoy, más caros
+# que los congelados → el optimizador va a preferir el acopio).
+PRECIOS_ACTUALES = {
+    'Corralón Austral':   {'Cemento': 11000.0, 'Arena': 57000.0, 'Ladrillo hueco 12x18x33': 670.0, 'Hierro aletado 8mm': 13500.0, 'Pintura látex blanca': 40000.0, 'Cal hidratada': 8800.0},
+    'Corralón El Roble':  {'Cemento': 10800.0, 'Arena': 58000.0, 'Ladrillo hueco 12x18x33': 650.0, 'Hierro aletado 8mm': 13200.0, 'Pintura látex blanca': 41000.0, 'Cal hidratada': 9000.0},
+    'Corralón Don Pedro': {'Cemento': 11200.0, 'Arena': 56000.0, 'Ladrillo hueco 12x18x33': 690.0, 'Hierro aletado 8mm': 13250.0, 'Pintura látex blanca': 39500.0, 'Cal hidratada': 8700.0},
+}
+for corr_nombre, precios in PRECIOS_ACTUALES.items():
+    for mat_nombre, precio in precios.items():
+        track(ListaPrecio.create({
+            'corralon_id': corralones[corr_nombre].id,
+            'material_id': materiales[mat_nombre].id,
+            'precio': precio, 'fecha': date(2026, 6, 12),
+        }))
+
+print("  ✓ 3 acopios Austral (#51584/#53683/#54073) con listas congeladas "
+      "+ precios actuales de 3 corralones", file=sys.stderr)
+
 
 # ══════════════════════════════════════════════════════════════════
 # 6. COMMIT + CLEANUP SQL
@@ -862,6 +917,9 @@ print("", file=sys.stderr)
 cleanup_order = [
     'coop.ballot',
     'coop.orden.corralon',
+    'coop.acopio.precio',
+    'coop.acopio',
+    'coop.lista.precio',
     'coop.pedido.material',
     'coop.corralon',
     'coop.material',

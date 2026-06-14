@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== coop.acopio ===================== -->
+    <record id="view_coop_acopio_list" model="ir.ui.view">
+        <field name="name">coop.acopio.list</field>
+        <field name="model">coop.acopio</field>
+        <field name="arch" type="xml">
+            <list string="Acopios"
+                  decoration-success="state == 'vigente'"
+                  decoration-muted="state == 'cerrado'"
+                  decoration-warning="state == 'agotado'">
+                <field name="fecha"/>
+                <field name="numero"/>
+                <field name="corralon_id"/>
+                <field name="obra_id"/>
+                <field name="monto_total"/>
+                <field name="consumido" optional="show"/>
+                <field name="saldo"/>
+                <field name="n_precios" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'vigente'"
+                       decoration-warning="state == 'agotado'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_acopio_form" model="ir.ui.view">
+        <field name="name">coop.acopio.form</field>
+        <field name="model">coop.acopio</field>
+        <field name="arch" type="xml">
+            <form string="Acopio">
+                <header>
+                    <button name="action_cerrar" string="Cerrar acopio"
+                            type="object" invisible="state == 'cerrado'"/>
+                    <button name="action_reabrir" string="Reabrir"
+                            type="object" invisible="state != 'cerrado'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="vigente,agotado,cerrado"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="numero"/>
+                            <field name="corralon_id"/>
+                            <field name="obra_id"/>
+                            <field name="fecha"/>
+                        </group>
+                        <group>
+                            <field name="monto_total"/>
+                            <field name="consumido" readonly="1"/>
+                            <field name="saldo" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Lista de precios congelada">
+                            <field name="precio_ids">
+                                <list editable="bottom">
+                                    <field name="material_id"/>
+                                    <field name="codigo_corralon"/>
+                                    <field name="precio_congelado"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_acopio" model="ir.actions.act_window">
+        <field name="name">Acopios</field>
+        <field name="res_model">coop.acopio</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== coop.lista.precio ===================== -->
+    <record id="view_coop_lista_precio_list" model="ir.ui.view">
+        <field name="name">coop.lista.precio.list</field>
+        <field name="model">coop.lista.precio</field>
+        <field name="arch" type="xml">
+            <list string="Precios actuales" editable="bottom">
+                <field name="fecha"/>
+                <field name="corralon_id"/>
+                <field name="material_id"/>
+                <field name="precio"/>
+                <field name="currency_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_lista_precio" model="ir.actions.act_window">
+        <field name="name">Precios Actuales</field>
+        <field name="res_model">coop.lista.precio</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- ===================== Menús ===================== -->
+    <menuitem id="menu_coop_acopios"
+              name="Acopios"
+              parent="menu_coop_materiales"
+              action="action_coop_acopio"
+              sequence="40"/>
+
+    <menuitem id="menu_coop_lista_precios"
+              name="Precios Actuales"
+              parent="menu_coop_materiales"
+              action="action_coop_lista_precio"
+              sequence="50"/>
+</odoo>

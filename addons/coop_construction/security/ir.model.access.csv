@@ -27,3 +27,12 @@ access_coop_corralon_syndic,coop.corralon syndic,model_coop_corralon,coop_member
 access_coop_orden_corralon_member,coop.orden.corralon member,model_coop_orden_corralon,coop_members.group_coop_member,1,0,0,0
 access_coop_orden_corralon_manager,coop.orden.corralon manager,model_coop_orden_corralon,coop_members.group_coop_manager,1,1,1,1
 access_coop_orden_corralon_syndic,coop.orden.corralon syndic,model_coop_orden_corralon,coop_members.group_coop_syndic,1,0,0,0
+access_coop_acopio_member,coop.acopio member,model_coop_acopio,coop_members.group_coop_member,1,0,0,0
+access_coop_acopio_manager,coop.acopio manager,model_coop_acopio,coop_members.group_coop_manager,1,1,1,1
+access_coop_acopio_syndic,coop.acopio syndic,model_coop_acopio,coop_members.group_coop_syndic,1,0,0,0
+access_coop_acopio_precio_member,coop.acopio.precio member,model_coop_acopio_precio,coop_members.group_coop_member,1,0,0,0
+access_coop_acopio_precio_manager,coop.acopio.precio manager,model_coop_acopio_precio,coop_members.group_coop_manager,1,1,1,1
+access_coop_acopio_precio_syndic,coop.acopio.precio syndic,model_coop_acopio_precio,coop_members.group_coop_syndic,1,0,0,0
+access_coop_lista_precio_member,coop.lista.precio member,model_coop_lista_precio,coop_members.group_coop_member,1,0,0,0
+access_coop_lista_precio_manager,coop.lista.precio manager,model_coop_lista_precio,coop_members.group_coop_manager,1,1,1,1
+access_coop_lista_precio_syndic,coop.lista.precio syndic,model_coop_lista_precio,coop_members.group_coop_syndic,1,0,0,0

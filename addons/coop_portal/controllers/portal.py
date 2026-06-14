@@ -178,8 +178,14 @@ class CoopPortal(http.Controller):
         if not etapa:
             etapa = request.env['coop.etapa'].sudo().search(
                 [('obra_id', '=', obra.id)], order='numero desc', limit=1)
+        # acopios vigentes de la obra (transparencia ACI: todos ven la plata
+        # congelada que queda en cada corralón)
+        acopios = request.env['coop.acopio'].sudo().search([
+            ('obra_id', '=', obra.id), ('state', '=', 'vigente'),
+        ], order='corralon_id, fecha')
         return self._render('coop_portal.obra', {
             'member': member, 'obra': obra, 'obras': obras, 'etapa': etapa,
+            'acopios': acopios,
         })
 
     # ── util ─────────────────────────────────────────────────────────
