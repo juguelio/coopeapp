@@ -17,3 +17,7 @@ access_coop_foja_item_member,coop.foja.item member,model_coop_foja_item,coop_mem
 access_coop_foja_item_manager,coop.foja.item manager,model_coop_foja_item,coop_members.group_coop_manager,1,1,1,1
 access_coop_avance_medicion_member,coop.avance.medicion member,model_coop_avance_medicion,coop_members.group_coop_member,1,1,1,0
 access_coop_avance_medicion_manager,coop.avance.medicion manager,model_coop_avance_medicion,coop_members.group_coop_manager,1,1,1,1
+access_coop_material_member,coop.material member,model_coop_material,coop_members.group_coop_member,1,0,0,0
+access_coop_material_manager,coop.material manager,model_coop_material,coop_members.group_coop_manager,1,1,1,1
+access_coop_pedido_material_member,coop.pedido.material member,model_coop_pedido_material,coop_members.group_coop_member,1,1,1,0
+access_coop_pedido_material_manager,coop.pedido.material manager,model_coop_pedido_material,coop_members.group_coop_manager,1,1,1,1

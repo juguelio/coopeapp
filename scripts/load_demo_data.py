@@ -539,28 +539,34 @@ Unidad = env['coop.unidad.produccion'].sudo()
 Foja = env['coop.foja.item'].sudo()
 Etapa = env['coop.etapa'].sudo()
 Avance = env['coop.avance.medicion'].sudo()
+Material = env['coop.material'].sudo()
+Pedido = env['coop.pedido.material'].sudo()
 
 for m in ('coop.unidad.produccion', 'coop.foja.item', 'coop.etapa',
-          'coop.avance.medicion', 'res.users'):
+          'coop.avance.medicion', 'coop.material', 'coop.pedido.material',
+          'res.users'):
     created.setdefault(m, [])
 
-# ── Usuario para Carlos (login: carlos / pass: carlos1234) ──────────
-carlos = members[0]
-existing = Users.search([('login', '=', 'carlos')], limit=1)
-if not existing:
-    carlos_user = track(Users.create({
-        'name': carlos.name,
-        'login': 'carlos',
-        'password': 'carlos1234',
-        'partner_id': carlos.partner_id.id,
-        'groups_id': [(6, 0, [
-            env.ref('base.group_user').id,
-            env.ref('coop_members.group_coop_member').id,
-        ])],
+member_group = env.ref('coop_members.group_coop_member').id
+user_group = env.ref('base.group_user').id
+
+def demo_user(member, login, password):
+    existing = Users.search([('login', '=', login)], limit=1)
+    if existing:
+        return existing
+    u = track(Users.create({
+        'name': member.name, 'login': login, 'password': password,
+        'partner_id': member.partner_id.id,
+        'groups_id': [(6, 0, [user_group, member_group])],
     }))
-    print("  ✓ Usuario portal: carlos / carlos1234 (probar en /app)", file=sys.stderr)
-else:
-    carlos_user = existing
+    return u
+
+# Carlos (members[0]) es capataz/coordinador de la obra; Lucas (members[2]) socio
+carlos = members[0]                       # coordinador (capataz_id de la obra)
+lucas = members[2]                        # socio puro
+demo_user(carlos, 'carlos', 'carlos1234')
+demo_user(lucas, 'lucas', 'lucas1234')
+print("  ✓ Usuarios portal: carlos/carlos1234 (coordinador), lucas/lucas1234 (socio)", file=sys.stderr)
 
 # ── Catálogo de unidades de producción ──────────────────────────────
 UNIDADES = [
@@ -621,23 +627,55 @@ for desc, periodo, rubro, importe, est in [
 
 print("  ✓ 2 etapas (1 cerrada, 1 en curso con gastos)", file=sys.stderr)
 
-# ── Avances de medición de Carlos (2 validados + 1 en borrador) ─────
+# ── Avances de medición ─────────────────────────────────────────────
+# Lucas (socio) carga; quedan 2 en borrador para que Carlos (coord) valide.
 AVANCES = [
-    ('1.0', 32.0, 'jornal', 1.0, 'validado', date(2026, 5, 20)),
-    ('4.0', 45.0, 'jornal', 1.0, 'validado', date(2026, 5, 22)),
-    ('4.0', 18.0, 'jornal', 1.0, 'borrador', date(2026, 5, 26)),
+    (lucas,  '1.0', 32.0, 'jornal', 1.0, 'validado', date(2026, 5, 20)),
+    (lucas,  '4.0', 45.0, 'jornal', 1.0, 'borrador', date(2026, 5, 25)),
+    (lucas,  '1.0', 28.0, 'jornal', 1.0, 'borrador', date(2026, 5, 26)),
+    (carlos, '3.0', 24.0, 'jornal', 1.0, 'validado', date(2026, 5, 22)),
 ]
-for item, cant, medida, trabajo, estado, fecha in AVANCES:
+for socio, item, cant, medida, trabajo, estado, fecha in AVANCES:
     av = track(Avance.create({
         'foja_item_id': foja_items[item].id,
-        'member_id': carlos.id,
+        'member_id': socio.id,
         'cantidad': cant, 'medida_trabajo': medida,
         'cantidad_trabajo': trabajo, 'fecha': fecha,
     }))
     if estado == 'validado':
         av.action_validar()
 
-print("  ✓ 3 avances de Carlos (2 validados, 1 en borrador)", file=sys.stderr)
+print("  ✓ 4 avances (2 de Lucas en borrador para validar)", file=sys.stderr)
+
+# ── Catálogo de materiales (para que el socio pueda pedir) ──────────
+MATERIALES = [
+    ('Cemento', 'bolsa', 'bolsa 50kg', '🪨'),
+    ('Cal hidratada', 'bolsa', 'bolsa 25kg', '⚪'),
+    ('Arena', 'm3', 'm³', '🏖️'),
+    ('Ladrillo hueco 12x18x33', 'unidad', 'unidad', '🧱'),
+    ('Hierro aletado 8mm', 'barra', 'barra 12m', '🔩'),
+    ('Pintura látex blanca', 'lata', 'lata 20L', '🎨'),
+]
+materiales = {}
+for nombre, uom, detalle, icono in MATERIALES:
+    mt = track(Material.create({
+        'name': nombre, 'uom': uom, 'detalle': detalle, 'icono': icono,
+    }))
+    materiales[nombre] = mt
+
+# ── Pedidos de Lucas (pendientes, para que Carlos los revise) ───────
+PEDIDOS = [
+    ('Ladrillo hueco 12x18x33', 500.0, 'mampostería planta baja'),
+    ('Pintura látex blanca', 4.0, 'pintura interior'),
+]
+for nombre, cant, nota in PEDIDOS:
+    track(Pedido.create({
+        'obra_id': obra.id, 'member_id': lucas.id,
+        'material_id': materiales[nombre].id, 'uom': materiales[nombre].uom,
+        'cantidad': cant, 'nota': nota,
+    }))
+
+print("  ✓ Catálogo (6 materiales) + 2 pedidos de Lucas pendientes", file=sys.stderr)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -651,6 +689,8 @@ print("", file=sys.stderr)
 
 # Generar SQL de cleanup (orden inverso por dependencias FK)
 cleanup_order = [
+    'coop.pedido.material',
+    'coop.material',
     'coop.avance.medicion',
     'coop.foja.item',
     'coop.etapa',

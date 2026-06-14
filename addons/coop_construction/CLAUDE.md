@@ -14,6 +14,8 @@ Vertical de construcción para cooperativas de trabajo. Depende de `coop_members
 - `coop.unidad.produccion` — catálogo de ítems con precio de referencia y unidad física (m², ml, m³…)
 - `coop.foja.item` — foja de medición: cantidad, precio, incidencia %, avance %
 - `coop.avance.medicion` — avance cargado por socio: cantidad producida + trabajo insumido (jornal/hora/tarea)
+- `coop.material` — catálogo de materiales para pedidos
+- `coop.pedido.material` — pedido de un socio (pendiente → aceptado/rechazado); guarda `cantidad_original` cuando el coordinador corrige
 
 ## Relaciones clave
 

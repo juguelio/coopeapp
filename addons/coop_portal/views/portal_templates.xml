@@ -105,6 +105,22 @@
 
             <a class="botonazo" href="/app/cargar">✏️ CARGAR LO QUE HICE</a>
 
+            <div class="card" t-if="es_coordinador" style="border-left:6px solid #f5a623">
+                <h3>SOS COORDINADOR</h3>
+                <a class="fila" href="/app/validar" style="text-decoration:none;color:inherit">
+                    <div>👍 Avances para revisar</div>
+                    <span t-attf-class="chip {{'espera' if n_validar else 'ok'}}">
+                        <t t-esc="n_validar"/> <t t-if="not n_validar">✓</t>
+                    </span>
+                </a>
+                <a class="fila" href="/app/pedidos" style="text-decoration:none;color:inherit;border:0">
+                    <div>🧱 Pedidos de materiales</div>
+                    <span t-attf-class="chip {{'espera' if n_pedidos else 'ok'}}">
+                        <t t-esc="n_pedidos"/> <t t-if="not n_pedidos">✓</t>
+                    </span>
+                </a>
+            </div>
+
             <div class="card" t-if="avances">
                 <h3>TUS ÚLTIMAS CARGAS</h3>
                 <div class="fila" t-foreach="avances" t-as="a">
@@ -270,6 +286,8 @@
                 <div style="color:var(--gris);font-size:13px">Lo mismo que ve el consejo. Sin secretos.</div>
             </div>
 
+            <a class="botonazo" href="/app/pedir">🧱 PEDIR MATERIALES</a>
+
             <div class="card" t-if="etapa">
                 <h3>ETAPA <t t-esc="etapa.numero"/> — <t t-esc="etapa_state_labels.get(etapa.state, etapa.state)"/></h3>
                 <div class="fila"><div>Ingreso de la etapa</div>
@@ -278,6 +296,155 @@
                     <b>$ <t t-esc="'{:,.0f}'.format(etapa.total_pagado).replace(',', '.')"/></b></div>
                 <div class="fila"><div>Saldo sin planificar</div>
                     <b style="color:var(--verde)">$ <t t-esc="'{:,.0f}'.format(etapa.saldo_sin_planificar).replace(',', '.')"/></b></div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ COORDINADOR: VALIDAR AVANCES ============ -->
+    <template id="coord_validar" name="App: coordinador valida avances">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app">← Volver</a>
+            <h1>👍 Avances para revisar</h1>
+            <div class="sub">Validá o devolvé al socio. Una por una.</div>
+
+            <div class="card" t-foreach="avances" t-as="a">
+                <div style="font-weight:800;font-size:16px"><t t-esc="a.member_id.name"/></div>
+                <div style="font-size:14px;color:var(--gris);margin-bottom:10px">
+                    <t t-esc="a.foja_item_id.name"/> —
+                    <b><t t-esc="'%g' % a.cantidad"/> <t t-esc="uom_labels.get(a.uom, a.uom)"/></b>
+                    en <t t-esc="'%g' % a.cantidad_trabajo"/>
+                    <t t-esc="medida_labels.get(a.medida_trabajo, a.medida_trabajo)"/>
+                    · <t t-esc="a.fecha.strftime('%d/%m')"/>
+                    · <t t-esc="a.obra_id.name"/>
+                </div>
+                <div style="display:flex;gap:10px">
+                    <form action="/app/validar/accion" method="post" style="flex:1">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="avance_id" t-att-value="a.id"/>
+                        <input type="hidden" name="accion" value="validar"/>
+                        <button class="botonazo" style="min-height:52px;font-size:16px;margin:0" type="submit">✓ Está bien</button>
+                    </form>
+                    <form action="/app/validar/accion" method="post" style="flex:1">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="avance_id" t-att-value="a.id"/>
+                        <input type="hidden" name="accion" value="rechazar"/>
+                        <button class="botonazo sec" style="min-height:52px;font-size:16px;margin:0" type="submit">✗ Corregir</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="listo" t-if="not avances">
+                <div class="check">✓</div>
+                <h1>Todo revisado</h1>
+                <p class="sub" style="margin-top:8px">No hay avances esperando. Buen trabajo.</p>
+                <a class="botonazo" href="/app">Volver al inicio</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ COORDINADOR: PEDIDOS ============ -->
+    <template id="coord_pedidos" name="App: coordinador revisa pedidos">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app">← Volver</a>
+            <h1>🧱 Pedidos de materiales</h1>
+            <div class="sub">Aceptá, corregí o rechazá.</div>
+
+            <div class="card" t-foreach="pedidos" t-as="p">
+                <div style="font-weight:800;font-size:16px"><t t-esc="p.member_id.name"/></div>
+                <div style="font-size:14px;color:var(--gris);margin-bottom:10px">
+                    <b><t t-esc="p.name"/></b> · <t t-esc="p.obra_id.name"/>
+                    <t t-if="p.nota"> · <t t-esc="p.nota"/></t>
+                </div>
+                <div style="display:flex;gap:10px;margin-bottom:8px">
+                    <form action="/app/pedidos/accion" method="post" style="flex:1">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="pedido_id" t-att-value="p.id"/>
+                        <input type="hidden" name="accion" value="aceptar"/>
+                        <button class="botonazo" style="min-height:48px;font-size:15px;margin:0" type="submit">✓ Aceptar</button>
+                    </form>
+                    <form action="/app/pedidos/accion" method="post" style="flex:1">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="pedido_id" t-att-value="p.id"/>
+                        <input type="hidden" name="accion" value="rechazar"/>
+                        <button class="botonazo sec" style="min-height:48px;font-size:15px;margin:0" type="submit">✗ Rechazar</button>
+                    </form>
+                </div>
+                <form action="/app/pedidos/accion" method="post" style="display:flex;gap:8px;align-items:center">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="pedido_id" t-att-value="p.id"/>
+                    <input type="hidden" name="accion" value="corregir"/>
+                    <input type="number" name="cantidad" step="any" min="0.01"
+                           t-att-placeholder="'Corregir cant. (pidió %g)' % p.cantidad"
+                           style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    <button class="botonazo sec" style="min-height:42px;font-size:14px;margin:0;width:auto;padding:0 14px" type="submit">✏️ y aceptar</button>
+                </form>
+            </div>
+
+            <div class="listo" t-if="not pedidos">
+                <div class="check">✓</div>
+                <h1>Sin pedidos pendientes</h1>
+                <a class="botonazo" href="/app">Volver al inicio</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ SOCIO: PEDIR MATERIALES (paso 1) ============ -->
+    <template id="pedir_paso1" name="App: pedir material paso 1">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'obra'"/>
+            <a class="atras" href="/app/obra">← Volver</a>
+            <div class="paso">PEDIR MATERIALES · <t t-esc="obra.name"/></div>
+            <div class="pregunta">¿Qué necesitás?</div>
+            <a class="opcion" t-foreach="materiales" t-as="m"
+               t-attf-href="/app/pedir/cantidad?obra_id={{obra.id}}&amp;material_id={{m.id}}">
+                <span><t t-esc="m.icono or '📦'"/> <t t-esc="m.name"/></span>
+                <span style="margin-left:auto;color:var(--gris)"><t t-esc="m.detalle or ''"/></span>
+            </a>
+            <div class="card" t-if="not materiales">
+                <h3>SIN CATÁLOGO</h3>
+                <div>El administrador todavía no cargó materiales. Avisale.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ SOCIO: PEDIR MATERIALES (paso 2) ============ -->
+    <template id="pedir_paso2" name="App: pedir material paso 2">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'obra'"/>
+            <a class="atras" t-attf-href="/app/pedir?obra_id={{obra.id}}">← Volver</a>
+            <div class="paso">PEDIR MATERIALES</div>
+            <div class="pregunta">¿Cuánto?</div>
+            <div class="sub"><t t-esc="material.icono or '📦'"/> <t t-esc="material.name"/>
+                <t t-if="material.detalle"> · <t t-esc="material.detalle"/></t></div>
+            <form action="/app/pedir/confirmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="obra_id" t-att-value="obra.id"/>
+                <input type="hidden" name="material_id" t-att-value="material.id"/>
+                <input class="numero-grande" type="number" name="cantidad" step="any"
+                       min="0.01" required="required" inputmode="decimal"
+                       t-attf-placeholder="{{uom_compra_labels.get(material.uom, material.uom)}}"/>
+                <input type="text" name="nota" placeholder="¿Para qué? (opcional)"
+                       style="width:100%;padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px;margin-bottom:10px"/>
+                <button class="botonazo" type="submit">PEDIR ✓</button>
+            </form>
+        </t>
+    </template>
+
+    <!-- ============ SOCIO: PEDIDO ENVIADO ============ -->
+    <template id="pedir_listo" name="App: pedido enviado">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'obra'"/>
+            <div class="listo">
+                <div class="check">🧱</div>
+                <h1>Pedido enviado</h1>
+                <p class="sub" style="margin-top:8px">
+                    Pediste <b><t t-esc="pedido.name"/></b>.<br/>
+                    Lo revisa el coordinador y si está bien va a la orden del corralón.
+                </p>
+                <a class="botonazo" href="/app/obra">Volver a la obra</a>
+                <a class="atras" href="/app/pedir">Pedir otro</a>
             </div>
         </t>
     </template>

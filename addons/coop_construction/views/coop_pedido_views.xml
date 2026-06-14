@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== coop.material ===================== -->
+    <record id="view_coop_material_list" model="ir.ui.view">
+        <field name="name">coop.material.list</field>
+        <field name="model">coop.material</field>
+        <field name="arch" type="xml">
+            <list string="Materiales" editable="bottom">
+                <field name="icono"/>
+                <field name="name"/>
+                <field name="detalle"/>
+                <field name="uom"/>
+                <field name="code" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_material" model="ir.actions.act_window">
+        <field name="name">Catálogo de Materiales</field>
+        <field name="res_model">coop.material</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- ===================== coop.pedido.material ===================== -->
+    <record id="view_coop_pedido_list" model="ir.ui.view">
+        <field name="name">coop.pedido.material.list</field>
+        <field name="model">coop.pedido.material</field>
+        <field name="arch" type="xml">
+            <list string="Pedidos de materiales"
+                  decoration-success="state == 'aceptado'"
+                  decoration-danger="state == 'rechazado'"
+                  decoration-muted="state == 'pendiente'">
+                <field name="create_date" string="Fecha"/>
+                <field name="obra_id"/>
+                <field name="member_id"/>
+                <field name="name"/>
+                <field name="nota" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'pendiente'"
+                       decoration-success="state == 'aceptado'"
+                       decoration-danger="state == 'rechazado'"/>
+                <field name="revisado_por" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_pedido_form" model="ir.ui.view">
+        <field name="name">coop.pedido.material.form</field>
+        <field name="model">coop.pedido.material</field>
+        <field name="arch" type="xml">
+            <form string="Pedido de material">
+                <header>
+                    <button name="action_aceptar" string="Aceptar" type="object"
+                            class="btn-success" invisible="state != 'pendiente'"
+                            groups="coop_members.group_coop_manager"/>
+                    <button name="action_rechazar" string="Rechazar" type="object"
+                            invisible="state != 'pendiente'"
+                            groups="coop_members.group_coop_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="obra_id"/>
+                            <field name="member_id"/>
+                            <field name="material_id"/>
+                            <field name="descripcion_libre"/>
+                        </group>
+                        <group>
+                            <field name="cantidad"/>
+                            <field name="uom"/>
+                            <field name="cantidad_original" readonly="1"/>
+                            <field name="nota"/>
+                            <field name="motivo_rechazo"
+                                   invisible="state != 'rechazado'"/>
+                            <field name="revisado_por" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_coop_pedido_search" model="ir.ui.view">
+        <field name="name">coop.pedido.material.search</field>
+        <field name="model">coop.pedido.material</field>
+        <field name="arch" type="xml">
+            <search string="Buscar pedidos">
+                <field name="obra_id"/>
+                <field name="member_id"/>
+                <filter name="pendientes" string="Pendientes"
+                        domain="[('state', '=', 'pendiente')]"/>
+                <filter name="aceptados" string="Aceptados"
+                        domain="[('state', '=', 'aceptado')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_obra" string="Obra"
+                            context="{'group_by': 'obra_id'}"/>
+                    <filter name="group_state" string="Estado"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_coop_pedido" model="ir.actions.act_window">
+        <field name="name">Pedidos de Materiales</field>
+        <field name="res_model">coop.pedido.material</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coop_pedido_search"/>
+        <field name="context">{'search_default_pendientes': 1}</field>
+    </record>
+
+    <menuitem id="menu_coop_pedidos"
+              name="Pedidos de Materiales"
+              parent="menu_coop_economia"
+              action="action_coop_pedido"
+              sequence="25"/>
+    <menuitem id="menu_coop_material_cat"
+              name="Catálogo de Materiales"
+              parent="menu_coop_config"
+              action="action_coop_material"
+              sequence="20"/>
+</odoo>

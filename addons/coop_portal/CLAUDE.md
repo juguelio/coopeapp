@@ -5,11 +5,29 @@ App mobile-first para socios en `/app`, servida por el mismo Odoo. Depende de
 
 ## Rutas
 
-- `/app` — home del socio (últimas cargas con estado)
+Socio (`controllers/portal.py`):
+- `/app` — home (últimas cargas; si coordina obras muestra accesos a sus bandejas)
 - `/app/cargar` → `/cantidad` → `/trabajo` → POST `/confirmar` — wizard de
-  avance en 3 pasos (un dato por paso), crea `coop.avance.medicion` en borrador
+  avance en 3 pasos, crea `coop.avance.medicion` en borrador
 - `/app/plata` — liquidaciones (`coop.payroll`) + producción validada
-- `/app/obra` — avance físico + etapa en curso (transparencia ACI)
+- `/app/obra` — avance físico + etapa en curso + botón pedir materiales
+- `/app/pedir` → `/cantidad` → POST `/confirmar` — wizard pedir material,
+  crea `coop.pedido.material` en pendiente
+
+Coordinador (`controllers/coordinador.py`):
+- `/app/validar` + POST `/accion` — bandeja de avances en borrador de SUS obras
+  (las que coordina = `capataz_id`); valida o devuelve al socio
+- `/app/pedidos` + POST `/accion` — bandeja de pedidos pendientes; acepta /
+  rechaza / corrige cantidad
+
+## Seguridad del coordinador
+
+- "Coordinador de una obra" = `project.project.capataz_id == member` (hasta que
+  exista `group_coop_coordinador`).
+- Las acciones del coordinador (validar avance, aceptar pedido) **verifican en
+  el controller** que el member es capataz de la obra del registro, y escriben
+  con `sudo()`. Deuda: mover a `group_coop_coordinador` + record rule cuando se
+  cree el grupo.
 
 ## Reglas del módulo
 

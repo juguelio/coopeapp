@@ -25,5 +25,29 @@
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
         </record>
+
+        <!-- Socio: crea/edita solo sus pedidos pendientes (lectura abierta) -->
+        <record id="rule_pedido_member_write" model="ir.rule">
+            <field name="name">Socio: solo sus pedidos pendientes</field>
+            <field name="model_id" ref="model_coop_pedido_material"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_member'))]"/>
+            <field name="domain_force">[('member_id.partner_id.user_ids', 'in', [user.id]), ('state', '=', 'pendiente')]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Manager: sin restricciones sobre pedidos -->
+        <record id="rule_pedido_manager_all" model="ir.rule">
+            <field name="name">Manager: todos los pedidos</field>
+            <field name="model_id" ref="model_coop_pedido_material"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_manager'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
     </data>
 </odoo>

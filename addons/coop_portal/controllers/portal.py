@@ -56,8 +56,23 @@ class CoopPortal(http.Controller):
         obras = self._obras(member)
         avances = request.env['coop.avance.medicion'].sudo().search(
             [('member_id', '=', member.id)], order='fecha desc, id desc', limit=3)
+        # ¿coordina obras? → accesos a sus bandejas
+        obras_coord = request.env['project.project'].sudo().search([
+            ('is_coop_obra', '=', True),
+            ('estado_obra', 'in', ['planificacion', 'activa']),
+            ('capataz_id', '=', member.id),
+        ])
+        n_validar = n_pedidos = 0
+        if obras_coord:
+            n_validar = request.env['coop.avance.medicion'].sudo().search_count([
+                ('foja_item_id.obra_id', 'in', obras_coord.ids),
+                ('state', '=', 'borrador')])
+            n_pedidos = request.env['coop.pedido.material'].sudo().search_count([
+                ('obra_id', 'in', obras_coord.ids), ('state', '=', 'pendiente')])
         return self._render('coop_portal.home', {
             'member': member, 'obras': obras, 'avances': avances,
+            'es_coordinador': bool(obras_coord),
+            'n_validar': n_validar, 'n_pedidos': n_pedidos,
         })
 
     # ── cargar avance (wizard 3 pasos) ───────────────────────────────

@@ -48,12 +48,10 @@ class CoopAssembly(models.Model):
     quorum_reached = fields.Boolean(
         string='Quórum alcanzado',
         compute='_compute_quorum',
-        store=True,
     )
     quorum_percentage = fields.Float(
         string='% de asistencia',
         compute='_compute_quorum',
-        store=True,
     )
 
     vote_ids = fields.One2many('coop.vote', 'assembly_id', string='Votaciones')
