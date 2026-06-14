@@ -14,6 +14,14 @@ Socio (`controllers/portal.py`):
 - `/app/pedir` → `/cantidad` → POST `/confirmar` — wizard pedir material,
   crea `coop.pedido.material` en pendiente
 
+Administrador (`controllers/admin.py`, rol = `member.role == 'manager'`):
+- `/app` redirige a `/app/admin` si es admin (nav: Tablero · Ruta · Reportes · Asamblea)
+- `/app/admin` — tablero multi-obra: cartera (avance %, saldo sin planificar,
+  controlador por etapa en curso), tareas críticas, pendientes del equipo
+- `/app/admin/ruta` — ruta crítica de toda la cartera (tareas es_critica)
+- `/app/admin/reportes?rango=hoy|semana|mes` — operaciones del período
+  (avances + pedidos + gastos) con totales ($ gastado, m²). NO valida nada.
+
 Síndico (`controllers/sindico.py`, rol = `member.role == 'syndic'`):
 - `/app` redirige a `/app/control` si el usuario es síndico (nav propia:
   Control · Auditoría · Asamblea · Firmar)

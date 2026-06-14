@@ -70,6 +70,12 @@
                 <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><span class="ico">🗳️</span>Asamblea</a>
                 <a href="/app/certificados" t-att-class="'viva' if nav_activo == 'firmar' else None"><span class="ico">✍️</span>Firmar</a>
             </div>
+            <div class="nav" t-elif="nav_rol == 'admin'">
+                <a href="/app/admin" t-att-class="'viva' if nav_activo == 'tablero' else None"><span class="ico">📊</span>Tablero</a>
+                <a href="/app/admin/ruta" t-att-class="'viva' if nav_activo == 'ruta' else None"><span class="ico">🔴</span>Ruta</a>
+                <a href="/app/admin/reportes" t-att-class="'viva' if nav_activo == 'reportes' else None"><span class="ico">📋</span>Reportes</a>
+                <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><span class="ico">🗳️</span>Asamblea</a>
+            </div>
             <div class="nav" t-else="">
                 <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
                 <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><span class="ico">✏️</span>Cargar</a>
@@ -699,6 +705,110 @@
                 </div>
             </div>
             <div style="font-size:12px;color:var(--gris);text-align:center">Solo lectura. Nada se modifica desde acá.</div>
+        </t>
+    </template>
+
+    <!-- ============ ADMIN: TABLERO MULTI-OBRA ============ -->
+    <template id="admin_dashboard" name="App: tablero del administrador">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'admin'"/>
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <h1>📊 Administración</h1>
+            <div class="sub"><t t-esc="member.name"/> · <t t-esc="len(resumenes)"/> obras activas</div>
+
+            <a class="card" t-if="n_criticas" href="/app/admin/ruta"
+               style="border-left:6px solid var(--rojo);text-decoration:none;color:inherit;display:block">
+                <div class="fila" style="border:0;padding:0">
+                    <div>🔴 Tareas en ruta crítica</div>
+                    <span class="chip espera"><t t-esc="n_criticas"/> ver →</span>
+                </div>
+            </a>
+
+            <div class="card" t-if="n_certs or n_pedidos">
+                <h3>PENDIENTES EN EL EQUIPO</h3>
+                <div class="fila" t-if="n_certs"><div>✍️ Certificados sin firmar</div><span class="chip espera"><t t-esc="n_certs"/></span></div>
+                <div class="fila" style="border:0" t-if="n_pedidos"><div>🧱 Pedidos sin resolver (coordinador)</div><span class="chip espera"><t t-esc="n_pedidos"/></span></div>
+            </div>
+
+            <h3 style="font-size:14px;color:var(--gris);font-weight:600;margin:16px 0 8px">CARTERA DE OBRAS</h3>
+            <div class="card" t-foreach="resumenes" t-as="r">
+                <div class="fila" style="border:0;padding:0 0 4px">
+                    <div style="font-weight:800;font-size:16px"><t t-esc="r['obra'].name"/></div>
+                    <span style="font-size:13px;color:var(--gris)">Coord: <t t-esc="r['coord']"/></span>
+                </div>
+                <div class="barra"><div t-attf-style="width:{{min(r['avance'], 100.0)}}%"/></div>
+                <div class="fila" style="border:0;padding:2px 0 0;font-size:13px">
+                    <div>Avance <b><t t-esc="'%.0f' % r['avance']"/>%</b></div>
+                    <t t-if="r['tiene_etapa']">
+                        <div>S/planif. <b t-attf-style="color:{{'var(--rojo)' if r['saldo'] &lt; 0 else 'var(--verde)'}}">
+                            $ <t t-esc="'{:,.0f}'.format(r['saldo']).replace(',', '.')"/></b></div>
+                        <div>Control. <b><t t-esc="'{:,.0f}'.format(r['controlador']).replace(',', '.')"/></b></div>
+                    </t>
+                    <t t-else=""><div style="color:var(--gris)">sin etapa en curso</div></t>
+                </div>
+            </div>
+
+            <div class="card" t-if="not resumenes">
+                <h3>SIN OBRAS ACTIVAS</h3>
+                <div>Cuando haya una obra activa, vas a ver su estado acá.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ADMIN: RUTA CRÍTICA MULTI-OBRA ============ -->
+    <template id="admin_ruta" name="App: ruta crítica admin">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'admin'"/>
+            <t t-set="nav_activo" t-value="'ruta'"/>
+            <h1>🔴 Ruta crítica</h1>
+            <div class="sub">Lo que no puede atrasarse, por obra.</div>
+
+            <div class="card" t-foreach="data" t-as="d" style="border-left:6px solid var(--rojo)">
+                <h3><t t-esc="d['obra'].name"/></h3>
+                <t t-if="d['criticas']">
+                    <div class="fila" t-foreach="d['criticas']" t-as="tk">
+                        <div><t t-esc="tk.name"/>
+                            <span t-if="tk.categoria_tarea" style="font-size:12px;color:var(--gris)"> · <t t-esc="cat_labels.get(tk.categoria_tarea, '')"/></span>
+                        </div>
+                        <span class="chip espera">holgura 0</span>
+                    </div>
+                </t>
+                <div t-else="" style="font-size:14px;color:var(--gris)">
+                    Sin ruta crítica calculada. Cargá tareas con duración y dependencias en el sistema y calculá la ruta desde la obra.
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ADMIN: REPORTES ============ -->
+    <template id="admin_reportes" name="App: reportes admin">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_rol" t-value="'admin'"/>
+            <t t-set="nav_activo" t-value="'reportes'"/>
+            <h1>📋 Reportes</h1>
+            <div class="sub">Operaciones del período</div>
+
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <a t-attf-class="botonazo {{'' if rango == 'hoy' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" href="/app/admin/reportes?rango=hoy">Hoy</a>
+                <a t-attf-class="botonazo {{'' if rango == 'semana' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" href="/app/admin/reportes?rango=semana">7 días</a>
+                <a t-attf-class="botonazo {{'' if rango == 'mes' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" href="/app/admin/reportes?rango=mes">Mes</a>
+            </div>
+
+            <div class="card">
+                <div class="fila" style="border:0;padding:0">
+                    <div><b><t t-esc="n_ops"/></b> operaciones</div>
+                    <div>💸 $ <b><t t-esc="'{:,.0f}'.format(total_gasto).replace(',', '.')"/></b></div>
+                    <div>📐 <b><t t-esc="'%g' % total_m2"/></b> m²</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="fila" t-foreach="ops" t-as="o">
+                    <div><t t-esc="o['icono']"/> <b><t t-esc="o['quien']"/></b> — <t t-esc="o['detalle']"/>
+                        <br/><span style="font-size:12px;color:var(--gris)"><t t-esc="o['fecha'].strftime('%d/%m')"/> · <t t-esc="o['obra']"/></span></div>
+                </div>
+                <div t-if="not ops" style="text-align:center;color:var(--gris);padding:14px">Sin operaciones en el período.</div>
+            </div>
         </t>
     </template>
 

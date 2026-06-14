@@ -53,9 +53,11 @@ class CoopPortal(http.Controller):
         member = self._member()
         if not member:
             return request.render('coop_portal.sin_socio')
-        # el síndico tiene su propio panel de control
+        # síndico y administrador tienen su propio panel
         if member.role == 'syndic':
             return request.redirect('/app/control')
+        if member.role == 'manager':
+            return request.redirect('/app/admin')
         obras = self._obras(member)
         avances = request.env['coop.avance.medicion'].sudo().search(
             [('member_id', '=', member.id)], order='fecha desc, id desc', limit=3)
