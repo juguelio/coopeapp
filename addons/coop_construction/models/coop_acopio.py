@@ -27,6 +27,9 @@ class CoopAcopio(models.Model):
         string='Moneda', store=True, readonly=True)
     precio_ids = fields.One2many(
         'coop.acopio.precio', 'acopio_id', string='Lista de precios congelada')
+    linea_ids = fields.One2many(
+        'coop.orden.corralon.linea', 'acopio_id',
+        string='Retiros (líneas de orden)')
     n_precios = fields.Integer(
         string='Materiales con precio', compute='_compute_n_precios')
     state = fields.Selection([
@@ -62,14 +65,17 @@ class CoopAcopio(models.Model):
         for r in self:
             r.n_precios = len(r.precio_ids)
 
-    # NOTA: en M2 fase 1 el consumo es 0 (todavía no hay líneas de orden).
-    # La fase 2 reescribe este compute para restar las líneas comprometidas.
-    @api.depends('monto_total')
+    # El saldo se RESERVA apenas se crea una línea de retiro (aunque la orden
+    # esté en borrador): así el optimizador no compromete dos veces el mismo
+    # saldo si se corre en tandas. Reasignar/borrar la línea libera el saldo.
+    @api.depends('monto_total', 'linea_ids.subtotal', 'linea_ids.fuente')
     def _compute_saldo(self) -> None:
         for r in self:
-            r.consumido = 0.0
-            r.saldo = r.monto_total
-            r.pct_consumido = 0.0
+            retiros = r.linea_ids.filtered(lambda ln: ln.fuente == 'acopio')
+            r.consumido = sum(retiros.mapped('subtotal'))
+            r.saldo = r.monto_total - r.consumido
+            r.pct_consumido = (
+                100.0 * r.consumido / r.monto_total) if r.monto_total else 0.0
 
     def action_cerrar(self) -> None:
         self.write({'state': 'cerrado'})

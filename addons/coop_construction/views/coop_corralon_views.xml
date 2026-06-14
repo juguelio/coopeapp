@@ -94,9 +94,14 @@
                         <group>
                             <field name="corralon_id"/>
                             <field name="obra_id"/>
+                            <field name="tipo"/>
+                            <field name="acopio_id" readonly="1"
+                                   invisible="not acopio_id"/>
                             <field name="n_items"/>
                         </group>
                         <group>
+                            <field name="total_lineas" readonly="1"/>
+                            <field name="ahorro_estimado" readonly="1"/>
                             <field name="importe_total"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="fecha_envio" readonly="1"/>
@@ -105,7 +110,23 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Pedidos consolidados">
+                        <page string="Líneas optimizadas" invisible="not linea_ids">
+                            <field name="linea_ids" readonly="1">
+                                <list>
+                                    <field name="material_id"/>
+                                    <field name="cantidad"/>
+                                    <field name="uom"/>
+                                    <field name="fuente" widget="badge"
+                                           decoration-success="fuente == 'acopio'"/>
+                                    <field name="acopio_id" optional="show"/>
+                                    <field name="precio_unitario"/>
+                                    <field name="subtotal"/>
+                                    <field name="razon" optional="show"/>
+                                    <field name="asignacion_manual" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Pedidos consolidados" invisible="not pedido_ids">
                             <field name="pedido_ids" readonly="1">
                                 <list>
                                     <field name="member_id"/>

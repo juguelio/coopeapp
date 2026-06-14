@@ -916,6 +916,7 @@ print("", file=sys.stderr)
 # Generar SQL de cleanup (orden inverso por dependencias FK)
 cleanup_order = [
     'coop.ballot',
+    'coop.orden.corralon.linea',
     'coop.orden.corralon',
     'coop.acopio.precio',
     'coop.acopio',

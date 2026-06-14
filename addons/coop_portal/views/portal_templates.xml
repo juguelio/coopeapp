@@ -447,7 +447,20 @@
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app/pedidos">← Pedidos</a>
             <h1>📦 Órdenes al corralón</h1>
-            <div class="sub">Juntá los pedidos aceptados por corralón y mandá una orden por WhatsApp.</div>
+            <div class="sub">Optimizá los pedidos al menor costo, o armá una orden a mano.</div>
+
+            <!-- Optimizador: asigna al menor costo (acopio congelado primero) -->
+            <div class="card" t-if="n_optimizables" style="border-left:6px solid var(--verde)">
+                <div style="font-weight:800;font-size:16px;margin-bottom:4px">⚡ Optimizar compras</div>
+                <div style="font-size:14px;color:var(--gris);margin-bottom:10px">
+                    Tenés <b><t t-esc="n_optimizables"/></b> pedido(s) aceptado(s) sin orden.
+                    El sistema los asigna al corralón más barato (acopio congelado primero) y arma una orden por corralón.
+                </div>
+                <form action="/app/corralon/optimizar" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button class="botonazo" style="margin:0" type="submit">⚡ Optimizar al menor costo</button>
+                </form>
+            </div>
 
             <!-- Pedidos aceptados sin corralón asignado -->
             <t t-if="sin_corralon">
@@ -503,6 +516,10 @@
             <!-- Órdenes ya armadas -->
             <t t-if="ordenes">
                 <h2 style="margin:22px 0 10px;font-size:18px">📋 Órdenes recientes</h2>
+                <div class="card" t-if="ahorro_borrador &gt; 0" style="border-left:6px solid var(--verde);font-size:14px">
+                    💰 Ahorro estimado en las órdenes en borrador:
+                    <b style="color:var(--verde)">$ <t t-esc="'{:,.0f}'.format(ahorro_borrador).replace(',', '.')"/></b>
+                </div>
                 <a t-foreach="ordenes" t-as="o" t-attf-href="/app/corralon/orden/{{o.id}}"
                    class="card" style="display:block;text-decoration:none;color:inherit">
                     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -510,6 +527,7 @@
                             <div style="font-weight:800"><t t-esc="o.corralon_id.name"/></div>
                             <div style="font-size:13px;color:var(--gris)">
                                 <t t-esc="o.obra_id.name"/> · <t t-esc="o.n_items"/> ítems
+                                <t t-if="o.ahorro_estimado &gt; 0"> · ahorro $<t t-esc="'{:,.0f}'.format(o.ahorro_estimado).replace(',', '.')"/></t>
                             </div>
                         </div>
                         <span t-attf-class="chip {{'ok' if o.estado == 'entregada' else 'espera'}}">
@@ -530,6 +548,50 @@
             <div class="sub">
                 <t t-esc="orden.obra_id.name"/> · <t t-esc="orden.n_items"/> ítems ·
                 <b><t t-esc="estado_labels.get(orden.estado, orden.estado)"/></b>
+            </div>
+
+            <div class="card" t-if="lineas_data">
+                <div style="font-weight:800;margin-bottom:4px">📋 Líneas asignadas al menor costo</div>
+                <div style="font-size:13px;color:var(--gris);margin-bottom:6px">
+                    Total $ <t t-esc="'{:,.0f}'.format(orden.total_lineas).replace(',', '.')"/>
+                    <t t-if="orden.ahorro_estimado &gt; 0"> · ahorro estimado
+                        <b style="color:var(--verde)">$ <t t-esc="'{:,.0f}'.format(orden.ahorro_estimado).replace(',', '.')"/></b></t>
+                </div>
+                <div t-foreach="lineas_data" t-as="ld" style="padding:10px 0;border-top:1px solid #eef2f5">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline">
+                        <div style="font-weight:700">
+                            <t t-esc="'%g' % ld['linea'].cantidad"/> <t t-esc="ld['linea'].material_id.name"/>
+                        </div>
+                        <div style="font-weight:700">$ <t t-esc="'{:,.0f}'.format(ld['linea'].subtotal).replace(',', '.')"/></div>
+                    </div>
+                    <div style="font-size:13px;margin:4px 0;color:var(--gris)">
+                        <span t-attf-class="chip {{'ok' if ld['linea'].fuente == 'acopio' else 'espera'}}" style="margin-right:6px">
+                            <t t-if="ld['linea'].fuente == 'acopio'">📦 Acopio</t>
+                            <t t-else="">💲 Compra</t>
+                        </span>
+                        <t t-esc="ld['linea'].razon"/>
+                        <t t-if="ld['linea'].asignacion_manual"> · ✋ manual</t>
+                    </div>
+                    <form t-if="orden.estado == 'borrador' and len(ld['opciones']) &gt; 1"
+                          action="/app/corralon/linea/reasignar" method="post"
+                          style="display:flex;gap:8px;margin-top:6px">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="linea_id" t-att-value="ld['linea'].id"/>
+                        <select name="opcion"
+                                style="flex:1;padding:8px;border:2px solid #d7dee5;border-radius:10px;font-size:14px">
+                            <option t-foreach="ld['opciones']" t-as="op"
+                                    t-att-value="'%d:%s' % (op['corralon'].id, op['tipo'])"
+                                    t-att-selected="'selected' if op['actual'] else None">
+                                <t t-esc="op['corralon'].name"/> ·
+                                <t t-if="op['tipo'] == 'acopio'">acopio</t><t t-else="">compra</t>
+                                · $<t t-esc="'{:,.0f}'.format(op['precio']).replace(',', '.')"/><t t-esc="'/u'"/>
+                                <t t-if="op['delta'] &gt; 0"> (+<t t-esc="'{:,.0f}'.format(op['delta']).replace(',', '.')"/>)</t>
+                                <t t-if="op['actual']"> ✓</t>
+                            </option>
+                        </select>
+                        <button class="botonazo sec" style="min-height:40px;margin:0;width:auto;padding:0 12px" type="submit">Cambiar</button>
+                    </form>
+                </div>
             </div>
 
             <div class="card">

@@ -129,13 +129,36 @@ class CoopPortalCoordinador(http.Controller):
         # órdenes ya armadas de sus obras
         ordenes = request.env['coop.orden.corralon'].sudo().search(
             [('obra_id', 'in', obras.ids)], order='create_date desc', limit=20)
+        ahorro_borrador = sum(ordenes.filtered(
+            lambda o: o.estado == 'borrador').mapped('ahorro_estimado'))
         return request.render('coop_portal.coord_corralon', {
             'member': member, 'sin_corralon': sin_corralon,
             'grupos': grupos_list, 'ordenes': ordenes,
             'corralones': self._corralones(),
+            'n_optimizables': len(sin_orden),
+            'ahorro_borrador': ahorro_borrador,
             'estado_labels': dict(request.env['coop.orden.corralon']
                                   ._fields['estado'].selection),
         })
+
+    @http.route('/app/corralon/optimizar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def corralon_optimizar(self, **kw):
+        member = self._member()
+        obras = self._obras_coordina(member)
+        if not obras:
+            return request.redirect('/app')
+        Orden = request.env['coop.orden.corralon'].sudo()
+        Pedido = request.env['coop.pedido.material'].sudo()
+        # optimizar por obra (los acopios y precios son por obra)
+        for obra in obras:
+            pedidos = Pedido.search([
+                ('obra_id', '=', obra.id), ('state', '=', 'aceptado'),
+                ('orden_id', '=', False),
+            ])
+            if pedidos:
+                Orden.generar_desde_pedidos(obra, pedidos, creado_por=member)
+        return request.redirect('/app/corralon')
 
     @http.route('/app/corralon/asignar', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
@@ -181,12 +204,79 @@ class CoopPortalCoordinador(http.Controller):
         texto = quote(orden.mensaje or '')
         wa_url = ('https://wa.me/%s?text=%s' % (num, texto)) if num else ''
         sms_url = 'sms:%s?body=%s' % (num, texto)
+        # para el override: candidatos por línea con el costo de cada alternativa
+        Orden = request.env['coop.orden.corralon'].sudo()
+        saldo = {ac.id: ac.saldo for ac in request.env['coop.acopio'].sudo()
+                 .search([('obra_id', '=', orden.obra_id.id),
+                          ('state', '=', 'vigente')])}
+        lineas_data = []
+        for ln in orden.linea_ids:
+            cand = Orden._candidatos_material(orden.obra_id, ln.material_id, saldo)
+            opciones = []
+            for c in cand:
+                actual = (c['corralon'].id == orden.corralon_id.id
+                          and c['tipo'] == ln.fuente)
+                opciones.append({
+                    'corralon': c['corralon'], 'tipo': c['tipo'],
+                    'precio': c['precio'],
+                    'delta': (c['precio'] - ln.precio_unitario) * ln.cantidad,
+                    'actual': actual,
+                })
+            lineas_data.append({'linea': ln, 'opciones': opciones})
         return request.render('coop_portal.coord_orden', {
             'member': member, 'orden': orden,
-            'wa_url': wa_url, 'sms_url': sms_url,
+            'wa_url': wa_url, 'sms_url': sms_url, 'lineas_data': lineas_data,
             'estado_labels': dict(request.env['coop.orden.corralon']
                                   ._fields['estado'].selection),
         })
+
+    @http.route('/app/corralon/linea/reasignar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def corralon_linea_reasignar(self, linea_id, opcion, **kw):
+        member = self._member()
+        Linea = request.env['coop.orden.corralon.linea'].sudo()
+        Orden = request.env['coop.orden.corralon'].sudo()
+        ln = Linea.browse(int(linea_id)).exists()
+        if not ln or not self._coordina_obra(member, ln.obra_id):
+            return request.redirect('/app/corralon')
+        try:
+            corralon_id, tipo = str(opcion).split(':')
+        except ValueError:
+            return request.redirect('/app/corralon/orden/%d' % ln.orden_id.id)
+        orden_orig = ln.orden_id
+        if orden_orig.estado != 'borrador':
+            return request.redirect('/app/corralon/orden/%d' % orden_orig.id)
+        # recalcular el candidato elegido server-side (no confiar en el precio)
+        saldo = {ac.id: ac.saldo for ac in request.env['coop.acopio'].sudo()
+                 .search([('obra_id', '=', ln.obra_id.id),
+                          ('state', '=', 'vigente')])}
+        cand = Orden._candidatos_material(ln.obra_id, ln.material_id, saldo)
+        elegido = next((c for c in cand
+                        if c['corralon'].id == int(corralon_id)
+                        and c['tipo'] == tipo), False)
+        if not elegido:
+            return request.redirect('/app/corralon/orden/%d' % orden_orig.id)
+        destino = orden_orig
+        if elegido['corralon'].id != orden_orig.corralon_id.id:
+            destino = Orden.search([
+                ('corralon_id', '=', elegido['corralon'].id),
+                ('obra_id', '=', ln.obra_id.id), ('estado', '=', 'borrador'),
+            ], limit=1) or Orden.create({
+                'corralon_id': elegido['corralon'].id,
+                'obra_id': ln.obra_id.id, 'creado_por': member.id})
+        ln.write({
+            'orden_id': destino.id, 'fuente': elegido['tipo'],
+            'acopio_id': elegido['acopio'] and elegido['acopio'].id or False,
+            'precio_unitario': elegido['precio'], 'asignacion_manual': True,
+            'razon': 'Elegido a mano por el coordinador',
+        })
+        # actualizar importes y limpiar orden origen si quedó vacía
+        for o in (orden_orig, destino):
+            o.importe_total = o.total_lineas
+        if orden_orig.id != destino.id and not orden_orig.linea_ids:
+            orden_orig.pedido_ids.write({'orden_id': destino.id})
+            orden_orig.unlink()
+        return request.redirect('/app/corralon/orden/%d' % destino.id)
 
     @http.route('/app/corralon/orden/accion', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)

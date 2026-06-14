@@ -36,3 +36,6 @@ access_coop_acopio_precio_syndic,coop.acopio.precio syndic,model_coop_acopio_pre
 access_coop_lista_precio_member,coop.lista.precio member,model_coop_lista_precio,coop_members.group_coop_member,1,0,0,0
 access_coop_lista_precio_manager,coop.lista.precio manager,model_coop_lista_precio,coop_members.group_coop_manager,1,1,1,1
 access_coop_lista_precio_syndic,coop.lista.precio syndic,model_coop_lista_precio,coop_members.group_coop_syndic,1,0,0,0
+access_coop_orden_corralon_linea_member,coop.orden.corralon.linea member,model_coop_orden_corralon_linea,coop_members.group_coop_member,1,0,0,0
+access_coop_orden_corralon_linea_manager,coop.orden.corralon.linea manager,model_coop_orden_corralon_linea,coop_members.group_coop_manager,1,1,1,1
+access_coop_orden_corralon_linea_syndic,coop.orden.corralon.linea syndic,model_coop_orden_corralon_linea,coop_members.group_coop_syndic,1,0,0,0
