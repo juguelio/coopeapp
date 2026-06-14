@@ -44,15 +44,19 @@ _demo_members = env['coop.member'].sudo().search(
     env['coop.member'].sudo().browse()
 _demo_obras = env['project.project'].sudo().search(
     [('name', '=', 'Obra Piloto San Martín de los Andes')])
-_demo_users = env['res.users'].sudo().search([('login', 'in', ['carlos', 'lucas'])])
+_demo_users = env['res.users'].sudo().search(
+    [('login', 'in', ['carlos', 'lucas', 'sofia', 'analia'])])
 
-if _demo_obras:
-    _safe_unlink(_search('coop.pedido.material', [('obra_id', 'in', _demo_obras.ids)]))
-    _safe_unlink(_search('coop.avance.medicion', [('obra_id', 'in', _demo_obras.ids)]))
-    _safe_unlink(_search('coop.foja.item', [('obra_id', 'in', _demo_obras.ids)]))
-    _safe_unlink(_search('coop.etapa', [('obra_id', 'in', _demo_obras.ids)]))
-    _safe_unlink(_search('coop.certificado', [('obra_id', 'in', _demo_obras.ids)]))
-    _safe_unlink(_search('coop.work.entry', [('obra_id', 'in', _demo_obras.ids)]))
+# Borrar cada obra demo con TODO su árbol de hijos y la obra, en el mismo
+# paso (evita orphans: si la obra no se borra por un FK, se ve en el aviso).
+for _o in _demo_obras:
+    _safe_unlink(_search('coop.pedido.material', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('coop.avance.medicion', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('coop.foja.item', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('coop.etapa', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('coop.certificado', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('coop.work.entry', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_o)
 
 _safe_unlink(_search('coop.material', [('name', 'in', [
     'Cemento', 'Cal hidratada', 'Arena', 'Ladrillo hueco 12x18x33',
@@ -73,7 +77,6 @@ if _demo_members:
     _safe_unlink(_demo_assemblies)
 
 _safe_unlink(_demo_users)
-_safe_unlink(_demo_obras)
 _safe_unlink(_demo_members)
 _safe_unlink(_demo_partners)
 env.cr.commit()
