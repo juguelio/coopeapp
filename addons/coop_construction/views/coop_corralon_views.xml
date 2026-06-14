@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== coop.corralon ===================== -->
+    <record id="view_coop_corralon_list" model="ir.ui.view">
+        <field name="name">coop.corralon.list</field>
+        <field name="model">coop.corralon</field>
+        <field name="arch" type="xml">
+            <list string="Corralones" editable="bottom">
+                <field name="name"/>
+                <field name="telefono"/>
+                <field name="direccion"/>
+                <field name="nota" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_corralon_form" model="ir.ui.view">
+        <field name="name">coop.corralon.form</field>
+        <field name="model">coop.corralon</field>
+        <field name="arch" type="xml">
+            <form string="Corralón">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="telefono"/>
+                        </group>
+                        <group>
+                            <field name="direccion"/>
+                            <field name="nota"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_corralon" model="ir.actions.act_window">
+        <field name="name">Corralones</field>
+        <field name="res_model">coop.corralon</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== coop.orden.corralon ===================== -->
+    <record id="view_coop_orden_corralon_list" model="ir.ui.view">
+        <field name="name">coop.orden.corralon.list</field>
+        <field name="model">coop.orden.corralon</field>
+        <field name="arch" type="xml">
+            <list string="Órdenes al corralón"
+                  decoration-muted="estado == 'borrador'"
+                  decoration-info="estado == 'enviada'"
+                  decoration-warning="estado == 'confirmada'"
+                  decoration-success="estado == 'entregada'">
+                <field name="create_date" string="Fecha"/>
+                <field name="corralon_id"/>
+                <field name="obra_id"/>
+                <field name="n_items"/>
+                <field name="importe_total"/>
+                <field name="estado" widget="badge"
+                       decoration-success="estado == 'entregada'"
+                       decoration-warning="estado == 'confirmada'"
+                       decoration-info="estado == 'enviada'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_orden_corralon_form" model="ir.ui.view">
+        <field name="name">coop.orden.corralon.form</field>
+        <field name="model">coop.orden.corralon</field>
+        <field name="arch" type="xml">
+            <form string="Orden al corralón">
+                <header>
+                    <button name="action_enviar" string="Marcar enviada"
+                            type="object" class="btn-primary"
+                            invisible="estado != 'borrador'"/>
+                    <button name="action_confirmar" string="Confirmar"
+                            type="object"
+                            invisible="estado not in ('borrador','enviada')"/>
+                    <button name="action_entregar" string="Marcar entregada"
+                            type="object" class="btn-success"
+                            invisible="estado == 'entregada'"/>
+                    <button name="action_volver_borrador" string="Volver a borrador"
+                            type="object"
+                            invisible="estado in ('borrador','entregada')"/>
+                    <field name="estado" widget="statusbar"
+                           statusbar_visible="borrador,enviada,confirmada,entregada"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="corralon_id"/>
+                            <field name="obra_id"/>
+                            <field name="n_items"/>
+                        </group>
+                        <group>
+                            <field name="importe_total"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="fecha_envio" readonly="1"/>
+                            <field name="fecha_entrega" readonly="1"/>
+                            <field name="gasto_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Pedidos consolidados">
+                            <field name="pedido_ids" readonly="1">
+                                <list>
+                                    <field name="member_id"/>
+                                    <field name="name"/>
+                                    <field name="cantidad"/>
+                                    <field name="uom"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Mensaje (WhatsApp)">
+                            <field name="mensaje" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_orden_corralon" model="ir.actions.act_window">
+        <field name="name">Órdenes al corralón</field>
+        <field name="res_model">coop.orden.corralon</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== Menús ===================== -->
+    <menuitem id="menu_coop_materiales"
+              name="Materiales"
+              parent="menu_coop_construction_root"
+              sequence="35"/>
+
+    <menuitem id="menu_coop_ordenes_corralon"
+              name="Órdenes al Corralón"
+              parent="menu_coop_materiales"
+              action="action_coop_orden_corralon"
+              sequence="20"/>
+
+    <menuitem id="menu_coop_corralones"
+              name="Corralones"
+              parent="menu_coop_materiales"
+              action="action_coop_corralon"
+              sequence="30"/>
+</odoo>

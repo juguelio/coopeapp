@@ -50,6 +50,7 @@ _demo_users = env['res.users'].sudo().search(
 # Borrar cada obra demo con TODO su árbol de hijos y la obra, en el mismo
 # paso (evita orphans: si la obra no se borra por un FK, se ve en el aviso).
 for _o in _demo_obras:
+    _safe_unlink(_search('coop.orden.corralon', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.pedido.material', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.avance.medicion', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.foja.item', [('obra_id', '=', _o.id)]))
@@ -64,6 +65,8 @@ _safe_unlink(_search('coop.material', [('name', 'in', [
 _safe_unlink(_search('coop.unidad.produccion', [('name', 'in', [
     'Pintura interior', 'Pintura en altura', 'Mampostería ladrillo hueco',
     'Colocación cañería', 'Contrapiso'])]))
+_safe_unlink(_search('coop.corralon', [('name', 'in', [
+    'Corralón Austral', 'Corralón El Roble'])]))
 
 if _demo_members:
     _safe_unlink(_search('coop.advance', [('member_id', 'in', _demo_members.ids)]))
@@ -654,10 +657,11 @@ Etapa = env['coop.etapa'].sudo()
 Avance = env['coop.avance.medicion'].sudo()
 Material = env['coop.material'].sudo()
 Pedido = env['coop.pedido.material'].sudo()
+Corralon = env['coop.corralon'].sudo()
 
 for m in ('coop.unidad.produccion', 'coop.foja.item', 'coop.etapa',
           'coop.avance.medicion', 'coop.material', 'coop.pedido.material',
-          'res.users'):
+          'coop.corralon', 'coop.orden.corralon', 'res.users'):
     created.setdefault(m, [])
 
 member_group = env.ref('coop_members.group_coop_member').id
@@ -797,6 +801,19 @@ for nombre, uom, detalle, icono in MATERIALES:
     }))
     materiales[nombre] = mt
 
+# ── Corralones (proveedores de materiales) ──────────────────────────
+CORRALONES = [
+    ('Corralón Austral', '5492944111222', 'Av. Koessler 1500, SMA'),
+    ('Corralón El Roble', '5492944333444', 'Ruta 40 km 2200, SMA'),
+]
+corralones = {}
+for nombre, tel, direccion in CORRALONES:
+    c = track(Corralon.create({
+        'name': nombre, 'telefono': tel, 'direccion': direccion,
+    }))
+    corralones[nombre] = c
+print("  ✓ 2 corralones (Austral, El Roble)", file=sys.stderr)
+
 # ── Pedidos de Lucas (pendientes, para que Carlos los revise) ───────
 PEDIDOS = [
     ('Ladrillo hueco 12x18x33', 500.0, 'mampostería planta baja'),
@@ -809,7 +826,27 @@ for nombre, cant, nota in PEDIDOS:
         'cantidad': cant, 'nota': nota,
     }))
 
-print("  ✓ Catálogo (6 materiales) + 2 pedidos de Lucas pendientes", file=sys.stderr)
+# ── Pedidos ya ACEPTADOS, listos para consolidar al corralón ────────
+# Dos con corralón asignado (Austral) → /app/corralon muestra un grupo
+# listo para "Armar orden"; uno sin corralón → prueba el flujo de asignar.
+ACEPTADOS = [
+    ('Cemento', 30.0, 'estructura', 'Corralón Austral'),
+    ('Arena', 6.0, 'contrapiso', 'Corralón Austral'),
+    ('Hierro aletado 8mm', 40.0, 'columnas', None),
+]
+for nombre, cant, nota, corr in ACEPTADOS:
+    ped = track(Pedido.create({
+        'obra_id': obra.id, 'member_id': lucas.id,
+        'material_id': materiales[nombre].id, 'uom': materiales[nombre].uom,
+        'cantidad': cant, 'nota': nota,
+    }))
+    vals = {'state': 'aceptado', 'revisado_por': carlos.id}
+    if corr:
+        vals['corralon_id'] = corralones[corr].id
+    ped.write(vals)
+
+print("  ✓ Catálogo (6 materiales) + 2 pedidos pendientes + 3 aceptados "
+      "(2 con corralón para consolidar)", file=sys.stderr)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -824,7 +861,9 @@ print("", file=sys.stderr)
 # Generar SQL de cleanup (orden inverso por dependencias FK)
 cleanup_order = [
     'coop.ballot',
+    'coop.orden.corralon',
     'coop.pedido.material',
+    'coop.corralon',
     'coop.material',
     'coop.avance.medicion',
     'coop.foja.item',

@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from odoo import http
 from odoo.http import request
 
@@ -25,6 +27,10 @@ class CoopPortalCoordinador(http.Controller):
 
     def _coordina_obra(self, member, obra):
         return bool(obra) and obra.capataz_id.id == member.id
+
+    def _corralones(self):
+        return request.env['coop.corralon'].sudo().search(
+            [('active', '=', True)], order='name')
 
     # ── bandeja de avances a validar ─────────────────────────────────
     @http.route('/app/validar', type='http', auth='user', website=False)
@@ -70,17 +76,21 @@ class CoopPortalCoordinador(http.Controller):
         ], order='create_date desc')
         return request.render('coop_portal.coord_pedidos', {
             'member': member, 'pedidos': pedidos,
+            'corralones': self._corralones(),
         })
 
     @http.route('/app/pedidos/accion', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
-    def pedidos_accion(self, pedido_id, accion, cantidad=None, **kw):
+    def pedidos_accion(self, pedido_id, accion, cantidad=None,
+                       corralon_id=None, **kw):
         member = self._member()
         pedido = request.env['coop.pedido.material'].sudo().browse(
             int(pedido_id)).exists()
         if pedido and self._coordina_obra(member, pedido.obra_id):
             if accion == 'aceptar':
                 pedido.action_aceptar()
+                if corralon_id:
+                    pedido.corralon_id = int(corralon_id)
             elif accion == 'rechazar':
                 pedido.action_rechazar()
             elif accion == 'corregir':
@@ -91,6 +101,118 @@ class CoopPortalCoordinador(http.Controller):
                 if nueva > 0:
                     pedido.action_corregir_cantidad(nueva)
         return request.redirect('/app/pedidos')
+
+    # ── consolidar pedidos → orden al corralón ───────────────────────
+    @http.route('/app/corralon', type='http', auth='user', website=False)
+    def corralon(self, **kw):
+        member = self._member()
+        obras = self._obras_coordina(member)
+        if not obras:
+            return request.redirect('/app')
+        Pedido = request.env['coop.pedido.material'].sudo()
+        # aceptados y todavía sin orden
+        sin_orden = Pedido.search([
+            ('obra_id', 'in', obras.ids), ('state', '=', 'aceptado'),
+            ('orden_id', '=', False),
+        ], order='obra_id, corralon_id')
+        sin_corralon = sin_orden.filtered(lambda p: not p.corralon_id)
+        # agrupar los que ya tienen corralón por (obra, corralón)
+        grupos = {}
+        for p in sin_orden.filtered(lambda p: p.corralon_id):
+            grupos.setdefault((p.obra_id, p.corralon_id), request.env[
+                'coop.pedido.material'].sudo())
+            grupos[(p.obra_id, p.corralon_id)] |= p
+        grupos_list = [
+            {'obra': o, 'corralon': c, 'pedidos': peds}
+            for (o, c), peds in grupos.items()
+        ]
+        # órdenes ya armadas de sus obras
+        ordenes = request.env['coop.orden.corralon'].sudo().search(
+            [('obra_id', 'in', obras.ids)], order='create_date desc', limit=20)
+        return request.render('coop_portal.coord_corralon', {
+            'member': member, 'sin_corralon': sin_corralon,
+            'grupos': grupos_list, 'ordenes': ordenes,
+            'corralones': self._corralones(),
+            'estado_labels': dict(request.env['coop.orden.corralon']
+                                  ._fields['estado'].selection),
+        })
+
+    @http.route('/app/corralon/asignar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def corralon_asignar(self, pedido_id, corralon_id, **kw):
+        member = self._member()
+        pedido = request.env['coop.pedido.material'].sudo().browse(
+            int(pedido_id)).exists()
+        if (pedido and corralon_id
+                and self._coordina_obra(member, pedido.obra_id)):
+            pedido.corralon_id = int(corralon_id)
+        return request.redirect('/app/corralon')
+
+    @http.route('/app/corralon/armar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def corralon_armar(self, obra_id, corralon_id, **kw):
+        member = self._member()
+        obra = request.env['project.project'].sudo().browse(
+            int(obra_id)).exists()
+        if not obra or not self._coordina_obra(member, obra):
+            return request.redirect('/app/corralon')
+        pedidos = request.env['coop.pedido.material'].sudo().search([
+            ('obra_id', '=', obra.id), ('corralon_id', '=', int(corralon_id)),
+            ('state', '=', 'aceptado'), ('orden_id', '=', False),
+        ])
+        if not pedidos:
+            return request.redirect('/app/corralon')
+        orden = request.env['coop.orden.corralon'].sudo().create({
+            'corralon_id': int(corralon_id), 'obra_id': obra.id,
+            'creado_por': member.id,
+        })
+        pedidos.write({'orden_id': orden.id})
+        return request.redirect('/app/corralon/orden/%d' % orden.id)
+
+    @http.route('/app/corralon/orden/<int:orden_id>', type='http',
+                auth='user', website=False)
+    def corralon_orden(self, orden_id, **kw):
+        member = self._member()
+        orden = request.env['coop.orden.corralon'].sudo().browse(
+            orden_id).exists()
+        if not orden or not self._coordina_obra(member, orden.obra_id):
+            return request.redirect('/app/corralon')
+        num = orden.corralon_id.whatsapp_num or ''
+        texto = quote(orden.mensaje or '')
+        wa_url = ('https://wa.me/%s?text=%s' % (num, texto)) if num else ''
+        sms_url = 'sms:%s?body=%s' % (num, texto)
+        return request.render('coop_portal.coord_orden', {
+            'member': member, 'orden': orden,
+            'wa_url': wa_url, 'sms_url': sms_url,
+            'estado_labels': dict(request.env['coop.orden.corralon']
+                                  ._fields['estado'].selection),
+        })
+
+    @http.route('/app/corralon/orden/accion', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def corralon_orden_accion(self, orden_id, accion, importe=None, **kw):
+        member = self._member()
+        orden = request.env['coop.orden.corralon'].sudo().browse(
+            int(orden_id)).exists()
+        if not orden or not self._coordina_obra(member, orden.obra_id):
+            return request.redirect('/app/corralon')
+        if accion == 'enviar':
+            orden.action_enviar()
+        elif accion == 'confirmar':
+            orden.action_confirmar()
+        elif accion == 'entregar':
+            try:
+                monto = float(str(importe).replace(',', '.'))
+            except (TypeError, ValueError):
+                monto = 0.0
+            # exigir importe > 0: entregada es terminal e imputa el gasto;
+            # sin importe no se puede re-imputar después
+            if monto > 0:
+                orden.importe_total = monto
+                orden.action_entregar()
+        elif accion == 'borrador':
+            orden.action_volver_borrador()
+        return request.redirect('/app/corralon/orden/%d' % orden.id)
 
     # ── socio: pedir materiales ──────────────────────────────────────
     @http.route('/app/pedir', type='http', auth='user', website=False)

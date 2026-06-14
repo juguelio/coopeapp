@@ -131,10 +131,16 @@
                         <t t-esc="n_validar"/> <t t-if="not n_validar">✓</t>
                     </span>
                 </a>
-                <a class="fila" href="/app/pedidos" style="text-decoration:none;color:inherit;border:0">
+                <a class="fila" href="/app/pedidos" style="text-decoration:none;color:inherit">
                     <div>🧱 Pedidos de materiales</div>
                     <span t-attf-class="chip {{'espera' if n_pedidos else 'ok'}}">
                         <t t-esc="n_pedidos"/> <t t-if="not n_pedidos">✓</t>
+                    </span>
+                </a>
+                <a class="fila" href="/app/corralon" style="text-decoration:none;color:inherit;border:0">
+                    <div>📦 Armar órdenes al corralón</div>
+                    <span t-attf-class="chip {{'espera' if n_corralon else 'ok'}}">
+                        <t t-esc="n_corralon"/> <t t-if="not n_corralon">✓</t>
                     </span>
                 </a>
             </div>
@@ -367,7 +373,9 @@
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>🧱 Pedidos de materiales</h1>
-            <div class="sub">Aceptá, corregí o rechazá.</div>
+            <div class="sub">Aceptá (y elegí corralón), corregí o rechazá.</div>
+            <a class="botonazo sec" href="/app/corralon"
+               style="margin-bottom:14px">📦 Armar órdenes al corralón →</a>
 
             <div class="card" t-foreach="pedidos" t-as="p">
                 <div style="font-weight:800;font-size:16px"><t t-esc="p.member_id.name"/></div>
@@ -375,20 +383,26 @@
                     <b><t t-esc="p.name"/></b> · <t t-esc="p.obra_id.name"/>
                     <t t-if="p.nota"> · <t t-esc="p.nota"/></t>
                 </div>
-                <div style="display:flex;gap:10px;margin-bottom:8px">
-                    <form action="/app/pedidos/accion" method="post" style="flex:1">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="pedido_id" t-att-value="p.id"/>
-                        <input type="hidden" name="accion" value="aceptar"/>
-                        <button class="botonazo" style="min-height:48px;font-size:15px;margin:0" type="submit">✓ Aceptar</button>
-                    </form>
-                    <form action="/app/pedidos/accion" method="post" style="flex:1">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="pedido_id" t-att-value="p.id"/>
-                        <input type="hidden" name="accion" value="rechazar"/>
-                        <button class="botonazo sec" style="min-height:48px;font-size:15px;margin:0" type="submit">✗ Rechazar</button>
-                    </form>
-                </div>
+                <form action="/app/pedidos/accion" method="post" style="margin-bottom:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="pedido_id" t-att-value="p.id"/>
+                    <input type="hidden" name="accion" value="aceptar"/>
+                    <div style="display:flex;gap:8px">
+                        <select name="corralon_id"
+                                style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                            <option value="">Corralón (opcional)…</option>
+                            <option t-foreach="corralones" t-as="c"
+                                    t-att-value="c.id"><t t-esc="c.name"/></option>
+                        </select>
+                        <button class="botonazo" style="min-height:48px;font-size:15px;margin:0;width:auto;padding:0 16px" type="submit">✓ Aceptar</button>
+                    </div>
+                </form>
+                <form action="/app/pedidos/accion" method="post" style="margin-bottom:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="pedido_id" t-att-value="p.id"/>
+                    <input type="hidden" name="accion" value="rechazar"/>
+                    <button class="botonazo sec" style="min-height:44px;font-size:15px;margin:0" type="submit">✗ Rechazar</button>
+                </form>
                 <form action="/app/pedidos/accion" method="post" style="display:flex;gap:8px;align-items:center">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <input type="hidden" name="pedido_id" t-att-value="p.id"/>
@@ -403,7 +417,159 @@
             <div class="listo" t-if="not pedidos">
                 <div class="check">✓</div>
                 <h1>Sin pedidos pendientes</h1>
-                <a class="botonazo" href="/app">Volver al inicio</a>
+                <a class="botonazo" href="/app/corralon">📦 Ir a órdenes al corralón</a>
+                <a class="botonazo sec" href="/app">Volver al inicio</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ COORDINADOR: ARMAR ÓRDENES AL CORRALÓN ============ -->
+    <template id="coord_corralon" name="App: consolidar pedidos por corralón">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app/pedidos">← Pedidos</a>
+            <h1>📦 Órdenes al corralón</h1>
+            <div class="sub">Juntá los pedidos aceptados por corralón y mandá una orden por WhatsApp.</div>
+
+            <!-- Pedidos aceptados sin corralón asignado -->
+            <t t-if="sin_corralon">
+                <div class="card" style="border-left:6px solid var(--amarillo)">
+                    <div style="font-weight:800;margin-bottom:8px">⚠️ Asigná corralón a estos pedidos</div>
+                    <div t-foreach="sin_corralon" t-as="p"
+                         style="padding:8px 0;border-top:1px solid #eef2f5">
+                        <div style="font-size:14px;margin-bottom:6px">
+                            <b><t t-esc="p.name"/></b> · <t t-esc="p.obra_id.name"/>
+                            · <span style="color:var(--gris)"><t t-esc="p.member_id.name"/></span>
+                        </div>
+                        <form action="/app/corralon/asignar" method="post"
+                              style="display:flex;gap:8px">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="pedido_id" t-att-value="p.id"/>
+                            <select name="corralon_id" required="required"
+                                    style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                                <option value="">Elegí corralón…</option>
+                                <option t-foreach="corralones" t-as="c"
+                                        t-att-value="c.id"><t t-esc="c.name"/></option>
+                            </select>
+                            <button class="botonazo" style="min-height:44px;margin:0;width:auto;padding:0 16px" type="submit">Asignar</button>
+                        </form>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Grupos listos para armar orden -->
+            <div class="card" t-foreach="grupos" t-as="g">
+                <div style="font-weight:800;font-size:17px">🏪 <t t-esc="g['corralon'].name"/></div>
+                <div style="font-size:14px;color:var(--gris);margin-bottom:8px">
+                    Obra: <t t-esc="g['obra'].name"/> · <t t-esc="len(g['pedidos'])"/> ítems
+                </div>
+                <div style="background:#f6f8fa;border-radius:10px;padding:10px;margin-bottom:10px;font-size:14px">
+                    <div t-foreach="g['pedidos']" t-as="p" style="padding:2px 0">
+                        • <b><t t-esc="'%g' % p.cantidad"/></b> · <t t-esc="p.name"/>
+                    </div>
+                </div>
+                <form action="/app/corralon/armar" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="obra_id" t-att-value="g['obra'].id"/>
+                    <input type="hidden" name="corralon_id" t-att-value="g['corralon'].id"/>
+                    <button class="botonazo" style="margin:0" type="submit">📦 Armar orden</button>
+                </form>
+            </div>
+
+            <div class="listo" t-if="not sin_corralon and not grupos">
+                <div class="check">✓</div>
+                <h1>Sin pedidos para consolidar</h1>
+                <div class="sub">Aceptá pedidos y asignales corralón para armar órdenes.</div>
+            </div>
+
+            <!-- Órdenes ya armadas -->
+            <t t-if="ordenes">
+                <h2 style="margin:22px 0 10px;font-size:18px">📋 Órdenes recientes</h2>
+                <a t-foreach="ordenes" t-as="o" t-attf-href="/app/corralon/orden/{{o.id}}"
+                   class="card" style="display:block;text-decoration:none;color:inherit">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <div style="font-weight:800"><t t-esc="o.corralon_id.name"/></div>
+                            <div style="font-size:13px;color:var(--gris)">
+                                <t t-esc="o.obra_id.name"/> · <t t-esc="o.n_items"/> ítems
+                            </div>
+                        </div>
+                        <span t-attf-class="chip {{'ok' if o.estado == 'entregada' else 'espera'}}">
+                            <t t-esc="estado_labels.get(o.estado, o.estado)"/>
+                        </span>
+                    </div>
+                </a>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============ COORDINADOR: DETALLE DE ORDEN + WHATSAPP ============ -->
+    <template id="coord_orden" name="App: orden al corralón">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app/corralon">← Órdenes</a>
+            <h1>📦 <t t-esc="orden.corralon_id.name"/></h1>
+            <div class="sub">
+                <t t-esc="orden.obra_id.name"/> · <t t-esc="orden.n_items"/> ítems ·
+                <b><t t-esc="estado_labels.get(orden.estado, orden.estado)"/></b>
+            </div>
+
+            <div class="card">
+                <div style="font-weight:800;margin-bottom:8px">Mensaje al corralón</div>
+                <div style="background:#f6f8fa;border-radius:10px;padding:12px;font-size:14px;white-space:pre-line"><t t-esc="orden.mensaje"/></div>
+            </div>
+
+            <t t-if="wa_url">
+                <a t-att-href="wa_url" target="_blank"
+                   class="botonazo" style="background:#25D366">💬 Mandar por WhatsApp</a>
+            </t>
+            <t t-else="">
+                <div class="card" style="border-left:6px solid var(--amarillo);font-size:14px">
+                    ⚠️ El corralón <b><t t-esc="orden.corralon_id.name"/></b> no tiene teléfono cargado. Agregalo en el backoffice para mandar por WhatsApp.
+                </div>
+            </t>
+            <a t-att-href="sms_url" class="botonazo sec">✉️ Mandar por SMS</a>
+
+            <!-- Estado de la orden -->
+            <div class="card">
+                <div style="font-weight:800;margin-bottom:10px">Estado de la orden</div>
+
+                <form t-if="orden.estado == 'borrador'" action="/app/corralon/orden/accion" method="post" style="margin-bottom:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="orden_id" t-att-value="orden.id"/>
+                    <input type="hidden" name="accion" value="enviar"/>
+                    <button class="botonazo" style="margin:0" type="submit">📤 Marcar como enviada</button>
+                </form>
+
+                <form t-if="orden.estado in ('borrador','enviada')" action="/app/corralon/orden/accion" method="post" style="margin-bottom:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="orden_id" t-att-value="orden.id"/>
+                    <input type="hidden" name="accion" value="confirmar"/>
+                    <button class="botonazo sec" style="margin:0" type="submit">✅ Corralón confirmó</button>
+                </form>
+
+                <form t-if="orden.estado != 'entregada'" action="/app/corralon/orden/accion" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="orden_id" t-att-value="orden.id"/>
+                    <input type="hidden" name="accion" value="entregar"/>
+                    <div style="font-size:14px;color:var(--gris);margin-bottom:6px">Importe total de la compra (obligatorio: se imputa como gasto de Materiales en la etapa en curso):</div>
+                    <div style="display:flex;gap:8px">
+                        <input type="number" name="importe" step="any" min="1"
+                               required="required"
+                               t-att-value="orden.importe_total or ''"
+                               placeholder="$ 0"
+                               style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                        <button class="botonazo" style="min-height:44px;margin:0;width:auto;padding:0 14px;background:var(--verde)" type="submit">📥 Entregada</button>
+                    </div>
+                </form>
+
+                <div t-if="orden.estado == 'entregada'" class="listo" style="padding:10px 0">
+                    <div class="check">✓</div>
+                    <div style="font-weight:800">Entregada</div>
+                    <div class="sub" t-if="orden.gasto_id">
+                        Gasto imputado: <t t-esc="'%g' % orden.importe_total"/> en Materiales
+                    </div>
+                </div>
             </div>
         </t>
     </template>

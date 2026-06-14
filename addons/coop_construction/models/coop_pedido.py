@@ -61,6 +61,14 @@ class CoopPedidoMaterial(models.Model):
     revisado_por = fields.Many2one(
         'coop.member', string='Revisado por', readonly=True)
     motivo_rechazo = fields.Char(string='Motivo del rechazo')
+    corralon_id = fields.Many2one(
+        'coop.corralon', string='Corralón',
+        help='A qué corralón se le pide este material (lo define el '
+             'coordinador al aceptar).')
+    orden_id = fields.Many2one(
+        'coop.orden.corralon', string='Orden al corralón', readonly=True,
+        ondelete='set null',
+        help='Orden consolidada en la que se incluyó este pedido.')
 
     _sql_constraints = [
         ('cantidad_positiva', 'CHECK(cantidad > 0)',

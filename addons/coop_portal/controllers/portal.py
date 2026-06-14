@@ -67,13 +67,16 @@ class CoopPortal(http.Controller):
             ('estado_obra', 'in', ['planificacion', 'activa']),
             ('capataz_id', '=', member.id),
         ])
-        n_validar = n_pedidos = 0
+        n_validar = n_pedidos = n_corralon = 0
         if obras_coord:
             n_validar = request.env['coop.avance.medicion'].sudo().search_count([
                 ('foja_item_id.obra_id', 'in', obras_coord.ids),
                 ('state', '=', 'borrador')])
             n_pedidos = request.env['coop.pedido.material'].sudo().search_count([
                 ('obra_id', 'in', obras_coord.ids), ('state', '=', 'pendiente')])
+            n_corralon = request.env['coop.pedido.material'].sudo().search_count([
+                ('obra_id', 'in', obras_coord.ids), ('state', '=', 'aceptado'),
+                ('orden_id', '=', False)])
         # asamblea en curso (votación abierta)
         asamblea = request.env['coop.assembly'].sudo().search(
             [('state', '=', 'open')], order='date desc', limit=1)
@@ -81,6 +84,7 @@ class CoopPortal(http.Controller):
             'member': member, 'obras': obras, 'avances': avances,
             'es_coordinador': bool(obras_coord),
             'n_validar': n_validar, 'n_pedidos': n_pedidos,
+            'n_corralon': n_corralon,
             'asamblea': asamblea,
         })
 

@@ -43,7 +43,14 @@ Coordinador (`controllers/coordinador.py`):
 - `/app/validar` + POST `/accion` — bandeja de avances en borrador de SUS obras
   (las que coordina = `capataz_id`); valida o devuelve al socio
 - `/app/pedidos` + POST `/accion` — bandeja de pedidos pendientes; acepta /
-  rechaza / corrige cantidad
+  rechaza / corrige cantidad. Al aceptar puede tagear `corralon_id` (opcional)
+- `/app/corralon` — consolidar pedidos **aceptados sin orden** por corralón:
+  asignar corralón a los que faltan (POST `/asignar`) y armar una orden por
+  corralón (POST `/armar` → crea `coop.orden.corralon`, vincula los pedidos)
+- `/app/corralon/orden/<id>` + POST `/accion` — detalle de la orden: mensaje
+  consolidado, botón **WhatsApp** (`wa.me/<num>?text=`) y SMS; estados
+  borrador→enviada→confirmada→entregada. Al marcar **entregada** con importe,
+  imputa el gasto al rubro Materiales de la etapa en curso (`coop.proyeccion.gasto`)
 
 ## Seguridad del coordinador
 
