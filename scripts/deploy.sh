@@ -2,11 +2,12 @@
 # Deploy de uno o varios módulos al VPS.
 # Uso: ./scripts/deploy.sh coop_construction
 #      ./scripts/deploy.sh coop_construction,coop_portal
-# Con la llave SSH configurada (ver scripts/setup-ssh.sh) no pide password.
+# Requiere haber corrido scripts/setup-ssh.sh una vez (crea el alias
+# 'coopeapp-vps' en ~/.ssh/config con la llave correcta → sin password).
 set -euo pipefail
 
 MODULOS="${1:?Uso: ./scripts/deploy.sh MODULO[,MODULO2,...]}"
-VPS="odoo-admin@178.105.15.189"
+VPS="coopeapp-vps"   # alias de ~/.ssh/config (IdentityFile + IdentitiesOnly)
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DB="coop_piloto"
 
