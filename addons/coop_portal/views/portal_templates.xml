@@ -958,6 +958,49 @@
         </t>
     </template>
 
+    <!-- ============ LOGIN TELÉFONO + PIN ============ -->
+    <template id="ingresar" name="App: ingresar con teléfono y PIN">
+        &lt;!DOCTYPE html&gt;
+        <html lang="es">
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+            <meta name="theme-color" content="#1a7f4e"/>
+            <link rel="manifest" href="/app/manifest.webmanifest"/>
+            <link rel="apple-touch-icon" href="/coop_portal/static/img/icon.svg"/>
+            <title>coopeapp · ingresar</title>
+            <style>
+                body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#f4f6f8;margin:0;padding:0;color:#1a2430}
+                .wrap{max-width:420px;margin:0 auto;padding:40px 20px;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center}
+                .logo{text-align:center;margin-bottom:24px}
+                .logo img{width:88px;height:88px}
+                h1{text-align:center;font-size:24px;margin:0 0 6px}
+                .sub{text-align:center;color:#6b7785;font-size:15px;margin-bottom:24px}
+                input{width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px;margin-bottom:12px}
+                button{width:100%;padding:16px;background:#1a7f4e;color:#fff;border:0;border-radius:12px;font-size:18px;font-weight:700}
+                .err{background:#fdeceb;color:#b3261e;padding:12px;border-radius:12px;font-size:14px;margin-bottom:12px;text-align:center}
+                .alt{text-align:center;margin-top:18px;font-size:13px;color:#6b7785}
+                .alt a{color:#1a7f4e}
+            </style>
+        </head>
+        <body>
+            <div class="wrap">
+                <div class="logo"><img src="/coop_portal/static/img/icon.svg" alt="coopeapp"/></div>
+                <h1>Entrar a coopeapp</h1>
+                <div class="sub">Con tu teléfono y tu PIN.</div>
+                <div class="err" t-if="error"><t t-esc="error"/></div>
+                <form action="/app/ingresar/entrar" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="tel" name="telefono" placeholder="Tu teléfono" inputmode="tel" required="required"/>
+                    <input type="password" name="pin" placeholder="Tu PIN" inputmode="numeric" required="required"/>
+                    <button type="submit">Entrar</button>
+                </form>
+                <div class="alt">¿Tenés usuario y contraseña? <a href="/web/login">Entrar por ahí</a></div>
+            </div>
+        </body>
+        </html>
+    </template>
+
     <!-- ============ CARGA OFFLINE: ENCOLADO ============ -->
     <template id="cargar_encolado" name="App: avance encolado offline">
         <t t-call="coop_portal.layout">

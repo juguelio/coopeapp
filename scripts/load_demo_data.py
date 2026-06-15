@@ -730,6 +730,11 @@ demo_user(lucas, 'lucas', 'lucas1234')
 # Carlos es coordinador real (grupo group_coop_coordinador, M7)
 Users.search([('login', '=', 'carlos')], limit=1).write({
     'groups_id': [(4, env.ref('coop_members.group_coop_coordinador').id)]})
+# Login teléfono+PIN demo (M7): Lucas con teléfono + PIN 1234
+lucas.partner_id.write({'phone': '2944500111'})
+_lucas_user = Users.search([('login', '=', 'lucas')], limit=1)
+if _lucas_user:
+    _lucas_user.set_coop_pin('1234')
 
 # Sofía: administrador → grupo manager (implica member)
 if not Users.search([('login', '=', 'sofia')], limit=1):

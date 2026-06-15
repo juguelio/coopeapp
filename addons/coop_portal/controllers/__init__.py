@@ -6,3 +6,4 @@ from . import admin
 from . import relevamiento
 from . import herramientas
 from . import pwa
+from . import auth
