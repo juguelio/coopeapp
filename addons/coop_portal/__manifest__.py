@@ -1,6 +1,6 @@
 {
     'name': 'Cooperativa - App de Socios',
-    'version': '18.0.0.9.0',
+    'version': '18.0.1.0.0',
     'summary': 'Portal mobile-first: socio, coordinador, síndico y administrador en /app + corralón + optimizador + relevamientos + herramientas',
     'author': 'Coopeapp',
     'depends': ['coop_construction', 'coop_assembly'],

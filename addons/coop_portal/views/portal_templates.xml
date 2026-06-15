@@ -10,6 +10,13 @@
             <meta charset="utf-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
             <meta name="theme-color" content="#1a7f4e"/>
+            <link rel="manifest" href="/app/manifest.webmanifest"/>
+            <meta name="mobile-web-app-capable" content="yes"/>
+            <meta name="apple-mobile-web-app-capable" content="yes"/>
+            <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+            <meta name="apple-mobile-web-app-title" content="coopeapp"/>
+            <link rel="apple-touch-icon" href="/coop_portal/static/img/icon.svg"/>
+            <link rel="icon" href="/coop_portal/static/img/icon.svg"/>
             <title>coopeapp</title>
             <style>
                 :root{--verde:#1a7f4e;--verde-claro:#e6f4ec;--amarillo:#f5a623;--rojo:#d0413b;
@@ -82,6 +89,57 @@
                 <a href="/app/plata" t-att-class="'viva' if nav_activo == 'plata' else None"><span class="ico">💵</span>Mi plata</a>
                 <a href="/app/obra" t-att-class="'viva' if nav_activo == 'obra' else None"><span class="ico">🏗️</span>Obra</a>
             </div>
+
+            <div id="offline-aviso" style="display:none;position:fixed;bottom:74px;left:12px;right:12px;background:var(--amarillo);color:#3a2a00;padding:10px 14px;border-radius:12px;font-size:14px;text-align:center;z-index:99">
+                📴 Sin señal — lo que cargues se guarda y se envía solo cuando vuelva.
+            </div>
+
+            <script>
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', function () {
+                        navigator.serviceWorker.register('/app/sw.js', {scope: '/app/'}).catch(function () {});
+                    });
+                }
+                (function () {
+                    var KEY = 'coopeapp_cola_avances';
+                    function cola() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+                    function guardar(c) { localStorage.setItem(KEY, JSON.stringify(c)); }
+                    function avisoOffline() {
+                        var el = document.getElementById('offline-aviso');
+                        if (el) { el.style.display = navigator.onLine ? 'none' : 'block'; }
+                    }
+                    function sincronizar() {
+                        if (!navigator.onLine) { return; }
+                        var pend = cola();
+                        if (!pend.length) { return; }
+                        var resto = [];
+                        var faltan = pend.length;
+                        pend.forEach(function (item) {
+                            var fd = new FormData();
+                            Object.keys(item).forEach(function (k) { fd.append(k, item[k]); });
+                            fetch('/app/cargar/sync', {method: 'POST', body: fd, credentials: 'same-origin'})
+                                .then(function (r) { return r.json(); })
+                                .then(function (j) { if (!j.ok) { resto.push(item); } })
+                                .catch(function () { resto.push(item); })
+                                .finally(function () { faltan--; if (faltan === 0) { guardar(resto); } });
+                        });
+                    }
+                    window.addEventListener('online', function () { avisoOffline(); sincronizar(); });
+                    window.addEventListener('offline', avisoOffline);
+                    avisoOffline();
+                    sincronizar();
+                    // intercepta el form de cargar avance marcado data-offline
+                    document.addEventListener('submit', function (ev) {
+                        var f = ev.target;
+                        if (!f || f.getAttribute('data-offline') !== '1' || navigator.onLine) { return; }
+                        ev.preventDefault();
+                        var datos = {};
+                        new FormData(f).forEach(function (v, k) { if (k !== 'csrf_token') { datos[k] = v; } });
+                        var c = cola(); c.push(datos); guardar(c);
+                        window.location = '/app/cargar/encolado';
+                    });
+                })();
+            </script>
         </body>
         </html>
     </template>
@@ -228,7 +286,7 @@
             <a class="atras" t-attf-href="/app/cargar/cantidad?item_id={{item.id}}">← Volver</a>
             <div class="paso">PASO 3 DE 3</div>
             <div class="pregunta">¿Cuánto trabajo te llevó?</div>
-            <form action="/app/cargar/confirmar" method="post">
+            <form action="/app/cargar/confirmar" method="post" data-offline="1">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                 <input type="hidden" name="item_id" t-att-value="item.id"/>
                 <input type="hidden" name="cantidad" t-att-value="cantidad"/>
@@ -896,6 +954,23 @@
                     Lo registramos. El coordinador y el administrador lo van a revisar.
                 </p>
                 <a class="botonazo" href="/app/obra">Volver a la obra</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ CARGA OFFLINE: ENCOLADO ============ -->
+    <template id="cargar_encolado" name="App: avance encolado offline">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'cargar'"/>
+            <div class="listo">
+                <div class="check">📴</div>
+                <h1>Guardado sin señal</h1>
+                <p class="sub" style="margin-top:8px">
+                    Tu avance quedó guardado en el teléfono.<br/>
+                    Se envía solo cuando vuelva la señal. No hace falta que hagas nada.
+                </p>
+                <a class="botonazo" href="/app">Volver al inicio</a>
+                <a class="atras" href="/app/cargar">Cargar otro</a>
             </div>
         </t>
     </template>
