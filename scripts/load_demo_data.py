@@ -727,6 +727,9 @@ sofia = members[3]                        # administrador (role 'manager')
 analia = members[5]                       # síndico (role 'syndic')
 demo_user(carlos, 'carlos', 'carlos1234')
 demo_user(lucas, 'lucas', 'lucas1234')
+# Carlos es coordinador real (grupo group_coop_coordinador, M7)
+Users.search([('login', '=', 'carlos')], limit=1).write({
+    'groups_id': [(4, env.ref('coop_members.group_coop_coordinador').id)]})
 
 # Sofía: administrador → grupo manager (implica member)
 if not Users.search([('login', '=', 'sofia')], limit=1):

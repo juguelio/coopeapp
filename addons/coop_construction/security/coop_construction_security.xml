@@ -56,5 +56,28 @@
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
         </record>
+
+        <!-- ===== Coordinador: opera SOLO sobre sus obras (capataz_id) ===== -->
+        <!-- El manager NO hereda estas reglas restrictivas porque tiene las
+             suyas (1=1) sobre los mismos modelos: las reglas de distintos
+             grupos se UNEN, así el manager sigue viendo todo. -->
+        <record id="rule_avance_coordinador" model="ir.rule">
+            <field name="name">Coordinador: avances de sus obras</field>
+            <field name="model_id" ref="model_coop_avance_medicion"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_coordinador'))]"/>
+            <field name="domain_force">[('foja_item_id.obra_id.capataz_id.partner_id.user_ids', 'in', [user.id])]</field>
+        </record>
+        <record id="rule_pedido_coordinador" model="ir.rule">
+            <field name="name">Coordinador: pedidos de sus obras</field>
+            <field name="model_id" ref="model_coop_pedido_material"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_coordinador'))]"/>
+            <field name="domain_force">[('obra_id.capataz_id.partner_id.user_ids', 'in', [user.id])]</field>
+        </record>
+        <record id="rule_orden_corralon_coordinador" model="ir.rule">
+            <field name="name">Coordinador: órdenes al corralón de sus obras</field>
+            <field name="model_id" ref="model_coop_orden_corralon"/>
+            <field name="groups" eval="[(4, ref('coop_members.group_coop_coordinador'))]"/>
+            <field name="domain_force">[('obra_id.capataz_id.partner_id.user_ids', 'in', [user.id])]</field>
+        </record>
     </data>
 </odoo>

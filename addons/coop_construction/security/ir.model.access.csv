@@ -70,3 +70,9 @@ access_coop_incidente_syndic,coop.incidente syndic,model_coop_incidente,coop_mem
 access_coop_operacion_member,coop.operacion member,model_coop_operacion,coop_members.group_coop_member,1,0,0,0
 access_coop_operacion_manager,coop.operacion manager,model_coop_operacion,coop_members.group_coop_manager,1,0,0,0
 access_coop_operacion_syndic,coop.operacion syndic,model_coop_operacion,coop_members.group_coop_syndic,1,0,0,0
+access_coop_avance_medicion_coordinador,coop.avance.medicion coord,model_coop_avance_medicion,coop_members.group_coop_coordinador,1,1,1,0
+access_coop_pedido_material_coordinador,coop.pedido.material coord,model_coop_pedido_material,coop_members.group_coop_coordinador,1,1,1,0
+access_coop_orden_corralon_coordinador,coop.orden.corralon coord,model_coop_orden_corralon,coop_members.group_coop_coordinador,1,1,1,1
+access_coop_orden_corralon_linea_coordinador,coop.orden.corralon.linea coord,model_coop_orden_corralon_linea,coop_members.group_coop_coordinador,1,1,1,1
+access_coop_asignacion_herramienta_coordinador,coop.asignacion.herramienta coord,model_coop_asignacion_herramienta,coop_members.group_coop_coordinador,1,1,1,1
+access_coop_incidente_coordinador,coop.incidente coord,model_coop_incidente,coop_members.group_coop_coordinador,1,1,1,0

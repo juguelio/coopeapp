@@ -15,11 +15,19 @@
             <field name="comment">Puede ver su propia ficha, horas y liquidaciones.</field>
         </record>
 
+        <!-- Grupo: Coordinador de obra (entre socio y administrador) -->
+        <record id="group_coop_coordinador" model="res.groups">
+            <field name="name">Coordinador de Obra</field>
+            <field name="category_id" ref="module_category_cooperative"/>
+            <field name="implied_ids" eval="[(4, ref('group_coop_member'))]"/>
+            <field name="comment">Coordina obras: valida avances y gestiona pedidos/órdenes/herramientas de sus obras.</field>
+        </record>
+
         <!-- Grupo: Administrador cooperativo (ve todo, carga datos) -->
         <record id="group_coop_manager" model="res.groups">
             <field name="name">Administrador Cooperativo</field>
             <field name="category_id" ref="module_category_cooperative"/>
-            <field name="implied_ids" eval="[(4, ref('group_coop_member'))]"/>
+            <field name="implied_ids" eval="[(4, ref('group_coop_coordinador'))]"/>
             <field name="comment">Puede gestionar socios, aportes y liquidaciones.</field>
         </record>
 
