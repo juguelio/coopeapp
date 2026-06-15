@@ -1,0 +1,84 @@
+name: Deploy a VPS
+
+# Deploy automático: cada push a main que toque addons/ sube los módulos
+# cambiados al VPS y los actualiza. También se puede disparar a mano.
+# Requiere los secrets cargados por scripts/setup-ci-deploy.sh:
+#   VPS_SSH_PRIVATE_KEY, VPS_HOST, VPS_USER, VPS_KNOWN_HOSTS
+
+on:
+  push:
+    branches: [main]
+    paths: ['addons/**']
+  workflow_dispatch:
+    inputs:
+      modulos:
+        description: 'Módulos a actualizar (separados por coma). Vacío = autodetecta del último push.'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detectar módulos cambiados
+        id: mods
+        run: |
+          set -e
+          MANUAL="${{ github.event.inputs.modulos }}"
+          if [ -n "$MANUAL" ]; then
+            MODS="$MANUAL"
+          else
+            BEFORE="${{ github.event.before }}"
+            if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+              BEFORE="HEAD~1"
+            fi
+            MODS=$(git diff --name-only "$BEFORE" HEAD -- 'addons/*/' \
+              | sed -nE 's#^addons/([^/]+)/.*#\1#p' | sort -u | paste -sd, -)
+          fi
+          echo "modulos=$MODS" >> "$GITHUB_OUTPUT"
+          echo "Módulos a deployar: ${MODS:-(ninguno)}"
+
+      - name: Configurar SSH
+        if: steps.mods.outputs.modulos != ''
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ci
+          chmod 600 ~/.ssh/id_ci
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Subir addons + actualizar Odoo
+        if: steps.mods.outputs.modulos != ''
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          MODULOS: ${{ steps.mods.outputs.modulos }}
+          DB: coop_piloto
+        run: |
+          set -e
+          SSH="ssh -i $HOME/.ssh/id_ci -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          for m in ${MODULOS//,/ }; do
+            [ -d "addons/$m" ] || { echo "✗ addons/$m no existe, salteo"; continue; }
+            find "addons/$m" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+            echo "→ Subiendo $m..."
+            rsync -az --delete -e "$SSH" "addons/$m" "$VPS_USER@$VPS_HOST:~/odoo-coop/addons/"
+          done
+          echo "→ Actualizando módulos ($MODULOS) y reiniciando Odoo..."
+          $SSH "$VPS_USER@$VPS_HOST" "
+            set -e
+            cd ~/odoo-coop
+            for m in ${MODULOS//,/ }; do
+              find addons/\$m -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+            done
+            docker compose run --rm odoo odoo -u $MODULOS -d $DB --stop-after-init
+            docker compose restart odoo
+          "
+          echo "✓ Deploy de $MODULOS completo → https://www.coopeapp.com.ar/app"
