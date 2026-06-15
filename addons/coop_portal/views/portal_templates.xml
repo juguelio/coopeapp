@@ -123,6 +123,16 @@
                 <a class="botonazo" style="min-height:50px;font-size:16px;margin:0" href="/app/asamblea">ENTRAR Y VOTAR</a>
             </div>
 
+            <div class="card" t-if="relevamiento" style="border-left:6px solid #2d7ff9">
+                <h3>📐 TE ASIGNARON UN RELEVAMIENTO</h3>
+                <div style="font-size:15px;margin-bottom:10px">
+                    <t t-esc="relevamiento.orden_id.cliente_id.name"/> ·
+                    <t t-esc="relevamiento.orden_id.ubicacion or relevamiento.orden_id.name"/>
+                </div>
+                <a class="botonazo" style="min-height:50px;font-size:16px;margin:0"
+                   t-attf-href="/app/relevar/{{relevamiento.id}}">CARGAR RELEVAMIENTO</a>
+            </div>
+
             <div class="card" t-if="es_coordinador" style="border-left:6px solid #f5a623">
                 <h3>SOS COORDINADOR</h3>
                 <a class="fila" href="/app/validar" style="text-decoration:none;color:inherit">
@@ -709,6 +719,60 @@
                 </p>
                 <a class="botonazo" href="/app/obra">Volver a la obra</a>
                 <a class="atras" href="/app/pedir">Pedir otro</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ RELEVAMIENTO: CARGA DEL SOCIO ============ -->
+    <template id="relevar" name="App: cargar relevamiento">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app">← Volver</a>
+            <h1>📐 Relevamiento</h1>
+            <div class="sub">
+                <t t-esc="rel.orden_id.cliente_id.name"/> ·
+                <t t-esc="rel.orden_id.ubicacion or rel.orden_id.name"/>
+            </div>
+            <div class="card" t-if="rel.orden_id.descripcion" style="font-size:14px;color:var(--gris)">
+                <t t-esc="rel.orden_id.descripcion"/>
+            </div>
+
+            <form action="/app/relevar/guardar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="relevamiento_id" t-att-value="rel.id"/>
+                <div class="card">
+                    <div style="font-weight:800;margin-bottom:8px">Medidas</div>
+                    <div style="font-size:13px;color:var(--gris);margin-bottom:10px">Cargá lo que mediste. Dejá vacío lo que no uses.</div>
+                    <div t-foreach="filas" t-as="i" style="display:flex;gap:6px;margin-bottom:8px">
+                        <input type="text" t-att-name="'concepto_%d' % i" placeholder="qué (ej: frente)"
+                               style="flex:2;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                        <input type="number" step="any" t-att-name="'valor_%d' % i" placeholder="cuánto" inputmode="decimal"
+                               style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                        <input type="text" t-att-name="'unidad_%d' % i" placeholder="ml/m²"
+                               style="width:70px;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    </div>
+                </div>
+                <div class="card">
+                    <div style="font-weight:800;margin-bottom:8px">Observaciones</div>
+                    <textarea name="observaciones" rows="3" placeholder="Lo que viste en el lugar..."
+                              style="width:100%;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                </div>
+                <button class="botonazo" type="submit">✓ Enviar relevamiento</button>
+            </form>
+        </t>
+    </template>
+
+    <template id="relevar_listo" name="App: relevamiento enviado">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <div class="listo">
+                <div class="check">📐</div>
+                <h1>Relevamiento enviado</h1>
+                <p class="sub" style="margin-top:8px">
+                    Cargaste <b><t t-esc="rel.n_medidas"/></b> medida(s).<br/>
+                    El administrador lo usa para armar el presupuesto.
+                </p>
+                <a class="botonazo" href="/app">Volver al inicio</a>
             </div>
         </t>
     </template>

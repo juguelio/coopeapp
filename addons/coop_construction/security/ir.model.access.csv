@@ -45,3 +45,9 @@ access_coop_orden_trabajo_syndic,coop.orden.trabajo syndic,model_coop_orden_trab
 access_coop_ot_etapa_member,coop.ot.etapa member,model_coop_ot_etapa,coop_members.group_coop_member,1,0,0,0
 access_coop_ot_etapa_manager,coop.ot.etapa manager,model_coop_ot_etapa,coop_members.group_coop_manager,1,1,1,1
 access_coop_ot_etapa_syndic,coop.ot.etapa syndic,model_coop_ot_etapa,coop_members.group_coop_syndic,1,0,0,0
+access_coop_relevamiento_member,coop.relevamiento member,model_coop_relevamiento,coop_members.group_coop_member,1,0,0,0
+access_coop_relevamiento_manager,coop.relevamiento manager,model_coop_relevamiento,coop_members.group_coop_manager,1,1,1,1
+access_coop_relevamiento_syndic,coop.relevamiento syndic,model_coop_relevamiento,coop_members.group_coop_syndic,1,0,0,0
+access_coop_relevamiento_medida_member,coop.relevamiento.medida member,model_coop_relevamiento_medida,coop_members.group_coop_member,1,0,0,0
+access_coop_relevamiento_medida_manager,coop.relevamiento.medida manager,model_coop_relevamiento_medida,coop_members.group_coop_manager,1,1,1,1
+access_coop_relevamiento_medida_syndic,coop.relevamiento.medida syndic,model_coop_relevamiento_medida,coop_members.group_coop_syndic,1,0,0,0

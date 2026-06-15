@@ -80,12 +80,16 @@ class CoopPortal(http.Controller):
         # asamblea en curso (votación abierta)
         asamblea = request.env['coop.assembly'].sudo().search(
             [('state', '=', 'open')], order='date desc', limit=1)
+        # relevamiento asignado pendiente (el socio es relevador)
+        relevamiento = request.env['coop.relevamiento'].sudo().search(
+            [('member_id', '=', member.id), ('state', '=', 'pendiente')],
+            order='create_date desc', limit=1)
         return self._render('coop_portal.home', {
             'member': member, 'obras': obras, 'avances': avances,
             'es_coordinador': bool(obras_coord),
             'n_validar': n_validar, 'n_pedidos': n_pedidos,
             'n_corralon': n_corralon,
-            'asamblea': asamblea,
+            'asamblea': asamblea, 'relevamiento': relevamiento,
         })
 
     # ── cargar avance (wizard 3 pasos) ───────────────────────────────

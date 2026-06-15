@@ -67,6 +67,18 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Relevamiento" invisible="not relevamiento_ids">
+                            <field name="relevamiento_ids" readonly="1">
+                                <list>
+                                    <field name="member_id"/>
+                                    <field name="fecha"/>
+                                    <field name="n_medidas"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'validado'"
+                                           decoration-info="state == 'cargado'"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
                 <div class="oe_chatter">
@@ -94,4 +106,75 @@
               parent="menu_coop_comercial"
               action="action_coop_orden_trabajo"
               sequence="10"/>
+
+    <!-- ===================== coop.relevamiento ===================== -->
+    <record id="view_coop_relevamiento_list" model="ir.ui.view">
+        <field name="name">coop.relevamiento.list</field>
+        <field name="model">coop.relevamiento</field>
+        <field name="arch" type="xml">
+            <list string="Relevamientos"
+                  decoration-success="state == 'validado'"
+                  decoration-info="state == 'cargado'">
+                <field name="orden_id"/>
+                <field name="member_id"/>
+                <field name="fecha"/>
+                <field name="n_medidas"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'validado'"
+                       decoration-info="state == 'cargado'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_relevamiento_form" model="ir.ui.view">
+        <field name="name">coop.relevamiento.form</field>
+        <field name="model">coop.relevamiento</field>
+        <field name="arch" type="xml">
+            <form string="Relevamiento">
+                <header>
+                    <button name="action_validar" string="Validar"
+                            type="object" class="btn-primary"
+                            invisible="state != 'cargado'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="orden_id"/>
+                            <field name="member_id"/>
+                        </group>
+                        <group>
+                            <field name="fecha"/>
+                            <field name="n_medidas"/>
+                        </group>
+                    </group>
+                    <field name="observaciones"/>
+                    <field name="medida_ids">
+                        <list editable="bottom">
+                            <field name="concepto"/>
+                            <field name="valor"/>
+                            <field name="unidad"/>
+                        </list>
+                    </field>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_relevamiento" model="ir.actions.act_window">
+        <field name="name">Relevamientos</field>
+        <field name="res_model">coop.relevamiento</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_coop_relevamientos"
+              name="Relevamientos"
+              parent="menu_coop_comercial"
+              action="action_coop_relevamiento"
+              sequence="20"/>
 </odoo>

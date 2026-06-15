@@ -41,6 +41,11 @@ class CoopOrdenTrabajo(models.Model):
         tracking=True)
     etapa_memoria_ids = fields.One2many(
         'coop.ot.etapa', 'orden_id', string='Memoria descriptiva (etapas)')
+    relevamiento_ids = fields.One2many(
+        'coop.relevamiento', 'orden_id', string='Relevamientos')
+    relevamiento_id = fields.Many2one(
+        'coop.relevamiento', string='Relevamiento',
+        compute='_compute_relevamiento')
     obra_id = fields.Many2one(
         'project.project', string='Obra generada', readonly=True,
         ondelete='set null')
@@ -56,11 +61,23 @@ class CoopOrdenTrabajo(models.Model):
                     'coop.orden.trabajo') or 'Nueva'
         return super().create(vals_list)
 
+    @api.depends('relevamiento_ids')
+    def _compute_relevamiento(self) -> None:
+        for r in self:
+            r.relevamiento_id = r.relevamiento_ids[:1].id
+
     # ── transiciones básicas (presupuesto/obra se cablean en M3-3/M3-4) ──
     def action_a_relevamiento(self) -> None:
+        """Pasa a relevamiento y crea el relevamiento para el relevador
+        asignado (si todavía no hay uno)."""
         for r in self:
-            if r.state == 'recibida':
-                r.state = 'relevamiento'
+            if r.state != 'recibida':
+                continue
+            if not r.relevamiento_ids:
+                self.env['coop.relevamiento'].create({
+                    'orden_id': r.id, 'member_id': r.relevador_id.id or False,
+                })
+            r.state = 'relevamiento'
 
     def action_rechazar(self) -> None:
         self.write({'state': 'rechazada'})
