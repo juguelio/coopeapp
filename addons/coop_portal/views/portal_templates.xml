@@ -1240,27 +1240,54 @@
     </template>
 
     <!-- ============ ADMIN: RUTA CRÍTICA MULTI-OBRA ============ -->
-    <template id="admin_ruta" name="App: ruta crítica admin">
+    <template id="admin_ruta" name="App: ruta crítica admin (editable por oficio)">
         <t t-call="coop_portal.layout">
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'ruta'"/>
             <h1>🔴 Ruta crítica</h1>
-            <div class="sub">Lo que no puede atrasarse, por obra.</div>
+            <div class="sub">Editá duración y oficio; la ruta se recalcula sola. Cada oficio es un carril.</div>
 
-            <div class="card" t-foreach="data" t-as="d" style="border-left:6px solid var(--rojo)">
-                <h3><t t-esc="d['obra'].name"/></h3>
-                <t t-if="d['criticas']">
-                    <div class="fila" t-foreach="d['criticas']" t-as="tk">
-                        <div><t t-esc="tk.name"/>
-                            <span t-if="tk.categoria_tarea" style="font-size:12px;color:var(--gris)"> · <t t-esc="cat_labels.get(tk.categoria_tarea, '')"/></span>
-                        </div>
-                        <span class="chip espera">holgura 0</span>
-                    </div>
-                </t>
-                <div t-else="" style="font-size:14px;color:var(--gris)">
-                    Sin ruta crítica calculada. Cargá tareas con duración y dependencias en el sistema y calculá la ruta desde la obra.
+            <t t-foreach="data" t-as="d">
+                <h2 style="margin:18px 0 8px;font-size:18px"><t t-esc="d['obra'].name"/>
+                    <span style="font-size:13px;color:var(--gris);font-weight:400"> · fin estimado día <t t-esc="'%g' % d['fin_obra']"/></span>
+                </h2>
+                <div t-if="not d['carriles']" style="font-size:14px;color:var(--gris)" class="card">
+                    Sin tareas cargadas. Cargalas en el sistema (con dependencias) para ver la ruta.
                 </div>
-            </div>
+                <div class="card" t-foreach="d['carriles']" t-as="c">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+                        <div style="font-weight:800">🛠️ <t t-esc="cat_labels.get(c['oficio'], 'Otro')"/></div>
+                        <div style="font-size:13px;color:var(--gris)">
+                            <t t-esc="'%g' % c['dur']"/> días
+                            <t t-if="c['criticas']"> · <span style="color:var(--rojo)"><t t-esc="c['criticas']"/> crítica(s)</span></t>
+                        </div>
+                    </div>
+                    <div t-foreach="c['items']" t-as="i" style="padding:8px 0;border-top:1px solid #eef2f5">
+                        <div style="display:flex;justify-content:space-between;align-items:baseline">
+                            <div style="font-size:14px">
+                                <t t-esc="i['tk'].name"/>
+                                <span t-if="i['tk'].es_critica" class="chip espera" style="margin-left:6px">crítica · holgura <t t-esc="'%g' % i['tk'].holgura"/></span>
+                            </div>
+                        </div>
+                        <div t-if="i['cruce']" style="font-size:12px;color:var(--amarillo);margin:2px 0">
+                            ⚠️ depende de otro oficio (<t t-esc="', '.join(i['cruce'])"/>) — ojo con la cadena falsa
+                        </div>
+                        <form action="/app/admin/ruta/editar" method="post" style="display:flex;gap:6px;margin-top:4px">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="task_id" t-att-value="i['tk'].id"/>
+                            <input type="number" name="duracion" step="any" min="0"
+                                   t-att-value="'%g' % i['tk'].duracion_dias"
+                                   style="width:90px;padding:8px;border:2px solid #d7dee5;border-radius:10px;font-size:14px"/>
+                            <select name="categoria"
+                                    style="flex:1;padding:8px;border:2px solid #d7dee5;border-radius:10px;font-size:14px">
+                                <option t-foreach="cat_labels.items()" t-as="cl" t-att-value="cl[0]"
+                                        t-att-selected="'selected' if cl[0] == i['tk'].categoria_tarea else None"><t t-esc="cl[1]"/></option>
+                            </select>
+                            <button class="botonazo sec" style="min-height:38px;margin:0;width:auto;padding:0 12px" type="submit">Guardar</button>
+                        </form>
+                    </div>
+                </div>
+            </t>
         </t>
     </template>
 

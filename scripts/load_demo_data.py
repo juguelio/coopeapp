@@ -61,6 +61,7 @@ for _o in _demo_obras:
     _safe_unlink(_search('coop.etapa', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.certificado', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.work.entry', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('project.task', [('project_id', '=', _o.id)]))
     _safe_unlink(_o)
 
 _safe_unlink(_search('coop.material', [('name', 'in', [
@@ -1023,6 +1024,31 @@ track(Incidente.create({
 print("  ✓ Herramientas M4: 4 herramientas (1 asignada a la obra) + "
       "1 incidente de material reportado por Lucas", file=sys.stderr)
 
+# ── Ruta crítica (M6): tareas por oficio (carriles) + dependencias ──
+Task = env['project.task'].sudo()
+created.setdefault('project.task', [])
+
+
+def _mk_task(nombre, dur, cat, deps=None):
+    return track(Task.create({
+        'name': nombre, 'project_id': obra.id, 'duracion_dias': dur,
+        'categoria_tarea': cat,
+        'depend_on_ids': [(6, 0, [d.id for d in (deps or [])])],
+    }))
+
+
+t_mamp = _mk_task('Mampostería planta baja', 3, 'albanileria')
+t_revoque = _mk_task('Revoque grueso', 4, 'albanileria', [t_mamp])
+_mk_task('Encadenado superior', 2, 'estructura', [t_mamp])
+t_elec1 = _mk_task('Cañería eléctrica', 3, 'electricidad', [t_mamp])
+t_elec2 = _mk_task('Cableado', 2, 'electricidad', [t_elec1])
+_mk_task('Cañería sanitaria', 3, 'sanitaria', [t_mamp])
+_mk_task('Pintura interior', 4, 'terminaciones', [t_revoque, t_elec2])
+obra.action_calcular_ruta_critica()
+
+print("  ✓ Ruta crítica M6: 7 tareas en 5 oficios (carriles) + CPM calculado",
+      file=sys.stderr)
+
 
 # ══════════════════════════════════════════════════════════════════
 # 6. COMMIT + CLEANUP SQL
@@ -1067,6 +1093,7 @@ cleanup_order = [
     'coop.vote',
     'coop.assembly',
     'coop.contribution',
+    'project.task',
     'res.users',
     'coop.member',
     'project.project',

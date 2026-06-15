@@ -56,24 +56,64 @@ class CoopPortalAdmin(http.Controller):
             'n_criticas': len(criticas), 'n_certs': n_certs, 'n_pedidos': n_pedidos,
         })
 
-    # ── ruta crítica multi-obra ──────────────────────────────────────
+    # ── ruta crítica multi-obra, editable por oficio (carriles) ──────
     @http.route('/app/admin/ruta', type='http', auth='user', website=False)
     def ruta(self, **kw):
         member = self._member()
         if not self._es_admin(member):
             return request.redirect('/app')
-        obras = self._obras_activas()
+        Task = request.env['project.task'].sudo()
         data = []
-        for o in obras:
-            criticas = request.env['project.task'].sudo().search([
-                ('project_id', '=', o.id), ('es_critica', '=', True),
-            ], order='fin_temprano')
-            data.append({'obra': o, 'criticas': criticas})
+        for o in self._obras_activas():
+            tasks = Task.search(
+                [('project_id', '=', o.id)], order='categoria_tarea, fin_temprano')
+            carriles = {}
+            for tk in tasks:
+                # aviso anti-cadena-falsa: dependencia con OTRO oficio
+                cruces = tk.depend_on_ids.filtered(
+                    lambda d: d.categoria_tarea and tk.categoria_tarea
+                    and d.categoria_tarea != tk.categoria_tarea)
+                carriles.setdefault(tk.categoria_tarea or 'otro', []).append({
+                    'tk': tk, 'cruce': cruces.mapped('name')})
+            carriles_list = [{
+                'oficio': k, 'items': v,
+                'dur': sum(i['tk'].duracion_dias for i in v),
+                'criticas': sum(1 for i in v if i['tk'].es_critica),
+            } for k, v in carriles.items()]
+            data.append({'obra': o, 'carriles': carriles_list,
+                         'fin_obra': max(tasks.mapped('fin_temprano') or [0.0])})
         return request.render('coop_portal.admin_ruta', {
             'member': member, 'data': data,
             'cat_labels': dict(
-                request.env['project.task']._fields['categoria_tarea'].selection),
+                Task._fields['categoria_tarea'].selection),
         })
+
+    @http.route('/app/admin/ruta/editar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def ruta_editar(self, task_id, duracion=None, categoria=None, **kw):
+        member = self._member()
+        if not self._es_admin(member):
+            return request.redirect('/app')
+        Task = request.env['project.task'].sudo()
+        tk = Task.browse(int(task_id)).exists()
+        if tk and tk.project_id in self._obras_activas():
+            vals = {}
+            if duracion is not None:
+                try:
+                    vals['duracion_dias'] = max(
+                        0.0, float(str(duracion).replace(',', '.')))
+                except (TypeError, ValueError):
+                    pass
+            cats = dict(Task._fields['categoria_tarea'].selection)
+            if categoria in cats:
+                vals['categoria_tarea'] = categoria
+            if vals:
+                tk.write(vals)
+                try:
+                    tk.project_id.action_calcular_ruta_critica()
+                except Exception:  # noqa: BLE001 — sin tareas o ciclo
+                    pass
+        return request.redirect('/app/admin/ruta')
 
     # ── reportes: sobre la vista unificada coop.operacion (M6) ───────
     @http.route('/app/admin/reportes', type='http', auth='user', website=False)
