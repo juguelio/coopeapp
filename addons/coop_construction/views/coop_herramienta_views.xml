@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============ maintenance.equipment (vista coop) ============ -->
+    <record id="view_coop_herramienta_list" model="ir.ui.view">
+        <field name="name">coop.herramienta.list</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="arch" type="xml">
+            <list string="Herramientas"
+                  decoration-danger="estado_coop in ('rota','perdida') or service_vencido"
+                  decoration-success="estado_coop == 'disponible'"
+                  decoration-info="estado_coop == 'en_obra'">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="estado_coop" widget="badge"
+                       decoration-success="estado_coop == 'disponible'"
+                       decoration-info="estado_coop == 'en_obra'"
+                       decoration-danger="estado_coop in ('rota','perdida')"/>
+                <field name="obra_id" optional="show"/>
+                <field name="next_action_date" optional="show"/>
+                <field name="service_vencido" optional="hide"/>
+                <field name="valor_reposicion" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_herramienta_form" model="ir.ui.view">
+        <field name="name">coop.herramienta.form</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="arch" type="xml">
+            <form string="Herramienta">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category_id"/>
+                            <field name="serial_no"/>
+                            <field name="codigo_etiqueta"/>
+                            <field name="estado_coop"/>
+                        </group>
+                        <group>
+                            <field name="obra_id"/>
+                            <field name="coordinador_responsable_id"/>
+                            <field name="valor_reposicion"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="period"/>
+                            <field name="next_action_date"/>
+                            <field name="service_vencido"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Historial de asignaciones">
+                            <field name="asignacion_ids" readonly="1">
+                                <list>
+                                    <field name="obra_id"/>
+                                    <field name="member_id"/>
+                                    <field name="fecha_retiro"/>
+                                    <field name="fecha_devolucion"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'en_obra'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_herramientas" model="ir.actions.act_window">
+        <field name="name">Herramientas</field>
+        <field name="res_model">maintenance.equipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_coop_herramienta_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_coop_herramienta_form')})]"/>
+    </record>
+
+    <!-- ============ coop.asignacion.herramienta ============ -->
+    <record id="view_coop_asignacion_list" model="ir.ui.view">
+        <field name="name">coop.asignacion.herramienta.list</field>
+        <field name="model">coop.asignacion.herramienta</field>
+        <field name="arch" type="xml">
+            <list string="Asignaciones" editable="bottom"
+                  decoration-info="state == 'en_obra'">
+                <field name="equipment_id"/>
+                <field name="obra_id"/>
+                <field name="member_id"/>
+                <field name="fecha_retiro"/>
+                <field name="fecha_devolucion" readonly="1"/>
+                <field name="state" widget="badge" decoration-info="state == 'en_obra'"/>
+                <button name="action_devolver" string="Devolver" type="object"
+                        icon="fa-undo" invisible="state != 'en_obra'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_asignacion" model="ir.actions.act_window">
+        <field name="name">Asignaciones de Herramientas</field>
+        <field name="res_model">coop.asignacion.herramienta</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- ============ Menús ============ -->
+    <menuitem id="menu_coop_herramientas_root"
+              name="Herramientas"
+              parent="menu_coop_construction_root"
+              sequence="45"/>
+
+    <menuitem id="menu_coop_herramientas_inv"
+              name="Inventario"
+              parent="menu_coop_herramientas_root"
+              action="action_coop_herramientas"
+              sequence="10"/>
+
+    <menuitem id="menu_coop_herramientas_asig"
+              name="Asignaciones"
+              parent="menu_coop_herramientas_root"
+              action="action_coop_asignacion"
+              sequence="20"/>
+</odoo>
