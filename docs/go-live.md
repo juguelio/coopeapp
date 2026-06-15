@@ -7,7 +7,15 @@ en orden. Tiempo estimado: 30–45 min.
 ## 0. Antes de empezar
 - [ ] `git push` (que `origin/main` tenga todo lo último).
 - [ ] SSH por clave andando (`ssh coopeapp-vps 'echo ok'` no pide password).
-- [ ] **Hacer un backup ANTES de tocar nada:** `ssh coopeapp-vps "cd ~/odoo-coop && ./scripts/backup-vps.sh"` (ver [runbook-backups.md](runbook-backups.md)).
+- [ ] **Subir los scripts al VPS** (deploy.sh solo sube `addons/`, no `scripts/`):
+      `cd ~/Dev/coopeapp && rsync -az scripts coopeapp-vps:~/odoo-coop/`
+- [ ] **Confirmar los nombres de los contenedores** antes del backup:
+      `ssh coopeapp-vps "cd ~/odoo-coop && docker compose ps"` → ver el servicio de
+      Postgres (¿`db`? ¿`postgres`?) y el usuario de la DB. Si NO es `db`/`odoo`,
+      correr el backup con: `DB_SERVICE=<nombre> DB_USER=<user> ./scripts/backup-vps.sh`.
+- [ ] **Hacer un backup ANTES de tocar nada** y verificar que pesa > 0:
+      `ssh coopeapp-vps "cd ~/odoo-coop && ./scripts/backup-vps.sh && ls -lh ~/backups"`
+      (ver [runbook-backups.md](runbook-backups.md)).
 
 ## 1. Subir el código y actualizar todos los módulos (una sola vez)
 
