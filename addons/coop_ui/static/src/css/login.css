@@ -1,0 +1,32 @@
+/* coopeapp — branding de la pantalla de login de Odoo.
+   Verde de marca + esconde el branding de Odoo. El logo se sube en
+   Ajustes → Compañías (queda arriba del formulario automáticamente). */
+
+:root {
+    --coop-verde: #1a7f4e;
+    --coop-verde-oscuro: #14633c;
+}
+
+.oe_login_form .btn-primary,
+.oe_signup_form .btn-primary,
+form .btn-primary {
+    background-color: var(--coop-verde) !important;
+    border-color: var(--coop-verde) !important;
+}
+.oe_login_form .btn-primary:hover,
+form .btn-primary:hover {
+    background-color: var(--coop-verde-oscuro) !important;
+    border-color: var(--coop-verde-oscuro) !important;
+}
+
+a {
+    color: var(--coop-verde);
+}
+
+/* Esconder "Powered by Odoo" y el gestor de bases en el login */
+.o_footer,
+.oe_login_footer,
+.text-center .text-muted a[href*="odoo.com"],
+a[href="/web/database/manager"] {
+    display: none !important;
+}

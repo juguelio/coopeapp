@@ -1,0 +1,65 @@
+/* coopeapp — branding del backoffice de Odoo Community.
+   Solo CSS (robusto entre versiones). Color de marca: verde #1a7f4e. */
+
+:root {
+    --coop-verde: #1a7f4e;
+    --coop-verde-oscuro: #14633c;
+    --coop-amarillo: #f5a623;
+}
+
+/* Barra superior en verde coopeapp */
+.o_main_navbar {
+    background-color: var(--coop-verde) !important;
+    border-bottom: none !important;
+}
+.o_main_navbar .o_menu_brand,
+.o_main_navbar > a,
+.o_main_navbar .dropdown-toggle,
+.o_main_navbar .o_nav_entry,
+.o_main_navbar .o_menu_sections a {
+    color: #ffffff !important;
+}
+.o_main_navbar .o_menu_brand:hover,
+.o_main_navbar .o_nav_entry:hover {
+    background-color: var(--coop-verde-oscuro) !important;
+}
+
+/* Botones primarios y acentos en verde */
+.btn-primary,
+.o_form_button_save,
+.btn.btn-primary {
+    background-color: var(--coop-verde) !important;
+    border-color: var(--coop-verde) !important;
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--coop-verde-oscuro) !important;
+    border-color: var(--coop-verde-oscuro) !important;
+}
+.text-primary,
+.o_form_uri,
+a.o_form_uri > span {
+    color: var(--coop-verde) !important;
+}
+
+/* Statusbar / badges con un toque más suave */
+.o_arrow_button.btn-primary {
+    background-color: var(--coop-verde) !important;
+}
+
+/* Más aire en los formularios, esquinas redondeadas */
+.o_form_sheet,
+.o_list_renderer,
+.o_content .o_view_controller {
+    border-radius: 10px;
+}
+
+/* Esconder ruido de Odoo: documentación/soporte/expiración */
+.o_user_menu .o_documentation,
+.o_user_menu .o_support,
+.o_user_menu .o_odoo_account,
+.o_database_expiration_panel,
+.o_debug_manager {
+    display: none !important;
+}
