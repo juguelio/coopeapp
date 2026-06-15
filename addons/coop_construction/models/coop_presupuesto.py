@@ -1,3 +1,4 @@
+import re
 from urllib.parse import quote
 
 from odoo import models, fields, api
@@ -103,8 +104,8 @@ class CoopPresupuesto(models.Model):
                     iva += base - n
             r.neto, r.iva, r.total = neto, iva, total
 
-    @api.depends('orden_id', 'total', 'fecha_vencimiento', 'name',
-                 'cliente_id')
+    @api.depends('total', 'fecha_vencimiento', 'name', 'cliente_id',
+                 'cliente_id.phone', 'cliente_id.mobile')
     def _compute_mensaje(self) -> None:
         for r in self:
             total_txt = '{:,.0f}'.format(r.total).replace(',', '.')
@@ -115,8 +116,7 @@ class CoopPresupuesto(models.Model):
                 'Cualquier duda quedo a disposición. ¡Gracias!'
             ) % (r.cliente_id.name or '', r.name or '', total_txt,
                  r.fecha_vencimiento and r.fecha_vencimiento.strftime('%d/%m/%Y') or '')
-            import re as _re
-            num = _re.sub(r'\D', '', r.cliente_id.phone or r.cliente_id.mobile or '')
+            num = re.sub(r'\D', '', r.cliente_id.phone or r.cliente_id.mobile or '')
             r.wa_url = ('https://wa.me/%s?text=%s' % (num, quote(r.mensaje))
                         ) if num else ''
 
@@ -130,11 +130,40 @@ class CoopPresupuesto(models.Model):
                     r.orden_id.state = 'enviada'
 
     def action_aprobar(self):
-        """Aprueba el presupuesto. La creación de la obra + etapas se cablea
-        en M3-4 (action_aprobar extendido)."""
-        for r in self:
-            r.state = 'aprobado'
-        return True
+        """Aprueba el presupuesto y crea la OBRA con sus etapas desde la
+        memoria descriptiva de la OT. Idempotente: si la OT ya tiene obra, no
+        la recrea. Devuelve la acción para abrir la obra creada."""
+        self.ensure_one()
+        self.state = 'aprobado'
+        orden = self.orden_id
+        orden.state = 'aprobada'
+        if not orden.obra_id:
+            obra = self.env['project.project'].create({
+                'name': '%s — %s' % (orden.name, orden.cliente_id.name or ''),
+                'is_coop_obra': True,
+                'obra_type': 'otro',
+                'comitente_id': orden.cliente_id.id,
+                'ubicacion': orden.ubicacion or False,
+                'currency_id': self.currency_id.id,
+                'monto_contrato': self.total,
+                'estado_obra': 'planificacion',
+            })
+            # etapas desde la memoria descriptiva (orden estable por secuencia)
+            numero = 0
+            for em in orden.etapa_memoria_ids.sorted(
+                    lambda e: (e.secuencia, e.id)):
+                numero += 1
+                self.env['coop.etapa'].create({
+                    'obra_id': obra.id, 'numero': numero, 'name': em.name,
+                    'state': 'planificacion',
+                })
+            orden.obra_id = obra.id
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'project.project',
+            'res_id': orden.obra_id.id, 'view_mode': 'form',
+            'target': 'current',
+        }
 
     def action_rechazar(self) -> None:
         self.write({'state': 'rechazado'})

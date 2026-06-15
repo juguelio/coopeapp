@@ -43,7 +43,8 @@ _demo_members = env['coop.member'].sudo().search(
     [('partner_id', 'in', _demo_partners.ids)]) if _demo_partners else \
     env['coop.member'].sudo().browse()
 _demo_obras = env['project.project'].sudo().search(
-    [('name', '=', 'Obra Piloto San Martín de los Andes')])
+    ['|', ('name', '=', 'Obra Piloto San Martín de los Andes'),
+          ('comitente_id', 'in', _demo_partners.ids)])
 _demo_users = env['res.users'].sudo().search(
     [('login', 'in', ['carlos', 'lucas', 'sofia', 'analia'])])
 
@@ -68,6 +69,10 @@ _safe_unlink(_search('coop.unidad.produccion', [('name', 'in', [
     'Colocación cañería', 'Contrapiso'])]))
 _safe_unlink(_search('coop.corralon', [('name', 'in', [
     'Corralón Austral', 'Corralón El Roble', 'Corralón Don Pedro'])]))
+# OTs del pipeline comercial (cascada: memoria, relevamiento, presupuesto).
+# Borrar antes que socios/partners (relevamiento.member_id y cliente_id restrict).
+_safe_unlink(_search('coop.orden.trabajo',
+                     [('cliente_id', 'in', _demo_partners.ids)]))
 
 if _demo_members:
     _safe_unlink(_search('coop.advance', [('member_id', 'in', _demo_members.ids)]))
@@ -903,6 +908,49 @@ for corr_nombre, precios in PRECIOS_ACTUALES.items():
 print("  ✓ 3 acopios Austral (#51584/#53683/#54073) con listas congeladas "
       "+ precios actuales de 3 corralones", file=sys.stderr)
 
+# ── Pipeline comercial (M3): OT + memoria + relevamiento + presupuesto ──
+Partner = env['res.partner'].sudo()
+OT = env['coop.orden.trabajo'].sudo()
+Presup = env['coop.presupuesto'].sudo()
+PresupLinea = env['coop.presupuesto.linea'].sudo()
+for m in ('coop.orden.trabajo', 'coop.ot.etapa', 'coop.relevamiento',
+          'coop.relevamiento.medida', 'coop.presupuesto',
+          'coop.presupuesto.linea'):
+    created.setdefault(m, [])
+
+cliente = track(Partner.create({
+    'name': 'Familia Pérez (cliente demo)',
+    'email': 'cliente.perez@demo.coop', 'phone': '5492944999000',
+}))
+ot = track(OT.create({
+    'cliente_id': cliente.id, 'administrador_id': sofia.id,
+    'relevador_id': lucas.id,
+    'descripcion': 'Refacción de vivienda: baño nuevo y pintura completa.',
+    'ubicacion': 'Los Cipreses 340, San Martín de los Andes',
+}))
+for sec, nombre in [(10, 'Demolición y sanitarios'),
+                    (20, 'Albañilería y revoque'),
+                    (30, 'Pintura interior y exterior')]:
+    track(env['coop.ot.etapa'].sudo().create({
+        'orden_id': ot.id, 'secuencia': sec, 'name': nombre}))
+# pasa a relevamiento: crea el relevamiento pendiente para Lucas (home card)
+ot.action_a_relevamiento()
+
+# presupuesto borrador con líneas por categoría (factura B, IVA incluido)
+pres = track(Presup.create({'orden_id': ot.id, 'tipo_factura': 'B'}))
+for cat, nombre, cant, precio in [
+    ('materiales', 'Cemento, cal y arena (estimado)', 1, 850000.0),
+    ('materiales', 'Sanitarios y grifería', 1, 1200000.0),
+    ('mano_obra', 'Mano de obra cuadrilla (estimado)', 1, 2400000.0),
+    ('logistica', 'Fletes', 2, 90000.0),
+]:
+    track(PresupLinea.create({
+        'presupuesto_id': pres.id, 'categoria': cat, 'name': nombre,
+        'cantidad': cant, 'precio_unitario': precio, 'iva_alicuota': '21'}))
+
+print("  ✓ Pipeline M3: 1 OT (Familia Pérez) + memoria 3 etapas + "
+      "relevamiento pendiente de Lucas + presupuesto borrador", file=sys.stderr)
+
 
 # ══════════════════════════════════════════════════════════════════
 # 6. COMMIT + CLEANUP SQL
@@ -916,6 +964,12 @@ print("", file=sys.stderr)
 # Generar SQL de cleanup (orden inverso por dependencias FK)
 cleanup_order = [
     'coop.ballot',
+    'coop.presupuesto.linea',
+    'coop.presupuesto',
+    'coop.relevamiento.medida',
+    'coop.relevamiento',
+    'coop.ot.etapa',
+    'coop.orden.trabajo',
     'coop.orden.corralon.linea',
     'coop.orden.corralon',
     'coop.acopio.precio',

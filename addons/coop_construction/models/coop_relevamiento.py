@@ -26,7 +26,7 @@ class CoopRelevamiento(models.Model):
         ('validado', 'Validado'),
     ], string='Estado', default='pendiente', required=True, tracking=True)
 
-    @api.depends('orden_id.name', 'member_id')
+    @api.depends('orden_id.name')
     def _compute_name(self) -> None:
         for r in self:
             r.name = 'Relevamiento %s' % (r.orden_id.name or '')
