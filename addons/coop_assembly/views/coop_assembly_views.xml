@@ -7,7 +7,8 @@
             <form string="Asamblea">
                 <header>
                     <button name="action_open" string="Iniciar asamblea" type="object" class="btn-primary" invisible="state != 'draft'" groups="coop_members.group_coop_manager"/>
-                    <button name="action_generate_minutes" string="Generar acta" type="object" invisible="state != 'open'" groups="coop_members.group_coop_manager"/>
+                    <button name="action_generate_minutes" string="Generar acta" type="object" invisible="state not in ('open','closed')" groups="coop_members.group_coop_manager"/>
+                    <button name="%(action_report_coop_acta)d" string="Imprimir acta PDF" type="action" class="btn-secondary" invisible="not acta_texto"/>
                     <button name="action_close" string="Cerrar asamblea" type="object" invisible="state != 'open'" groups="coop_members.group_coop_manager"/>
                     <button name="action_cancel" string="Cancelar" type="object" invisible="state in ('closed', 'cancelled')" groups="coop_members.group_coop_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,open,closed"/>
@@ -70,7 +71,23 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Acta">
+                        <page string="Acta legal">
+                            <group>
+                                <field name="numero_acta"/>
+                                <field name="acta_hash" readonly="1" groups="base.group_no_one"/>
+                            </group>
+                            <field name="acta_texto" placeholder="Apretá 'Generar acta' para armar el texto legal desde los puntos del orden del día."/>
+                            <separator string="Firmas"/>
+                            <field name="firma_ids" readonly="1">
+                                <list>
+                                    <field name="rol"/>
+                                    <field name="member_id"/>
+                                    <field name="fecha"/>
+                                    <field name="firma_valida" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Acta (libre / vieja)">
                             <field name="minutes"/>
                         </page>
                     </notebook>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_coop_acta_asamblea" model="ir.sequence">
+        <field name="name">Acta de asamblea</field>
+        <field name="code">coop.assembly.acta.asamblea</field>
+        <field name="padding">1</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_coop_acta_board" model="ir.sequence">
+        <field name="name">Acta de consejo</field>
+        <field name="code">coop.assembly.acta.board</field>
+        <field name="padding">1</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

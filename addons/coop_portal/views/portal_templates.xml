@@ -990,9 +990,26 @@
                 </t>
             </div>
 
-            <div class="card" t-if="not votos">
+            <div class="card" t-if="not votos and not puntos">
                 <h3>SIN PUNTOS</h3>
-                <div>La asamblea está abierta pero todavía no hay votaciones cargadas.</div>
+                <div>La asamblea está abierta pero todavía no hay orden del día cargado.</div>
+            </div>
+
+            <div class="card" t-if="asamblea.acta_texto" style="border-left:6px solid var(--verde)">
+                <h3>📄 ACTA</h3>
+                <div style="font-size:13px;color:var(--gris);margin-bottom:10px">
+                    <t t-if="asamblea.numero_acta">Acta N° <t t-esc="asamblea.numero_acta"/> · </t>
+                    El acta legal está lista para pasar al libro.
+                </div>
+                <t t-if="ya_firme">
+                    <div class="fila" style="border:0;padding:4px 0">
+                        <div>Tu firma</div><span class="chip ok">✓ Firmaste</span>
+                    </div>
+                </t>
+                <form t-elif="mi_rol_firma" action="/app/asamblea/firmar" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button class="botonazo" style="margin:0" type="submit">✍️ Firmar el acta como <t t-esc="mi_rol_firma"/></button>
+                </form>
             </div>
         </t>
     </template>

@@ -11,3 +11,6 @@ access_coop_ballot_syndic,coop.ballot sindico,model_coop_ballot,coop_members.gro
 access_coop_assembly_point_member,coop.assembly.point socio,model_coop_assembly_point,coop_members.group_coop_member,1,0,0,0
 access_coop_assembly_point_manager,coop.assembly.point admin,model_coop_assembly_point,coop_members.group_coop_manager,1,1,1,1
 access_coop_assembly_point_syndic,coop.assembly.point sindico,model_coop_assembly_point,coop_members.group_coop_syndic,1,0,0,0
+access_coop_acta_firma_member,coop.acta.firma socio,model_coop_acta_firma,coop_members.group_coop_member,1,0,0,0
+access_coop_acta_firma_manager,coop.acta.firma admin,model_coop_acta_firma,coop_members.group_coop_manager,1,1,1,1
+access_coop_acta_firma_syndic,coop.acta.firma sindico,model_coop_acta_firma,coop_members.group_coop_syndic,1,0,0,0

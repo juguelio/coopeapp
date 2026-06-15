@@ -12,6 +12,8 @@
     'data': [
         'security/coop_assembly_security.xml',
         'security/ir.model.access.csv',
+        'data/coop_assembly_data.xml',
+        'report/coop_acta_report.xml',
         'views/coop_assembly_views.xml',
         'views/coop_vote_views.xml',
         'views/coop_assembly_menus.xml',

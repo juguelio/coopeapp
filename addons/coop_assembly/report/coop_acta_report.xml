@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_coop_acta" model="ir.actions.report">
+        <field name="name">Acta de asamblea</field>
+        <field name="model">coop.assembly</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">coop_assembly.report_acta</field>
+        <field name="report_file">coop_assembly.report_acta</field>
+        <field name="binding_model_id" ref="model_coop_assembly"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_acta">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 class="text-center">
+                            ACTA N° <span t-field="doc.numero_acta"/>
+                        </h2>
+                        <p style="text-align: justify; white-space: pre-line; line-height: 1.6;"
+                           t-esc="doc.acta_texto"/>
+
+                        <t t-if="doc.firma_ids">
+                            <h4 class="mt16">Firmas (electrónicas internas)</h4>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Rol</th><th>Socio</th><th>Fecha</th><th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="doc.firma_ids" t-as="f">
+                                        <td><span t-field="f.rol"/></td>
+                                        <td><span t-field="f.member_id"/></td>
+                                        <td><span t-field="f.fecha"/></td>
+                                        <td>
+                                            <span t-if="f.firma_valida">✓ vigente</span>
+                                            <span t-else="">⚠ invalidada (el acta cambió)</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <p class="text-muted mt16" style="font-size: 11px;">
+                            Documento generado por coopeapp. El documento legal es el
+                            libro de actas rubricado (ley 20.337). Las firmas registradas
+                            aquí son firmas electrónicas internas (trazabilidad), no
+                            reemplazan la firma en el libro.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -37,11 +37,34 @@ class CoopPortalAsamblea(http.Controller):
             'member': member, 'asamblea': asamblea, 'votos': votos,
             'puntos': asamblea.sudo().point_ids.sorted('sequence'),
             'mi_presente': member in asamblea.attendee_ids,
+            'mi_rol_firma': self._rol_firma(asamblea, member),
+            'ya_firme': bool(asamblea.firma_ids.filtered(
+                lambda f: f.member_id.id == member.id)),
             'point_state_labels': dict(request.env['coop.assembly.point']
                                        ._fields['state'].selection),
             'choice_labels': dict(request.env['coop.ballot']
                                   ._fields['choice'].selection),
         })
+
+    def _rol_firma(self, asamblea, member):
+        if member.id == asamblea.president_id.id:
+            return 'presidente'
+        if member.id == asamblea.secretary_id.id:
+            return 'secretario'
+        if member.role == 'syndic':
+            return 'sindico'
+        return False
+
+    @http.route('/app/asamblea/firmar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def asamblea_firmar(self, **kw):
+        member = self._member()
+        asamblea = self._asamblea_actual()
+        if member and asamblea and asamblea.acta_texto:
+            rol = self._rol_firma(asamblea, member)
+            if rol:
+                asamblea.sudo().action_firmar(member, rol)
+        return request.redirect('/app/asamblea')
 
     @http.route('/app/asamblea/presente', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)

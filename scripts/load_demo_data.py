@@ -312,11 +312,30 @@ vote3 = track(Vote.create({
 vote3.action_open_vote()
 vote3.action_close_vote()
 
-# Cerrar asamblea y generar acta
+# Orden del día por puntos (M5), cada uno con su votación y resolución
+Point = env['coop.assembly.point'].sudo()
+created.setdefault('coop.assembly.point', [])
+created.setdefault('coop.acta.firma', [])
+for sec, tema, voto, resol in [
+    (1, 'Aprobación de balance 2025', vote1, 'Se aprueba el balance 2025.'),
+    (2, 'Modificación de tarifa horaria', vote2,
+     'Se aprueba subir la tarifa de $3.500 a $4.200 para obras nuevas.'),
+    (3, 'Compra de herramientas nuevas', vote3,
+     'Se rechaza la compra por $850.000; se reverá en la próxima.'),
+]:
+    track(Point.create({
+        'assembly_id': assembly.id, 'sequence': sec, 'name': tema,
+        'vote_id': voto.id, 'resolucion': resol, 'state': 'resuelto'}))
+
+# Cerrar asamblea y generar acta legal (desde los puntos)
 assembly.action_close()
 assembly.action_generate_minutes()
+# firmas electrónicas internas (presidente + secretario)
+assembly.action_firmar(members[0], 'presidente')
+assembly.action_firmar(members[1], 'secretario')
 
-print("  ✓ Asamblea con 3 votaciones creada y cerrada", file=sys.stderr)
+print("  ✓ Asamblea cerrada: 3 puntos + acta legal generada + 2 firmas",
+      file=sys.stderr)
 
 # ── Asamblea ABIERTA con votaciones abiertas (para votar desde /app) ──
 asamblea_viva = track(Assembly.create({
@@ -353,7 +372,17 @@ voto_coord = track(Vote.create({
 }))
 voto_coord.action_open_vote()
 
-print("  ✓ Asamblea ABIERTA con 2 votaciones para votar en /app", file=sys.stderr)
+# orden del día de la asamblea abierta (puntos en debate)
+for sec, tema, voto in [
+    (1, 'Compra de andamios nuevos', voto_andamios),
+    (2, 'Designar coordinadora de Quintriqueo', voto_coord),
+]:
+    track(Point.create({
+        'assembly_id': asamblea_viva.id, 'sequence': sec, 'name': tema,
+        'vote_id': voto.id, 'state': 'en_debate'}))
+
+print("  ✓ Asamblea ABIERTA con 2 votaciones + orden del día para /app",
+      file=sys.stderr)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1033,6 +1062,8 @@ cleanup_order = [
     'coop.certificado',
     'coop.advance',
     'coop.payroll',
+    'coop.acta.firma',
+    'coop.assembly.point',
     'coop.vote',
     'coop.assembly',
     'coop.contribution',
