@@ -63,17 +63,18 @@ class ResUsers(models.Model):
         return _verify_pin(self.sudo().coop_pin_hash, pin)
 
     def _check_credentials(self, credential, env):
-        """Extiende la auth: si el password estándar falla, prueba el PIN.
-        Diseño seguro: el login normal pasa SIEMPRE por super() primero; solo
-        si super() rechaza intentamos el PIN. Un error acá nunca bloquea el
-        login normal."""
-        try:
-            return super()._check_credentials(credential, env)
-        except AccessDenied:
-            if (isinstance(credential, dict)
-                    and credential.get('type') == 'password'
-                    and credential.get('password')
-                    and self._verifica_pin(credential['password'])):
+        """Auth por PIN AISLADA del login estándar: el PIN solo se acepta cuando
+        la credencial trae la clave 'coop_pin', que ÚNICAMENTE setea el flujo
+        /app/ingresar. /web/login manda {login,password,type} sin esa clave →
+        nunca acepta el PIN (no hay oráculo de brute-force en el backend).
+        Además respeta el bloqueo por intentos en TODO punto de entrada."""
+        if isinstance(credential, dict) and credential.get('coop_pin'):
+            self.ensure_one()
+            u = self.sudo()
+            if u.coop_pin_bloqueo and u.coop_pin_bloqueo > fields.Datetime.now():
+                raise AccessDenied()
+            if self._verifica_pin(credential['coop_pin']):
                 return {'uid': self.id, 'auth_method': 'password',
                         'mfa': 'default'}
-            raise
+            raise AccessDenied()
+        return super()._check_credentials(credential, env)

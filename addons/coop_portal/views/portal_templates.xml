@@ -134,7 +134,7 @@
                         if (!f || f.getAttribute('data-offline') !== '1' || navigator.onLine) { return; }
                         ev.preventDefault();
                         var datos = {};
-                        new FormData(f).forEach(function (v, k) { if (k !== 'csrf_token') { datos[k] = v; } });
+                        new FormData(f).forEach(function (v, k) { datos[k] = v; });
                         var c = cola(); c.push(datos); guardar(c);
                         window.location = '/app/cargar/encolado';
                     });
@@ -1398,6 +1398,7 @@
                                    style="width:90px;padding:8px;border:2px solid #d7dee5;border-radius:10px;font-size:14px"/>
                             <select name="categoria"
                                     style="flex:1;padding:8px;border:2px solid #d7dee5;border-radius:10px;font-size:14px">
+                                <option value="" t-att-selected="'selected' if not i['tk'].categoria_tarea else None">— sin oficio —</option>
                                 <option t-foreach="cat_labels.items()" t-as="cl" t-att-value="cl[0]"
                                         t-att-selected="'selected' if cl[0] == i['tk'].categoria_tarea else None"><t t-esc="cl[1]"/></option>
                             </select>

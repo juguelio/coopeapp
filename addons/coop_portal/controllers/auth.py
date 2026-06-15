@@ -2,6 +2,7 @@ import re
 from datetime import timedelta
 
 from odoo import fields, http
+from odoo.exceptions import AccessDenied
 from odoo.http import request
 
 
@@ -28,19 +29,21 @@ class CoopPortalAuth(http.Controller):
                 ('state', '=', 'active')], limit=1)
         user = member.partner_id.user_ids[:1] if member else \
             request.env['res.users'].sudo().browse()
-        if user:
+        pin = (pin or '').strip()
+        if user and pin:
             if (user.coop_pin_bloqueo
                     and user.coop_pin_bloqueo > fields.Datetime.now()):
                 return request.render('coop_portal.ingresar', {
                     'error': 'Demasiados intentos. Esperá unos minutos.'})
             try:
+                # la clave 'coop_pin' activa la auth por PIN (aislada de
+                # /web/login); sin ella el PIN no se acepta en ningún lado
                 request.session.authenticate(request.db, {
-                    'login': user.login, 'password': pin or '',
-                    'type': 'password'})
+                    'login': user.login, 'type': 'password', 'coop_pin': pin})
                 user.sudo().write({'coop_pin_intentos': 0,
                                    'coop_pin_bloqueo': False})
                 return request.redirect('/app')
-            except Exception:  # noqa: BLE001 — PIN incorrecto
+            except AccessDenied:
                 intentos = user.coop_pin_intentos + 1
                 vals = {'coop_pin_intentos': intentos}
                 if intentos >= 5:

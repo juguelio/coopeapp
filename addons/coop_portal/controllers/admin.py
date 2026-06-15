@@ -95,7 +95,10 @@ class CoopPortalAdmin(http.Controller):
         if not self._es_admin(member):
             return request.redirect('/app')
         Task = request.env['project.task'].sudo()
-        tk = Task.browse(int(task_id)).exists()
+        try:
+            tk = Task.browse(int(task_id)).exists()
+        except (TypeError, ValueError):
+            return request.redirect('/app/admin/ruta')
         if tk and tk.project_id in self._obras_activas():
             vals = {}
             if duracion is not None:

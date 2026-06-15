@@ -74,13 +74,12 @@ class CoopPwa(http.Controller):
         return request.render('coop_portal.cargar_encolado', {})
 
     @http.route('/app/cargar/sync', type='http', auth='user', website=False,
-                methods=['POST'], csrf=False)
+                methods=['POST'], csrf=True)
     def cargar_sync(self, item_id=None, cantidad=None, medida_trabajo=None,
                     cantidad_trabajo=None, **kw):
-        """Endpoint para sincronizar un avance cargado offline. csrf=False a
-        propósito: es auth='user' (sesión propia) y solo crea el avance del
-        socio logueado (la record rule 'propio + borrador' es la garantía).
-        La cola del cliente reintenta acá al volver la señal."""
+        """Sincroniza un avance cargado offline. csrf=True: la cola del cliente
+        guarda el csrf_token de la página y lo reenvía. Solo crea el avance del
+        socio logueado (record rule 'propio + borrador')."""
         member = request.env['coop.member'].sudo().search(
             [('partner_id.user_ids', 'in', [request.env.uid]),
              ('state', '=', 'active')], limit=1)
