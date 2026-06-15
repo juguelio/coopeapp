@@ -67,3 +67,6 @@ access_coop_asignacion_herramienta_syndic,coop.asignacion.herramienta syndic,mod
 access_coop_incidente_member,coop.incidente member,model_coop_incidente,coop_members.group_coop_member,1,0,0,0
 access_coop_incidente_manager,coop.incidente manager,model_coop_incidente,coop_members.group_coop_manager,1,1,1,1
 access_coop_incidente_syndic,coop.incidente syndic,model_coop_incidente,coop_members.group_coop_syndic,1,0,0,0
+access_coop_operacion_member,coop.operacion member,model_coop_operacion,coop_members.group_coop_member,1,0,0,0
+access_coop_operacion_manager,coop.operacion manager,model_coop_operacion,coop_members.group_coop_manager,1,0,0,0
+access_coop_operacion_syndic,coop.operacion syndic,model_coop_operacion,coop_members.group_coop_syndic,1,0,0,0

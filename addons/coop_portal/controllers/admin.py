@@ -75,49 +75,39 @@ class CoopPortalAdmin(http.Controller):
                 request.env['project.task']._fields['categoria_tarea'].selection),
         })
 
-    # ── reportes con rango de fechas ─────────────────────────────────
+    # ── reportes: sobre la vista unificada coop.operacion (M6) ───────
     @http.route('/app/admin/reportes', type='http', auth='user', website=False)
-    def reportes(self, rango='mes', **kw):
+    def reportes(self, rango='mes', tipo=None, **kw):
         member = self._member()
         if not self._es_admin(member):
             return request.redirect('/app')
         hoy = fields.Date.context_today(request.env['coop.member'].sudo())
         desde = {
-            'hoy': hoy,
-            'semana': hoy - timedelta(days=7),
+            'hoy': hoy, 'semana': hoy - timedelta(days=7),
             'mes': hoy - timedelta(days=30),
         }.get(rango, hoy - timedelta(days=30))
-
-        env = request.env
+        dominio = [('fecha', '>=', desde)]
+        if tipo in ('avance', 'pedido', 'gasto', 'incidente'):
+            dominio.append(('tipo', '=', tipo))
+        iconos = {'avance': '✏️', 'pedido': '🧱', 'gasto': '💸',
+                  'incidente': '⚠️'}
+        registros = request.env['coop.operacion'].sudo().search(
+            dominio, order='fecha desc')
         ops, total_gasto, total_m2 = [], 0.0, 0.0
-        for a in env['coop.avance.medicion'].sudo().search([
-                ('state', '=', 'validado'), ('fecha', '>=', desde)],
-                order='fecha desc'):
-            if a.uom == 'm2':
-                total_m2 += a.cantidad
-            ops.append({'fecha': a.fecha, 'icono': '✏️', 'quien': a.member_id.name,
-                        'obra': a.obra_id.name,
-                        'detalle': '%s — %g %s' % (
-                            a.foja_item_id.name, a.cantidad,
-                            dict(a._fields['uom'].selection).get(a.uom, a.uom))})
-        for p in env['coop.pedido.material'].sudo().search([
-                ('state', '=', 'aceptado'),
-                ('create_date', '>=', fields.Datetime.to_string(desde))],
-                order='create_date desc'):
-            ops.append({'fecha': p.create_date.date(), 'icono': '🧱',
-                        'quien': p.member_id.name, 'obra': p.obra_id.name,
-                        'detalle': p.name})
-        for g in env['coop.proyeccion.gasto'].sudo().search([
-                ('state', '=', 'pagado'),
-                ('fecha_pago', '>=', desde)], order='fecha_pago desc'):
-            total_gasto += g.importe
-            ops.append({'fecha': g.fecha_pago, 'icono': '💸',
-                        'quien': '—', 'obra': g.obra_id.name,
-                        'detalle': '%s · $ %s' % (
-                            g.name, '{:,.0f}'.format(g.importe).replace(',', '.'))})
-        ops = [o for o in ops if o['fecha']]
-        ops.sort(key=lambda o: o['fecha'], reverse=True)
+        for o in registros:
+            if o.tipo == 'gasto':
+                total_gasto += o.monto
+            if o.uom == 'm2':
+                total_m2 += o.cantidad
+            detalle = o.detalle or ''
+            if o.tipo == 'gasto' and o.monto:
+                detalle += ' · $ %s' % '{:,.0f}'.format(o.monto).replace(',', '.')
+            elif o.cantidad and o.uom:
+                detalle += ' — %g %s' % (o.cantidad, o.uom)
+            ops.append({'fecha': o.fecha, 'icono': iconos.get(o.tipo, '•'),
+                        'quien': o.member_id.name or '—',
+                        'obra': o.obra_id.name or '—', 'detalle': detalle})
         return request.render('coop_portal.admin_reportes', {
-            'member': member, 'ops': ops[:40], 'rango': rango,
+            'member': member, 'ops': ops[:40], 'rango': rango, 'tipo': tipo,
             'n_ops': len(ops), 'total_gasto': total_gasto, 'total_m2': total_m2,
         })

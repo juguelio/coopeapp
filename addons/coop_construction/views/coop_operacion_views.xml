@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_operacion_list" model="ir.ui.view">
+        <field name="name">coop.operacion.list</field>
+        <field name="model">coop.operacion</field>
+        <field name="arch" type="xml">
+            <list string="Operaciones" create="false" edit="false">
+                <field name="fecha"/>
+                <field name="tipo"/>
+                <field name="obra_id"/>
+                <field name="member_id"/>
+                <field name="detalle"/>
+                <field name="cantidad" sum="Cantidad"/>
+                <field name="uom"/>
+                <field name="monto" sum="Monto"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_operacion_pivot" model="ir.ui.view">
+        <field name="name">coop.operacion.pivot</field>
+        <field name="model">coop.operacion</field>
+        <field name="arch" type="xml">
+            <pivot string="Operaciones">
+                <field name="obra_id" type="row"/>
+                <field name="tipo" type="col"/>
+                <field name="monto" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_coop_operacion_search" model="ir.ui.view">
+        <field name="name">coop.operacion.search</field>
+        <field name="model">coop.operacion</field>
+        <field name="arch" type="xml">
+            <search string="Operaciones">
+                <field name="detalle"/>
+                <field name="obra_id"/>
+                <field name="member_id"/>
+                <filter name="f_avance" string="Avances" domain="[('tipo','=','avance')]"/>
+                <filter name="f_pedido" string="Pedidos" domain="[('tipo','=','pedido')]"/>
+                <filter name="f_gasto" string="Gastos" domain="[('tipo','=','gasto')]"/>
+                <filter name="f_incidente" string="Incidentes" domain="[('tipo','=','incidente')]"/>
+                <separator/>
+                <filter name="f_mes" string="Últimos 30 días"
+                        domain="[('fecha','&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="g_obra" string="Obra" context="{'group_by':'obra_id'}"/>
+                    <filter name="g_tipo" string="Tipo" context="{'group_by':'tipo'}"/>
+                    <filter name="g_fecha" string="Fecha" context="{'group_by':'fecha'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_coop_operacion" model="ir.actions.act_window">
+        <field name="name">Operaciones (reportes)</field>
+        <field name="res_model">coop.operacion</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_coop_operacion_search"/>
+    </record>
+
+    <menuitem id="menu_coop_operaciones"
+              name="Reportes (operaciones)"
+              parent="menu_coop_economia"
+              action="action_coop_operacion"
+              sequence="40"/>
+</odoo>

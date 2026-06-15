@@ -1272,10 +1272,16 @@
             <h1>📋 Reportes</h1>
             <div class="sub">Operaciones del período</div>
 
-            <div style="display:flex;gap:8px;margin-bottom:12px">
-                <a t-attf-class="botonazo {{'' if rango == 'hoy' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" href="/app/admin/reportes?rango=hoy">Hoy</a>
-                <a t-attf-class="botonazo {{'' if rango == 'semana' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" href="/app/admin/reportes?rango=semana">7 días</a>
-                <a t-attf-class="botonazo {{'' if rango == 'mes' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" href="/app/admin/reportes?rango=mes">Mes</a>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+                <a t-attf-class="botonazo {{'' if rango == 'hoy' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" t-attf-href="/app/admin/reportes?rango=hoy{{'&amp;tipo=%s' % tipo if tipo else ''}}">Hoy</a>
+                <a t-attf-class="botonazo {{'' if rango == 'semana' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" t-attf-href="/app/admin/reportes?rango=semana{{'&amp;tipo=%s' % tipo if tipo else ''}}">7 días</a>
+                <a t-attf-class="botonazo {{'' if rango == 'mes' else 'sec'}}" style="min-height:42px;font-size:14px;margin:0" t-attf-href="/app/admin/reportes?rango=mes{{'&amp;tipo=%s' % tipo if tipo else ''}}">Mes</a>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+                <a t-attf-class="chip {{'ok' if not tipo else 'espera'}}" style="text-decoration:none;padding:6px 12px" t-attf-href="/app/admin/reportes?rango={{rango}}">Todo</a>
+                <a t-foreach="[('avance','✏️ Avances'),('pedido','🧱 Pedidos'),('gasto','💸 Gastos'),('incidente','⚠️ Incidentes')]" t-as="f"
+                   t-attf-class="chip {{'ok' if tipo == f[0] else 'espera'}}" style="text-decoration:none;padding:6px 12px"
+                   t-attf-href="/app/admin/reportes?rango={{rango}}&amp;tipo={{f[0]}}"><t t-esc="f[1]"/></a>
             </div>
 
             <div class="card">
