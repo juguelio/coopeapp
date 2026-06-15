@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_coop_presupuesto" model="ir.actions.report">
+        <field name="name">Presupuesto</field>
+        <field name="model">coop.presupuesto</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">coop_construction.report_presupuesto</field>
+        <field name="report_file">coop_construction.report_presupuesto</field>
+        <field name="binding_model_id" ref="model_coop_presupuesto"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_presupuesto">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Presupuesto <span t-field="doc.name"/></h2>
+                        <div class="row mt8">
+                            <div class="col-6">
+                                <strong>Cliente:</strong> <span t-field="doc.cliente_id"/><br/>
+                                <strong>Trabajo:</strong> <span t-field="doc.orden_id.name"/><br/>
+                                <t t-if="doc.orden_id.ubicacion">
+                                    <strong>Ubicación:</strong> <span t-field="doc.orden_id.ubicacion"/><br/>
+                                </t>
+                            </div>
+                            <div class="col-6 text-end">
+                                <strong>Fecha:</strong> <span t-field="doc.fecha"/><br/>
+                                <strong>Válido hasta:</strong> <span t-field="doc.fecha_vencimiento"/><br/>
+                                <strong>Comprobante:</strong> <span t-field="doc.tipo_factura"/><br/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm mt16">
+                            <thead>
+                                <tr>
+                                    <th>Categoría</th>
+                                    <th>Detalle</th>
+                                    <th class="text-end">Cant.</th>
+                                    <th class="text-end">P. unit.</th>
+                                    <th class="text-end">IVA</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.linea_ids" t-as="ln">
+                                    <td><span t-field="ln.categoria"/></td>
+                                    <td><span t-field="ln.name"/></td>
+                                    <td class="text-end"><span t-esc="'%g' % ln.cantidad"/></td>
+                                    <td class="text-end"><span t-field="ln.precio_unitario"/></td>
+                                    <td class="text-end"><span t-field="ln.iva_alicuota"/></td>
+                                    <td class="text-end"><span t-field="ln.subtotal"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="row">
+                            <div class="col-6"/>
+                            <div class="col-6">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Neto</td>
+                                        <td class="text-end"><span t-field="doc.neto"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>IVA</td>
+                                        <td class="text-end"><span t-field="doc.iva"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total</strong></td>
+                                        <td class="text-end"><strong><span t-field="doc.total"/></strong></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <p class="mt16 text-muted">
+                            Presupuesto válido hasta el <span t-field="doc.fecha_vencimiento"/>.
+                            Los precios pueden reajustarse por inflación pasada esa fecha.
+                            Este documento es un presupuesto, no una factura.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

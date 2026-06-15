@@ -46,6 +46,8 @@ class CoopOrdenTrabajo(models.Model):
     relevamiento_id = fields.Many2one(
         'coop.relevamiento', string='Relevamiento',
         compute='_compute_relevamiento')
+    presupuesto_ids = fields.One2many(
+        'coop.presupuesto', 'orden_id', string='Presupuestos')
     obra_id = fields.Many2one(
         'project.project', string='Obra generada', readonly=True,
         ondelete='set null')
@@ -78,6 +80,21 @@ class CoopOrdenTrabajo(models.Model):
                     'orden_id': r.id, 'member_id': r.relevador_id.id or False,
                 })
             r.state = 'relevamiento'
+
+    def action_crear_presupuesto(self):
+        """Crea un presupuesto en borrador y abre su formulario."""
+        self.ensure_one()
+        version = len(self.presupuesto_ids) + 1
+        pres = self.env['coop.presupuesto'].create({
+            'orden_id': self.id, 'version': version,
+        })
+        if self.state in ('recibida', 'relevamiento'):
+            self.state = 'presupuestada'
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'coop.presupuesto',
+            'res_id': pres.id, 'view_mode': 'form', 'target': 'current',
+        }
 
     def action_rechazar(self) -> None:
         self.write({'state': 'rechazada'})

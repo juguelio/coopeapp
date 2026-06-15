@@ -32,6 +32,9 @@
                             invisible="state != 'recibida'"/>
                     <button name="action_rechazar" string="Rechazar"
                             type="object" invisible="state in ('rechazada','aprobada')"/>
+                    <button name="action_crear_presupuesto" string="Crear presupuesto"
+                            type="object" class="btn-primary"
+                            invisible="state in ('rechazada','aprobada','vencida')"/>
                     <button name="action_reabrir" string="Reabrir"
                             type="object" invisible="state == 'recibida'"/>
                     <field name="state" widget="statusbar"
@@ -76,6 +79,19 @@
                                     <field name="state" widget="badge"
                                            decoration-success="state == 'validado'"
                                            decoration-info="state == 'cargado'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Presupuestos" invisible="not presupuesto_ids">
+                            <field name="presupuesto_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="fecha"/>
+                                    <field name="tipo_factura"/>
+                                    <field name="total"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'aprobado'"
+                                           decoration-info="state == 'enviado'"/>
                                 </list>
                             </field>
                         </page>

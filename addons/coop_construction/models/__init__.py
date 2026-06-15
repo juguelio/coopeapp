@@ -8,4 +8,5 @@ from . import coop_corralon
 from . import coop_acopio
 from . import coop_orden_trabajo
 from . import coop_relevamiento
+from . import coop_presupuesto
 from . import coop_work_entry

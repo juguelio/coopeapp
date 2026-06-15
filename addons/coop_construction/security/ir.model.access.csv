@@ -51,3 +51,9 @@ access_coop_relevamiento_syndic,coop.relevamiento syndic,model_coop_relevamiento
 access_coop_relevamiento_medida_member,coop.relevamiento.medida member,model_coop_relevamiento_medida,coop_members.group_coop_member,1,0,0,0
 access_coop_relevamiento_medida_manager,coop.relevamiento.medida manager,model_coop_relevamiento_medida,coop_members.group_coop_manager,1,1,1,1
 access_coop_relevamiento_medida_syndic,coop.relevamiento.medida syndic,model_coop_relevamiento_medida,coop_members.group_coop_syndic,1,0,0,0
+access_coop_presupuesto_member,coop.presupuesto member,model_coop_presupuesto,coop_members.group_coop_member,1,0,0,0
+access_coop_presupuesto_manager,coop.presupuesto manager,model_coop_presupuesto,coop_members.group_coop_manager,1,1,1,1
+access_coop_presupuesto_syndic,coop.presupuesto syndic,model_coop_presupuesto,coop_members.group_coop_syndic,1,0,0,0
+access_coop_presupuesto_linea_member,coop.presupuesto.linea member,model_coop_presupuesto_linea,coop_members.group_coop_member,1,0,0,0
+access_coop_presupuesto_linea_manager,coop.presupuesto.linea manager,model_coop_presupuesto_linea,coop_members.group_coop_manager,1,1,1,1
+access_coop_presupuesto_linea_syndic,coop.presupuesto.linea syndic,model_coop_presupuesto_linea,coop_members.group_coop_syndic,1,0,0,0

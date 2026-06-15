@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_presupuesto_list" model="ir.ui.view">
+        <field name="name">coop.presupuesto.list</field>
+        <field name="model">coop.presupuesto</field>
+        <field name="arch" type="xml">
+            <list string="Presupuestos"
+                  decoration-success="state == 'aprobado'"
+                  decoration-info="state == 'enviado'"
+                  decoration-danger="state in ('rechazado','vencido')">
+                <field name="name"/>
+                <field name="fecha"/>
+                <field name="orden_id"/>
+                <field name="cliente_id"/>
+                <field name="tipo_factura"/>
+                <field name="total"/>
+                <field name="fecha_vencimiento"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'aprobado'"
+                       decoration-info="state == 'enviado'"
+                       decoration-danger="state in ('rechazado','vencido')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_presupuesto_form" model="ir.ui.view">
+        <field name="name">coop.presupuesto.form</field>
+        <field name="model">coop.presupuesto</field>
+        <field name="arch" type="xml">
+            <form string="Presupuesto">
+                <header>
+                    <button name="action_enviar" string="Enviar al cliente"
+                            type="object" class="btn-primary"
+                            invisible="state != 'borrador'"/>
+                    <button name="action_aprobar" string="Aprobar → crear obra"
+                            type="object" class="btn-success"
+                            invisible="state not in ('enviado','borrador')"/>
+                    <button name="action_rechazar" string="Rechazar"
+                            type="object" invisible="state in ('rechazado','aprobado')"/>
+                    <button name="action_borrador" string="Volver a borrador"
+                            type="object" invisible="state == 'borrador'"/>
+                    <button name="%(action_report_coop_presupuesto)d" string="Imprimir PDF"
+                            type="action" class="btn-secondary"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="borrador,enviado,aprobado"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="orden_id"/>
+                            <field name="cliente_id" readonly="1"/>
+                            <field name="version" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="tipo_factura"/>
+                            <field name="fecha"/>
+                            <field name="validez_dias"/>
+                            <field name="fecha_vencimiento" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="linea_ids">
+                        <list editable="bottom">
+                            <field name="categoria"/>
+                            <field name="name"/>
+                            <field name="material_id"/>
+                            <field name="cantidad"/>
+                            <field name="precio_unitario"/>
+                            <field name="iva_alicuota"/>
+                            <field name="subtotal" readonly="1"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer" colspan="2">
+                        <field name="neto" readonly="1"/>
+                        <field name="iva" readonly="1"/>
+                        <field name="total" readonly="1"
+                               class="oe_subtotal_footer_separator"/>
+                    </group>
+                    <field name="wa_url" widget="url" readonly="1"
+                           invisible="not wa_url" text="Enviar por WhatsApp"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_presupuesto" model="ir.actions.act_window">
+        <field name="name">Presupuestos</field>
+        <field name="res_model">coop.presupuesto</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_coop_presupuestos"
+              name="Presupuestos"
+              parent="menu_coop_comercial"
+              action="action_coop_presupuesto"
+              sequence="30"/>
+</odoo>
