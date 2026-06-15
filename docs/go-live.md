@@ -25,10 +25,15 @@ actualizar.
 
 ```bash
 cd ~/Dev/coopeapp                 # en tu Mac
-# subir TODOS los addons custom al VPS:
+# subir TODOS los addons custom al VPS.
+# OJO: --chmod=D755,F644 fuerza permisos legibles. Sin esto, rsync -a preserva
+# el modo 600 de los archivos de la Mac y Odoo (otro usuario en el contenedor)
+# no puede leer los __manifest__.py → "PermissionError: Permission denied".
 for m in coop_members coop_payroll coop_books coop_assembly coop_construction coop_portal coop_ui; do
-  rsync -az --delete -e "ssh" "addons/$m" coopeapp-vps:~/odoo-coop/addons/
+  rsync -az --delete --chmod=D755,F644 -e "ssh" "addons/$m" coopeapp-vps:~/odoo-coop/addons/
 done
+# (si ya copiaste sin --chmod, arreglá los permisos en el VPS:
+#  ssh coopeapp-vps "chmod -R a+rX ~/odoo-coop/addons" )
 
 # en el VPS: instalar coop_ui + actualizar el resto, en un solo comando
 ssh coopeapp-vps "cd ~/odoo-coop && \
