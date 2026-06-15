@@ -2,6 +2,7 @@ import re
 from urllib.parse import quote
 
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 CATEGORIAS = [
     ('materiales', 'Materiales e insumos'),
@@ -134,30 +135,43 @@ class CoopPresupuesto(models.Model):
         memoria descriptiva de la OT. Idempotente: si la OT ya tiene obra, no
         la recrea. Devuelve la acción para abrir la obra creada."""
         self.ensure_one()
-        self.state = 'aprobado'
         orden = self.orden_id
+        # #2: si la OT ya tiene obra (un presupuesto anterior fue aprobado), no
+        # crear otra ni dejar la obra con valores viejos en silencio. Para
+        # renegociar, se ajusta la obra directamente.
+        if orden.obra_id:
+            raise UserError(
+                'La OT %s ya tiene una obra creada por un presupuesto aprobado '
+                '(%s). Si renegociaste, ajustá la obra directamente; no se '
+                'aprueba un segundo presupuesto sobre la misma OT.'
+                % (orden.name, orden.obra_id.name))
+        self.state = 'aprobado'
         orden.state = 'aprobada'
-        if not orden.obra_id:
-            obra = self.env['project.project'].create({
-                'name': '%s — %s' % (orden.name, orden.cliente_id.name or ''),
-                'is_coop_obra': True,
-                'obra_type': 'otro',
-                'comitente_id': orden.cliente_id.id,
-                'ubicacion': orden.ubicacion or False,
-                'currency_id': self.currency_id.id,
-                'monto_contrato': self.total,
-                'estado_obra': 'planificacion',
-            })
-            # etapas desde la memoria descriptiva (orden estable por secuencia)
-            numero = 0
-            for em in orden.etapa_memoria_ids.sorted(
-                    lambda e: (e.secuencia, e.id)):
-                numero += 1
-                self.env['coop.etapa'].create({
-                    'obra_id': obra.id, 'numero': numero, 'name': em.name,
-                    'state': 'planificacion',
-                })
-            orden.obra_id = obra.id
+        obra = self.env['project.project'].create({
+            'name': '%s — %s' % (orden.name, orden.cliente_id.name or ''),
+            'is_coop_obra': True,
+            'obra_type': 'otro',
+            'comitente_id': orden.cliente_id.id,
+            'ubicacion': orden.ubicacion or False,
+            'currency_id': self.currency_id.id,
+            'monto_contrato': self.total,
+            'estado_obra': 'planificacion',
+        })
+        # etapas desde la memoria descriptiva (orden estable por secuencia)
+        etapas_vals = [
+            {'obra_id': obra.id, 'numero': i, 'name': em.name,
+             'state': 'planificacion'}
+            for i, em in enumerate(
+                orden.etapa_memoria_ids.sorted(lambda e: (e.secuencia, e.id)),
+                start=1)
+        ]
+        # #4: si la OT no tiene memoria, la obra nace con una etapa por defecto
+        # (no una obra vacía sin proyección).
+        if not etapas_vals:
+            etapas_vals = [{'obra_id': obra.id, 'numero': 1,
+                            'name': 'Etapa 1', 'state': 'planificacion'}]
+        self.env['coop.etapa'].create(etapas_vals)
+        orden.obra_id = obra.id
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'project.project',

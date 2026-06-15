@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+        <!-- El Administrador cooperativo gestiona obras (= project.project):
+             necesita acceso a Project para crear/leer obras (ej: al aprobar un
+             presupuesto se crea la obra). Sin esto el manager recibía AccessError. -->
+        <record id="coop_members.group_coop_manager" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('project.group_project_manager'))]"/>
+        </record>
+
         <!-- Socio: lee todos los avances (transparencia ACI),
              pero solo crea/edita los propios y en borrador -->
         <record id="rule_avance_medicion_member_write" model="ir.rule">

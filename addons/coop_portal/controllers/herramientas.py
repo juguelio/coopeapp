@@ -56,7 +56,11 @@ class CoopPortalHerramientas(http.Controller):
             int(obra_id)).exists()
         equipo = request.env['maintenance.equipment'].sudo().browse(
             int(equipment_id)).exists()
-        if (obra and equipo and obra.capataz_id.id == member.id
+        # guardas explícitas: sin member/obra/equipo, o sin capataz, no se
+        # compara .id (evita el bypass False == False)
+        if not member or not obra or not equipo:
+            return request.redirect('/app')
+        if (obra.capataz_id and obra.capataz_id.id == member.id
                 and equipo.estado_coop == 'disponible'):
             request.env['coop.asignacion.herramienta'].sudo().create({
                 'equipment_id': equipo.id, 'obra_id': obra.id,
@@ -69,7 +73,9 @@ class CoopPortalHerramientas(http.Controller):
         member = self._member()
         asig = request.env['coop.asignacion.herramienta'].sudo().browse(
             int(asignacion_id)).exists()
-        if asig and asig.obra_id.capataz_id.id == member.id:
+        if not member or not asig:
+            return request.redirect('/app')
+        if asig.obra_id.capataz_id and asig.obra_id.capataz_id.id == member.id:
             asig.action_devolver()
         return request.redirect('/app/herramientas')
 
