@@ -11,6 +11,8 @@
                     <button name="action_start_leaving" string="Iniciar baja" type="object" invisible="state not in ('active', 'suspended')"/>
                     <button name="action_confirm_leaving" string="Confirmar baja" type="object" class="btn-danger" invisible="state != 'leaving'"/>
                     <button name="action_reactivate" string="Reactivar" type="object" invisible="state not in ('suspended', 'leaving')"/>
+                    <button name="action_dar_acceso_app" string="Dar acceso a la app" type="object"
+                            help="Crea el usuario, le asigna el rol y le pone un PIN inicial (los últimos 4 del DNI). Si ya tiene acceso, no hace nada."/>
                     <field name="state" widget="statusbar" statusbar_visible="prospect,active,former"/>
                 </header>
                 <sheet>

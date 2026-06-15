@@ -206,7 +206,9 @@ for s in SOCIOS:
         'company_type': 'person',
     }))
 
-    member = track(Member.create({
+    # skip_portal_user: el demo crea sus propios usuarios (lucas/carlos/…) con
+    # demo_user; sin esto, el alta automática crearía otro usuario (login=DNI)
+    member = track(Member.with_context(skip_portal_user=True).create({
         'name': s['name'],
         'partner_id': partner.id,
         'dni': s['dni'],

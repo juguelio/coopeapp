@@ -1,3 +1,6 @@
+import secrets
+import string
+
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -112,3 +115,52 @@ class CoopMember(models.Model):
 
     def action_reactivate(self):
         self.write({'state': 'active', 'date_leaving': False})
+
+    # ── Alta automática del acceso a la app (M7) ─────────────────────
+    @api.model_create_multi
+    def create(self, vals_list):
+        members = super().create(vals_list)
+        if not self.env.context.get('skip_portal_user'):
+            for m in members:
+                m._provision_portal_user()
+        return members
+
+    def _provision_portal_user(self):
+        """Crea el acceso a la app del socio (usuario + rol + PIN) si todavía
+        no tiene uno. Login = DNI; PIN inicial = los últimos 4 del DNI (el
+        socio lo conoce; conviene que lo cambie). El teléfono del socio se
+        copia al contacto para habilitar el login por teléfono+PIN."""
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner or not self.dni or partner.user_ids:
+            return False
+        if self.phone and not (partner.phone or partner.mobile):
+            partner.phone = self.phone
+        grupo_xmlid = {
+            'syndic': 'coop_members.group_coop_syndic',
+            'manager': 'coop_members.group_coop_manager',
+        }.get(self.role, 'coop_members.group_coop_member')
+        grupo = self.env.ref(grupo_xmlid, raise_if_not_found=False)
+        interno = self.env.ref('base.group_user', raise_if_not_found=False)
+        if not grupo or not interno:
+            return False
+        pwd = ''.join(secrets.choice(string.ascii_letters + string.digits)
+                      for _ in range(16))
+        user = self.env['res.users'].sudo().with_context(
+            no_reset_password=True).create({
+                'name': self.name, 'login': self.dni,
+                'partner_id': partner.id, 'password': pwd,
+                'groups_id': [(6, 0, [interno.id, grupo.id])],
+            })
+        pin = ''.join(c for c in (self.dni or '') if c.isdigit())[-4:]
+        if len(pin) == 4:
+            user.set_coop_pin(pin)
+        self.message_post(body=_(
+            'Acceso a la app creado. Usuario: %s · PIN inicial: los últimos 4 '
+            'dígitos del DNI (recomendá cambiarlo).') % self.dni)
+        return user
+
+    def action_dar_acceso_app(self):
+        """Botón para (re)crear el acceso a la app a mano."""
+        for m in self:
+            m._provision_portal_user()
