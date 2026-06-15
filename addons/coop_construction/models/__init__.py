@@ -6,4 +6,5 @@ from . import coop_foja
 from . import coop_pedido
 from . import coop_corralon
 from . import coop_acopio
+from . import coop_orden_trabajo
 from . import coop_work_entry

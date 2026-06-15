@@ -39,3 +39,9 @@ access_coop_lista_precio_syndic,coop.lista.precio syndic,model_coop_lista_precio
 access_coop_orden_corralon_linea_member,coop.orden.corralon.linea member,model_coop_orden_corralon_linea,coop_members.group_coop_member,1,0,0,0
 access_coop_orden_corralon_linea_manager,coop.orden.corralon.linea manager,model_coop_orden_corralon_linea,coop_members.group_coop_manager,1,1,1,1
 access_coop_orden_corralon_linea_syndic,coop.orden.corralon.linea syndic,model_coop_orden_corralon_linea,coop_members.group_coop_syndic,1,0,0,0
+access_coop_orden_trabajo_member,coop.orden.trabajo member,model_coop_orden_trabajo,coop_members.group_coop_member,1,0,0,0
+access_coop_orden_trabajo_manager,coop.orden.trabajo manager,model_coop_orden_trabajo,coop_members.group_coop_manager,1,1,1,1
+access_coop_orden_trabajo_syndic,coop.orden.trabajo syndic,model_coop_orden_trabajo,coop_members.group_coop_syndic,1,0,0,0
+access_coop_ot_etapa_member,coop.ot.etapa member,model_coop_ot_etapa,coop_members.group_coop_member,1,0,0,0
+access_coop_ot_etapa_manager,coop.ot.etapa manager,model_coop_ot_etapa,coop_members.group_coop_manager,1,1,1,1
+access_coop_ot_etapa_syndic,coop.ot.etapa syndic,model_coop_ot_etapa,coop_members.group_coop_syndic,1,0,0,0

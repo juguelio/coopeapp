@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_orden_trabajo_list" model="ir.ui.view">
+        <field name="name">coop.orden.trabajo.list</field>
+        <field name="model">coop.orden.trabajo</field>
+        <field name="arch" type="xml">
+            <list string="Órdenes de trabajo"
+                  decoration-success="state == 'aprobada'"
+                  decoration-danger="state in ('rechazada','vencida')"
+                  decoration-info="state == 'enviada'">
+                <field name="name"/>
+                <field name="fecha_recepcion"/>
+                <field name="cliente_id"/>
+                <field name="ubicacion" optional="show"/>
+                <field name="relevador_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'aprobada'"
+                       decoration-info="state == 'enviada'"
+                       decoration-danger="state in ('rechazada','vencida')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_orden_trabajo_form" model="ir.ui.view">
+        <field name="name">coop.orden.trabajo.form</field>
+        <field name="model">coop.orden.trabajo</field>
+        <field name="arch" type="xml">
+            <form string="Orden de trabajo">
+                <header>
+                    <button name="action_a_relevamiento" string="Pasar a relevamiento"
+                            type="object" class="btn-primary"
+                            invisible="state != 'recibida'"/>
+                    <button name="action_rechazar" string="Rechazar"
+                            type="object" invisible="state in ('rechazada','aprobada')"/>
+                    <button name="action_reabrir" string="Reabrir"
+                            type="object" invisible="state == 'recibida'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="recibida,relevamiento,presupuestada,enviada,aprobada"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="cliente_id"/>
+                            <field name="ubicacion"/>
+                            <field name="fecha_recepcion"/>
+                        </group>
+                        <group>
+                            <field name="administrador_id"/>
+                            <field name="relevador_id"/>
+                            <field name="obra_id" readonly="1" invisible="not obra_id"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="descripcion" placeholder="Descripción del trabajo pedido por el cliente..."/>
+                    <notebook>
+                        <page string="Memoria descriptiva (etapas)">
+                            <field name="etapa_memoria_ids">
+                                <list editable="bottom">
+                                    <field name="secuencia" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="descripcion"/>
+                                    <field name="materiales"/>
+                                    <field name="herramientas"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_orden_trabajo" model="ir.actions.act_window">
+        <field name="name">Órdenes de Trabajo</field>
+        <field name="res_model">coop.orden.trabajo</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_coop_comercial"
+              name="Comercial"
+              parent="menu_coop_construction_root"
+              sequence="15"/>
+
+    <menuitem id="menu_coop_ordenes_trabajo"
+              name="Órdenes de Trabajo"
+              parent="menu_coop_comercial"
+              action="action_coop_orden_trabajo"
+              sequence="10"/>
+</odoo>
