@@ -8,3 +8,6 @@ access_coop_vote_syndic,coop.vote sindico,model_coop_vote,coop_members.group_coo
 access_coop_ballot_member,coop.ballot socio,model_coop_ballot,coop_members.group_coop_member,1,0,1,0
 access_coop_ballot_manager,coop.ballot admin,model_coop_ballot,coop_members.group_coop_manager,1,0,0,0
 access_coop_ballot_syndic,coop.ballot sindico,model_coop_ballot,coop_members.group_coop_syndic,1,0,0,0
+access_coop_assembly_point_member,coop.assembly.point socio,model_coop_assembly_point,coop_members.group_coop_member,1,0,0,0
+access_coop_assembly_point_manager,coop.assembly.point admin,model_coop_assembly_point,coop_members.group_coop_manager,1,1,1,1
+access_coop_assembly_point_syndic,coop.assembly.point sindico,model_coop_assembly_point,coop_members.group_coop_syndic,1,0,0,0

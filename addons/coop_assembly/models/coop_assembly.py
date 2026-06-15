@@ -56,6 +56,8 @@ class CoopAssembly(models.Model):
 
     vote_ids = fields.One2many('coop.vote', 'assembly_id', string='Votaciones')
     vote_count = fields.Integer(string='Votaciones', compute='_compute_vote_count')
+    point_ids = fields.One2many(
+        'coop.assembly.point', 'assembly_id', string='Orden del día (puntos)')
 
     president_id = fields.Many2one('coop.member', string='Presidente de asamblea')
     secretary_id = fields.Many2one('coop.member', string='Secretario de actas')

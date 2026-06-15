@@ -922,6 +922,40 @@
                 Tu voto es secreto.
             </div>
 
+            <div class="card">
+                <h3>QUÓRUM EN VIVO</h3>
+                <div style="font-size:15px;margin-bottom:6px">
+                    <b><t t-esc="asamblea.attendee_count"/></b> de <t t-esc="asamblea.total_active_members"/> socios
+                    (<t t-esc="'%.0f' % asamblea.quorum_percentage"/>%)
+                    <t t-if="asamblea.quorum_reached"> · <span style="color:var(--verde)">✓ hay quórum</span></t>
+                </div>
+                <div class="barra"><div t-attf-style="width:{{min(asamblea.quorum_percentage, 100.0)}}%"/></div>
+                <form t-if="not mi_presente" action="/app/asamblea/presente" method="post" style="margin-top:10px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button class="botonazo" style="margin:0" type="submit">✋ Estoy presente</button>
+                </form>
+                <div t-else="" class="fila" style="border:0;padding:4px 0">
+                    <div>Tu asistencia</div><span class="chip ok">✓ Presente</span>
+                </div>
+            </div>
+
+            <t t-if="puntos">
+                <h2 style="margin:20px 0 8px;font-size:18px">📋 Orden del día</h2>
+                <div class="card" t-foreach="puntos" t-as="p">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline">
+                        <div style="font-weight:800;font-size:15px"><t t-esc="p.sequence"/>. <t t-esc="p.name"/></div>
+                        <span t-attf-class="chip {{'ok' if p.state == 'resuelto' else 'espera'}}">
+                            <t t-esc="point_state_labels.get(p.state, p.state)"/>
+                        </span>
+                    </div>
+                    <div t-if="p.descripcion" style="font-size:14px;color:var(--gris);margin-top:4px"><t t-esc="p.descripcion"/></div>
+                    <div t-if="p.resolucion and p.state == 'resuelto'" style="font-size:14px;margin-top:6px;background:#f6f8fa;border-radius:10px;padding:8px">
+                        <b>Resolución:</b> <t t-esc="p.resolucion"/>
+                    </div>
+                </div>
+            </t>
+
+            <h2 t-if="votos" style="margin:20px 0 8px;font-size:18px">✅ Votaciones</h2>
             <div class="card" t-foreach="votos" t-as="v">
                 <div style="font-weight:800;font-size:16px;margin-bottom:2px"><t t-esc="v['vote'].name"/></div>
                 <div t-if="v['vote'].description" style="font-size:14px;color:var(--gris);margin-bottom:10px">

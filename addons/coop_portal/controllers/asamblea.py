@@ -13,9 +13,10 @@ class CoopPortalAsamblea(http.Controller):
             [('partner_id.user_ids', 'in', [request.env.uid]),
              ('state', '=', 'active')], limit=1)
 
-    def _asamblea_abierta(self):
+    def _asamblea_actual(self):
+        # convocada o en curso: durante ambas el socio puede marcar asistencia
         return request.env['coop.assembly'].sudo().search(
-            [('state', '=', 'open')], order='date desc', limit=1)
+            [('state', 'in', ['draft', 'open'])], order='date desc', limit=1)
 
     def _mi_ballot(self, vote, member):
         return request.env['coop.ballot'].sudo().search(
@@ -26,7 +27,7 @@ class CoopPortalAsamblea(http.Controller):
         member = self._member()
         if not member:
             return request.redirect('/app')
-        asamblea = self._asamblea_abierta()
+        asamblea = self._asamblea_actual()
         if not asamblea:
             return request.render('coop_portal.asamblea_ninguna', {'member': member})
         votos = []
@@ -34,9 +35,22 @@ class CoopPortalAsamblea(http.Controller):
             votos.append({'vote': v, 'mi_voto': self._mi_ballot(v, member)})
         return request.render('coop_portal.asamblea', {
             'member': member, 'asamblea': asamblea, 'votos': votos,
+            'puntos': asamblea.sudo().point_ids.sorted('sequence'),
+            'mi_presente': member in asamblea.attendee_ids,
+            'point_state_labels': dict(request.env['coop.assembly.point']
+                                       ._fields['state'].selection),
             'choice_labels': dict(request.env['coop.ballot']
                                   ._fields['choice'].selection),
         })
+
+    @http.route('/app/asamblea/presente', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def asamblea_presente(self, **kw):
+        member = self._member()
+        asamblea = self._asamblea_actual()
+        if member and asamblea and member not in asamblea.attendee_ids:
+            asamblea.sudo().write({'attendee_ids': [(4, member.id)]})
+        return request.redirect('/app/asamblea')
 
     @http.route('/app/votar', type='http', auth='user', website=False)
     def votar(self, vote_id, **kw):

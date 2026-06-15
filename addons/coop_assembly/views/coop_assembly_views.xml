@@ -35,7 +35,21 @@
                         <field name="secretary_id"/>
                     </group>
                     <notebook>
-                        <page string="Orden del dia">
+                        <page string="Orden del día (puntos)">
+                            <field name="point_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="descripcion"/>
+                                    <field name="vote_id"/>
+                                    <field name="resolucion"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'resuelto'"
+                                           decoration-warning="state == 'en_debate'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Orden del día (texto libre)">
                             <field name="agenda"/>
                         </page>
                         <page string="Socios presentes">
