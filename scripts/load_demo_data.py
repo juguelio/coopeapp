@@ -51,6 +51,8 @@ _demo_users = env['res.users'].sudo().search(
 # Borrar cada obra demo con TODO su árbol de hijos y la obra, en el mismo
 # paso (evita orphans: si la obra no se borra por un FK, se ve en el aviso).
 for _o in _demo_obras:
+    _safe_unlink(_search('coop.incidente', [('obra_id', '=', _o.id)]))
+    _safe_unlink(_search('coop.asignacion.herramienta', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.orden.corralon', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.acopio', [('obra_id', '=', _o.id)]))
     _safe_unlink(_search('coop.pedido.material', [('obra_id', '=', _o.id)]))
@@ -73,6 +75,10 @@ _safe_unlink(_search('coop.corralon', [('name', 'in', [
 # Borrar antes que socios/partners (relevamiento.member_id y cliente_id restrict).
 _safe_unlink(_search('coop.orden.trabajo',
                      [('cliente_id', 'in', _demo_partners.ids)]))
+# Herramientas demo (asignaciones cascada; incidentes ya borrados por obra).
+_safe_unlink(_search('maintenance.equipment', [('name', 'like', '(demo)')]))
+_safe_unlink(_search('maintenance.equipment.category',
+                     [('name', '=', 'Herramientas de obra (demo)')]))
 
 if _demo_members:
     _safe_unlink(_search('coop.advance', [('member_id', 'in', _demo_members.ids)]))
@@ -951,6 +957,43 @@ for cat, nombre, cant, precio in [
 print("  ✓ Pipeline M3: 1 OT (Familia Pérez) + memoria 3 etapas + "
       "relevamiento pendiente de Lucas + presupuesto borrador", file=sys.stderr)
 
+# ── Herramientas (M4): inventario + asignación + incidente ──────────
+Equipo = env['maintenance.equipment'].sudo()
+Cat = env['maintenance.equipment.category'].sudo()
+Asig = env['coop.asignacion.herramienta'].sudo()
+Incidente = env['coop.incidente'].sudo()
+for m in ('maintenance.equipment', 'maintenance.equipment.category',
+          'coop.asignacion.herramienta', 'coop.incidente'):
+    created.setdefault(m, [])
+
+cat = Cat.search([('name', '=', 'Herramientas de obra (demo)')], limit=1)
+if not cat:
+    cat = track(Cat.create({'name': 'Herramientas de obra (demo)'}))
+herr = {}
+for nombre, frecuencia, valor, prox_rev in [
+    ('Hormigonera 130L (demo)', 90, 1800000.0, date(2026, 8, 1)),
+    ('Amoladora angular (demo)', 180, 95000.0, date(2026, 5, 20)),  # vencido
+    ('Taladro percutor (demo)', 180, 140000.0, None),
+    ('Andamio tubular (demo)', 365, 650000.0, None),
+]:
+    herr[nombre] = track(Equipo.create({
+        'name': nombre, 'category_id': cat.id,
+        'frecuencia_dias': frecuencia, 'proxima_revision': prox_rev,
+        'valor_reposicion': valor}))
+# asignar la hormigonera a la obra piloto (queda en_obra)
+track(Asig.create({
+    'equipment_id': herr['Hormigonera 130L (demo)'].id,
+    'obra_id': obra.id, 'member_id': carlos.id}))
+# un incidente de material reportado por Lucas (merma)
+track(Incidente.create({
+    'tipo': 'rotura_material', 'obra_id': obra.id,
+    'material_id': materiales['Pintura látex blanca'].id, 'cantidad': 2,
+    'valor_estimado': 80000.0, 'reportado_por': lucas.id,
+    'descripcion': 'Se volcaron 2 latas de pintura en el traslado.'}))
+
+print("  ✓ Herramientas M4: 4 herramientas (1 asignada a la obra) + "
+      "1 incidente de material reportado por Lucas", file=sys.stderr)
+
 
 # ══════════════════════════════════════════════════════════════════
 # 6. COMMIT + CLEANUP SQL
@@ -970,6 +1013,10 @@ cleanup_order = [
     'coop.relevamiento',
     'coop.ot.etapa',
     'coop.orden.trabajo',
+    'coop.incidente',
+    'coop.asignacion.herramienta',
+    'maintenance.equipment',
+    'maintenance.equipment.category',
     'coop.orden.corralon.linea',
     'coop.orden.corralon',
     'coop.acopio.precio',

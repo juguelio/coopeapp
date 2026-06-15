@@ -10,4 +10,5 @@ from . import coop_orden_trabajo
 from . import coop_relevamiento
 from . import coop_presupuesto
 from . import coop_herramienta
+from . import coop_incidente
 from . import coop_work_entry

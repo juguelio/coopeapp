@@ -16,7 +16,7 @@
                        decoration-info="estado_coop == 'en_obra'"
                        decoration-danger="estado_coop in ('rota','perdida')"/>
                 <field name="obra_id" optional="show"/>
-                <field name="next_action_date" optional="show"/>
+                <field name="proxima_revision" optional="show"/>
                 <field name="service_vencido" optional="hide"/>
                 <field name="valor_reposicion" optional="hide"/>
             </list>
@@ -44,8 +44,8 @@
                             <field name="coordinador_responsable_id"/>
                             <field name="valor_reposicion"/>
                             <field name="currency_id" invisible="1"/>
-                            <field name="period"/>
-                            <field name="next_action_date"/>
+                            <field name="frecuencia_dias"/>
+                            <field name="proxima_revision"/>
                             <field name="service_vencido"/>
                         </group>
                     </group>
@@ -119,4 +119,86 @@
               parent="menu_coop_herramientas_root"
               action="action_coop_asignacion"
               sequence="20"/>
+
+    <!-- ============ coop.incidente ============ -->
+    <record id="view_coop_incidente_list" model="ir.ui.view">
+        <field name="name">coop.incidente.list</field>
+        <field name="model">coop.incidente</field>
+        <field name="arch" type="xml">
+            <list string="Incidentes"
+                  decoration-danger="state == 'reportado'"
+                  decoration-warning="state == 'revisado'"
+                  decoration-muted="state == 'resuelto'">
+                <field name="create_date" string="Fecha"/>
+                <field name="tipo"/>
+                <field name="name"/>
+                <field name="obra_id"/>
+                <field name="reportado_por"/>
+                <field name="valor_estimado" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-danger="state == 'reportado'"
+                       decoration-warning="state == 'revisado'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_incidente_form" model="ir.ui.view">
+        <field name="name">coop.incidente.form</field>
+        <field name="model">coop.incidente</field>
+        <field name="arch" type="xml">
+            <form string="Incidente">
+                <header>
+                    <button name="action_revisar" string="Marcar revisado"
+                            type="object" class="btn-primary"
+                            invisible="state != 'reportado'"/>
+                    <button name="action_resolver" string="Resolver"
+                            type="object" class="btn-success"
+                            invisible="state == 'resuelto'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="tipo"/>
+                            <field name="obra_id"/>
+                            <field name="es_herramienta" invisible="1"/>
+                            <field name="equipment_id" invisible="not es_herramienta"
+                                   required="es_herramienta"/>
+                            <field name="material_id" invisible="es_herramienta"/>
+                            <field name="cantidad" invisible="es_herramienta"/>
+                        </group>
+                        <group>
+                            <field name="reportado_por"/>
+                            <field name="fecha"/>
+                            <field name="valor_estimado" invisible="es_herramienta"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="gasto_id" readonly="1" invisible="not gasto_id"/>
+                            <field name="request_id" readonly="1" invisible="not request_id"/>
+                        </group>
+                    </group>
+                    <field name="descripcion" placeholder="Qué pasó..."/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_incidente" model="ir.actions.act_window">
+        <field name="name">Incidentes</field>
+        <field name="res_model">coop.incidente</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_coop_incidentes"
+              name="Incidentes"
+              parent="menu_coop_herramientas_root"
+              action="action_coop_incidente"
+              sequence="30"/>
 </odoo>

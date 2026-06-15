@@ -64,3 +64,6 @@ access_maintenance_request_coop_manager,maintenance.request coop manager,mainten
 access_coop_asignacion_herramienta_member,coop.asignacion.herramienta member,model_coop_asignacion_herramienta,coop_members.group_coop_member,1,0,0,0
 access_coop_asignacion_herramienta_manager,coop.asignacion.herramienta manager,model_coop_asignacion_herramienta,coop_members.group_coop_manager,1,1,1,1
 access_coop_asignacion_herramienta_syndic,coop.asignacion.herramienta syndic,model_coop_asignacion_herramienta,coop_members.group_coop_syndic,1,0,0,0
+access_coop_incidente_member,coop.incidente member,model_coop_incidente,coop_members.group_coop_member,1,0,0,0
+access_coop_incidente_manager,coop.incidente manager,model_coop_incidente,coop_members.group_coop_manager,1,1,1,1
+access_coop_incidente_syndic,coop.incidente syndic,model_coop_incidente,coop_members.group_coop_syndic,1,0,0,0

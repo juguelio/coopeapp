@@ -147,11 +147,15 @@
                         <t t-esc="n_pedidos"/> <t t-if="not n_pedidos">✓</t>
                     </span>
                 </a>
-                <a class="fila" href="/app/corralon" style="text-decoration:none;color:inherit;border:0">
+                <a class="fila" href="/app/corralon" style="text-decoration:none;color:inherit">
                     <div>📦 Armar órdenes al corralón</div>
                     <span t-attf-class="chip {{'espera' if n_corralon else 'ok'}}">
                         <t t-esc="n_corralon"/> <t t-if="not n_corralon">✓</t>
                     </span>
+                </a>
+                <a class="fila" href="/app/herramientas" style="text-decoration:none;color:inherit;border:0">
+                    <div>🔧 Herramientas</div>
+                    <span class="chip ok">→</span>
                 </a>
             </div>
 
@@ -321,6 +325,7 @@
             </div>
 
             <a class="botonazo" href="/app/pedir">🧱 PEDIR MATERIALES</a>
+            <a class="botonazo sec" t-attf-href="/app/reportar?obra_id={{obra.id}}">⚠️ REPORTAR ROTURA O PÉRDIDA</a>
 
             <div class="card" t-if="etapa">
                 <h3>ETAPA <t t-esc="etapa.numero"/> — <t t-esc="etapa_state_labels.get(etapa.state, etapa.state)"/></h3>
@@ -773,6 +778,124 @@
                     El administrador lo usa para armar el presupuesto.
                 </p>
                 <a class="botonazo" href="/app">Volver al inicio</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ HERRAMIENTAS: COORDINADOR ============ -->
+    <template id="herramientas" name="App: herramientas del coordinador">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app">← Volver</a>
+            <h1>🔧 Herramientas</h1>
+            <div class="sub">Llevá, devolvé y mirá los incidentes de tus obras.</div>
+
+            <div class="card" t-if="incidentes" style="border-left:6px solid var(--rojo)">
+                <div style="font-weight:800;margin-bottom:8px">⚠️ Incidentes sin resolver</div>
+                <div t-foreach="incidentes" t-as="inc" style="font-size:14px;padding:6px 0;border-top:1px solid #eef2f5">
+                    <b><t t-esc="tipo_labels.get(inc.tipo, inc.tipo)"/></b> ·
+                    <t t-esc="inc.name"/> · <span style="color:var(--gris)"><t t-esc="inc.reportado_por.name"/></span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="font-weight:800;margin-bottom:8px">En obra ahora</div>
+                <div t-if="not asignadas" style="color:var(--gris);font-size:14px">Ninguna herramienta asignada.</div>
+                <form t-foreach="asignadas" t-as="a" action="/app/herramientas/devolver" method="post"
+                      style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #eef2f5">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="asignacion_id" t-att-value="a.id"/>
+                    <div style="font-size:14px">
+                        <b><t t-esc="a.equipment_id.name"/></b><br/>
+                        <span style="color:var(--gris)"><t t-esc="a.obra_id.name"/> · <t t-esc="a.member_id.name"/></span>
+                    </div>
+                    <button class="botonazo sec" style="min-height:40px;margin:0;width:auto;padding:0 14px" type="submit">↩ Devolver</button>
+                </form>
+            </div>
+
+            <div class="card" t-if="disponibles">
+                <div style="font-weight:800;margin-bottom:8px">➕ Llevar herramienta</div>
+                <form action="/app/herramientas/llevar" method="post" style="display:flex;flex-direction:column;gap:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <select name="equipment_id" required="required"
+                            style="padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option value="">Elegí herramienta disponible…</option>
+                        <option t-foreach="disponibles" t-as="e" t-att-value="e.id"><t t-esc="e.name"/></option>
+                    </select>
+                    <select name="obra_id" required="required"
+                            style="padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option t-foreach="obras" t-as="o" t-att-value="o.id"><t t-esc="o.name"/></option>
+                    </select>
+                    <button class="botonazo" style="margin:0" type="submit">➕ Llevar a la obra</button>
+                </form>
+            </div>
+
+            <a class="botonazo sec" t-attf-href="/app/reportar">⚠️ Reportar rotura o pérdida</a>
+        </t>
+    </template>
+
+    <!-- ============ REPORTAR INCIDENTE: SOCIO ============ -->
+    <template id="reportar" name="App: reportar incidente">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'obra'"/>
+            <a class="atras" href="/app/obra">← Volver</a>
+            <h1>⚠️ Reportar</h1>
+            <div class="sub">Rotura o pérdida de herramienta o material. Queda registrado, sin culpas.</div>
+            <form action="/app/reportar/guardar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="card">
+                    <div style="font-weight:800;margin-bottom:8px">¿Qué pasó?</div>
+                    <select name="tipo" required="required"
+                            style="width:100%;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option value="rotura_herramienta">Se rompió una herramienta</option>
+                        <option value="perdida_herramienta">Se perdió una herramienta</option>
+                        <option value="rotura_material">Se rompió/arruinó material</option>
+                        <option value="perdida_material">Se perdió material</option>
+                    </select>
+                    <select name="obra_id" required="required"
+                            style="width:100%;margin-top:8px;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option t-foreach="obras" t-as="o" t-att-value="o.id"
+                                t-att-selected="'selected' if o.id == obra.id else None"><t t-esc="o.name"/></option>
+                    </select>
+                </div>
+                <div class="card">
+                    <div style="font-weight:800;margin-bottom:8px">¿Cuál? (herramienta o material)</div>
+                    <select name="equipment_id"
+                            style="width:100%;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option value="">— herramienta —</option>
+                        <option t-foreach="equipos" t-as="e" t-att-value="e.id"><t t-esc="e.name"/></option>
+                    </select>
+                    <select name="material_id"
+                            style="width:100%;margin-top:8px;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option value="">— material —</option>
+                        <option t-foreach="materiales" t-as="m" t-att-value="m.id"><t t-esc="m.name"/></option>
+                    </select>
+                    <div style="display:flex;gap:8px;margin-top:8px">
+                        <input type="number" name="cantidad" step="any" placeholder="cantidad (si es material)"
+                               style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                        <input type="number" name="valor" step="any" placeholder="valor aprox $"
+                               style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    </div>
+                </div>
+                <div class="card">
+                    <textarea name="descripcion" rows="3" placeholder="Contá qué pasó..."
+                              style="width:100%;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                </div>
+                <button class="botonazo" type="submit">✓ Avisar al coordinador</button>
+            </form>
+        </t>
+    </template>
+
+    <template id="reportar_listo" name="App: incidente reportado">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'obra'"/>
+            <div class="listo">
+                <div class="check">⚠️</div>
+                <h1>Reportado</h1>
+                <p class="sub" style="margin-top:8px">
+                    Lo registramos. El coordinador y el administrador lo van a revisar.
+                </p>
+                <a class="botonazo" href="/app/obra">Volver a la obra</a>
             </div>
         </t>
     </template>

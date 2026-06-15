@@ -24,22 +24,30 @@ class MaintenanceEquipment(models.Model):
         'res.currency', string='Moneda',
         default=lambda self: self.env.company.currency_id)
     codigo_etiqueta = fields.Char(string='Código de etiqueta')
+    # service preventivo propio (en Odoo 18 maintenance.equipment ya no trae
+    # 'period'/'next_action_date'; usamos campos propios autocontenidos).
+    frecuencia_dias = fields.Integer(
+        string='Frecuencia de service (días)',
+        help='Cada cuántos días corresponde el mantenimiento preventivo.')
+    proxima_revision = fields.Date(
+        string='Próxima revisión',
+        help='Fecha del próximo service. La app avisa si está vencida.')
     asignacion_ids = fields.One2many(
         'coop.asignacion.herramienta', 'equipment_id', string='Asignaciones')
     service_vencido = fields.Boolean(
         string='Service vencido', compute='_compute_service_vencido',
         search='_search_service_vencido')
 
-    @api.depends('next_action_date')
+    @api.depends('proxima_revision')
     def _compute_service_vencido(self) -> None:
         hoy = fields.Date.context_today(self)
         for r in self:
             r.service_vencido = bool(
-                r.next_action_date and r.next_action_date < hoy)
+                r.proxima_revision and r.proxima_revision < hoy)
 
     def _search_service_vencido(self, operator, value):
         hoy = fields.Date.context_today(self)
-        vencidos = self.search([('next_action_date', '<', hoy)])
+        vencidos = self.search([('proxima_revision', '<', hoy)])
         positivo = (operator == '=' and value) or (operator == '!=' and not value)
         return [('id', 'in' if positivo else 'not in', vencidos.ids)]
 
