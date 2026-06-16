@@ -71,6 +71,10 @@
         </head>
         <body>
             <t t-out="0"/>
+            <div style="text-align:center;padding:20px 0 90px">
+                <a href="/web/session/logout?redirect=/app/ingresar"
+                   style="color:var(--gris);font-size:14px;text-decoration:none">↪ Cerrar sesión</a>
+            </div>
             <div class="nav" t-if="nav_rol == 'sindico'">
                 <a href="/app/control" t-att-class="'viva' if nav_activo == 'control' else None"><span class="ico">🛡️</span>Control</a>
                 <a href="/app/auditoria" t-att-class="'viva' if nav_activo == 'auditoria' else None"><span class="ico">🔎</span>Auditoría</a>
