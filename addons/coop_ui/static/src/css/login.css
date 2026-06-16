@@ -23,10 +23,11 @@ a {
     color: var(--coop-verde);
 }
 
-/* Esconder "Powered by Odoo" y el gestor de bases en el login */
+/* Esconder "Powered by Odoo" / "Con la tecnología de Odoo" y el gestor de
+   bases en el login (cualquier link a odoo.com en el frontend). */
+a[href*="odoo.com"],
 .o_footer,
 .oe_login_footer,
-.text-center .text-muted a[href*="odoo.com"],
 a[href="/web/database/manager"] {
     display: none !important;
 }

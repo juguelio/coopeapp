@@ -7,7 +7,9 @@ MANIFEST = {
     'name': 'coopeapp',
     'short_name': 'coopeapp',
     'description': 'App de la cooperativa: avances, plata, obra, asamblea.',
-    'start_url': '/app',
+    # Arranca en el login del socio (teléfono+PIN). Si ya está logueado,
+    # /app/ingresar redirige solo a /app. Así el socio nunca cae en /web/login.
+    'start_url': '/app/ingresar',
     'scope': '/app/',
     'display': 'standalone',
     'orientation': 'portrait',
