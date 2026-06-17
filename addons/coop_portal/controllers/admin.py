@@ -284,6 +284,49 @@ class CoopPortalAdmin(http.Controller):
             '/app/admin/corralon/%d' % orden.id if orden
             else '/app/admin/corralon')
 
+    # ── notas de obra (M8-2) ─────────────────────────────────────────
+    @http.route('/app/admin/notas', type='http', auth='user', website=False)
+    def notas(self, **kw):
+        member = self._member()
+        if not self._es_admin(member):
+            return request.redirect('/app')
+        Nota = request.env['coop.nota'].sudo()
+        data = [{'obra': o, 'n': Nota.search_count([('obra_id', '=', o.id)])}
+                for o in self._obras_activas()]
+        return request.render('coop_portal.admin_notas', {
+            'member': member, 'data': data,
+            'nav_rol': 'admin', 'nav_activo': 'tablero'})
+
+    @http.route('/app/admin/notas/<int:obra_id>', type='http', auth='user',
+                website=False)
+    def notas_obra(self, obra_id, **kw):
+        member = self._member()
+        if not self._es_admin(member):
+            return request.redirect('/app')
+        obra = request.env['project.project'].sudo().browse(obra_id).exists()
+        if not obra:
+            return request.redirect('/app/admin/notas')
+        notas = request.env['coop.nota'].sudo().search(
+            [('obra_id', '=', obra.id)], order='create_date desc')
+        return request.render('coop_portal.admin_notas_obra', {
+            'member': member, 'obra': obra, 'notas': notas,
+            'nav_rol': 'admin', 'nav_activo': 'tablero'})
+
+    @http.route('/app/admin/notas/agregar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def notas_agregar(self, obra_id=None, texto=None, **kw):
+        member = self._member()
+        if not self._es_admin(member):
+            return request.redirect('/app')
+        obra = request.env['project.project'].sudo().browse(
+            int(obra_id)).exists() if (obra_id or '').isdigit() else None
+        texto = (texto or '').strip()
+        if obra and texto:
+            request.env['coop.nota'].sudo().create({
+                'obra_id': obra.id, 'texto': texto, 'member_id': member.id})
+        return request.redirect(
+            '/app/admin/notas/%d' % obra.id if obra else '/app/admin/notas')
+
     # ── ruta crítica multi-obra, editable por oficio (carriles) ──────
     @http.route('/app/admin/ruta', type='http', auth='user', website=False)
     def ruta(self, **kw):

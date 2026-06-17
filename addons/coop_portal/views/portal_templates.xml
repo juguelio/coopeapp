@@ -1395,6 +1395,7 @@
             </div>
             <a class="botonazo" href="/app/admin/nuevo">➕ NUEVO TRABAJO</a>
             <a class="botonazo sec" href="/app/admin/corralon">🧱 PEDIR AL CORRALÓN</a>
+            <a class="botonazo sec" href="/app/admin/notas">📝 NOTAS</a>
 
             <a class="card" t-if="n_relev" href="/app/admin/relevamientos"
                style="border-left:6px solid #2d7ff9;text-decoration:none;color:inherit;display:block">
@@ -1641,6 +1642,57 @@
                     </div>
                     <a t-if="d['wa_url']" class="botonazo" style="margin-top:10px" t-att-href="d['wa_url']" target="_blank">📲 MANDAR A <t t-esc="d['orden'].corralon_id.name"/></a>
                     <a class="atras" t-attf-href="/app/admin/corralon/{{d['orden'].id}}" style="display:block;text-align:center;margin-top:8px">ver / marcar enviada →</a>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ADMIN: NOTAS DE OBRA ============ -->
+    <template id="admin_notas" name="App: admin notas por obra">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin">← Volver</a>
+            <h1>📝 Notas</h1>
+            <div class="sub">Apuntes por obra — no se pierden.</div>
+            <div class="card" t-if="not data">
+                <h3>SIN OBRAS ACTIVAS</h3>
+                <div>Cuando haya una obra activa vas a poder anotar acá.</div>
+            </div>
+            <div class="card" t-if="data">
+                <a class="fila" t-foreach="data" t-as="d"
+                   t-attf-href="/app/admin/notas/{{d['obra'].id}}"
+                   style="text-decoration:none;color:inherit">
+                    <div><t t-esc="d['obra'].name"/></div>
+                    <span t-attf-class="chip {{'espera' if d['n'] else 'ok'}}">
+                        <t t-esc="d['n']"/> nota<t t-if="d['n'] != 1">s</t>
+                    </span>
+                </a>
+            </div>
+        </t>
+    </template>
+
+    <template id="admin_notas_obra" name="App: admin notas de una obra">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin/notas">← Volver</a>
+            <h1>📝 <t t-esc="obra.name"/></h1>
+            <form action="/app/admin/notas/agregar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="obra_id" t-att-value="obra.id"/>
+                <div class="card">
+                    <textarea name="texto" rows="3" placeholder="Escribí una nota..." required="required"
+                              style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:16px"/>
+                </div>
+                <button type="submit" class="botonazo">GUARDAR NOTA</button>
+            </form>
+            <div class="card" t-if="not notas">
+                <div style="color:var(--gris)">Todavía no hay notas en esta obra.</div>
+            </div>
+            <div class="card" t-foreach="notas" t-as="n">
+                <div style="white-space:pre-wrap"><t t-esc="n.texto"/></div>
+                <div style="font-size:12px;color:var(--gris);margin-top:6px">
+                    <t t-esc="n.member_id.name or 'alguien'"/> ·
+                    <t t-esc="n.create_date.strftime('%d/%m %H:%M') if n.create_date else ''"/>
                 </div>
             </div>
         </t>
