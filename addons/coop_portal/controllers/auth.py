@@ -25,9 +25,17 @@ class CoopPortalAuth(http.Controller):
         member = Member.browse()
         if len(num) >= 6:
             tail = num[-8:]
-            # match por dígitos: tolera teléfonos guardados con guiones/espacios
+            # pre-filtro SQL por los últimos 6 dígitos (casi siempre contiguos al
+            # final), después match exacto por dígitos en Python → tolera
+            # guiones/espacios SIN escanear toda la tabla de socios.
+            suf = num[-6:]
+            cand = Member.search([
+                ('state', '=', 'active'),
+                '|', ('partner_id.phone', 'like', suf),
+                     ('partner_id.mobile', 'like', suf)],
+                order='id', limit=50)
             member = next(
-                (m for m in Member.search([('state', '=', 'active')])
+                (m for m in cand
                  if re.sub(r'\D', '', m.partner_id.phone or '')[-8:] == tail
                  or re.sub(r'\D', '', m.partner_id.mobile or '')[-8:] == tail),
                 Member.browse())

@@ -66,8 +66,11 @@ class CoopPortalAdmin(http.Controller):
         member = self._member()
         if not self._es_admin(member):
             return request.redirect('/app')
+        # solo socios que pueden ABRIR la app (tienen usuario): si no, el
+        # relevamiento quedaría asignado a alguien que no puede cargarlo.
         socios = request.env['coop.member'].sudo().search(
-            [('state', '=', 'active')], order='name')
+            [('state', '=', 'active'),
+             ('partner_id.user_ids', '!=', False)], order='name')
         return request.render('coop_portal.admin_ot_nueva', {
             'member': member, 'socios': socios,
             'nav_rol': 'admin', 'nav_activo': 'tablero',
@@ -83,10 +86,15 @@ class CoopPortalAdmin(http.Controller):
         cliente = (cliente or '').strip()
         if not cliente:
             return request.redirect('/app/admin/nuevo')
-        partner = request.env['res.partner'].sudo().create({
-            'name': cliente, 'company_type': 'person',
-            'phone': (telefono or '').strip() or False,
-        })
+        Partner = request.env['res.partner'].sudo()
+        tel = (telefono or '').strip()
+        partner = Partner.search([('name', '=ilike', cliente)], limit=1)
+        if not partner:
+            partner = Partner.create({
+                'name': cliente, 'company_type': 'person',
+                'phone': tel or False})
+        elif tel and not partner.phone:
+            partner.phone = tel
         vals = {
             'cliente_id': partner.id, 'administrador_id': member.id,
             'ubicacion': (ubicacion or '').strip() or False,
@@ -97,6 +105,11 @@ class CoopPortalAdmin(http.Controller):
             rel = int(relevador_id) if relevador_id else None
         except (TypeError, ValueError):
             rel = None
+        if rel:
+            relm = request.env['coop.member'].sudo().browse(rel).exists()
+            # revalidar: el relevador tiene que poder abrir la app
+            if not (relm and relm.partner_id.user_ids):
+                rel = None
         if rel:
             vals['relevador_id'] = rel
         ot = request.env['coop.orden.trabajo'].sudo().create(vals)
@@ -201,8 +214,12 @@ class CoopPortalAdmin(http.Controller):
         res = request.env['coop.orden.corralon'].sudo().generar_desde_pedidos(
             obra, pedidos, creado_por=member)
         n_skip = len(res['skipped'])
-        if res['skipped']:
-            Pedido.browse([p.id for p in res['skipped']]).unlink()
+        # borrado defensivo: cualquier pedido temporal que NO quedó ligado a una
+        # orden (skipped o sin asignar) no debe quedar suelto en la bandeja del
+        # coordinador (que filtra orden_id == False).
+        huerfanos = pedidos.filtered(lambda p: not p.orden_id)
+        if huerfanos:
+            huerfanos.unlink()
         ids = ','.join(str(o.id) for o in res['ordenes'])
         return request.redirect(
             '/app/admin/corralon/resultado?ordenes=%s&skip=%d' % (ids, n_skip))
