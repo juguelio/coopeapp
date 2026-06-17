@@ -84,6 +84,13 @@ class CoopPortal(http.Controller):
         relevamiento = request.env['coop.relevamiento'].sudo().search(
             [('member_id', '=', member.id), ('state', '=', 'pendiente')],
             order='create_date desc', limit=1)
+        if obras_coord:
+            return self._render('coop_portal.home_coordinador', {
+                'member': member, 'obras_coord': obras_coord,
+                'n_validar': n_validar, 'n_pedidos': n_pedidos,
+                'n_corralon': n_corralon, 'asamblea': asamblea,
+                'relevamiento': relevamiento, 'nav_rol': 'coordinador',
+            })
         return self._render('coop_portal.home', {
             'member': member, 'obras': obras, 'avances': avances,
             'es_coordinador': bool(obras_coord),

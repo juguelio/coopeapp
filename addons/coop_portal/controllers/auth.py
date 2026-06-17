@@ -21,12 +21,16 @@ class CoopPortalAuth(http.Controller):
                 website=False, methods=['POST'], csrf=True)
     def entrar(self, telefono=None, pin=None, **kw):
         num = re.sub(r'\D', '', telefono or '')
-        member = request.env['coop.member'].sudo()
+        Member = request.env['coop.member'].sudo()
+        member = Member.browse()
         if len(num) >= 6:
-            member = member.search([
-                '|', ('partner_id.phone', 'like', num[-8:]),
-                     ('partner_id.mobile', 'like', num[-8:]),
-                ('state', '=', 'active')], limit=1)
+            tail = num[-8:]
+            # match por dígitos: tolera teléfonos guardados con guiones/espacios
+            member = next(
+                (m for m in Member.search([('state', '=', 'active')])
+                 if re.sub(r'\D', '', m.partner_id.phone or '')[-8:] == tail
+                 or re.sub(r'\D', '', m.partner_id.mobile or '')[-8:] == tail),
+                Member.browse())
         user = member.partner_id.user_ids[:1] if member else \
             request.env['res.users'].sudo().browse()
         pin = (pin or '').strip()

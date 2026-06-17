@@ -87,6 +87,12 @@
                 <a href="/app/admin/reportes" t-att-class="'viva' if nav_activo == 'reportes' else None"><span class="ico">📋</span>Reportes</a>
                 <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><span class="ico">🗳️</span>Asamblea</a>
             </div>
+            <div class="nav" t-elif="nav_rol == 'coordinador'">
+                <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
+                <a href="/app/validar" t-att-class="'viva' if nav_activo == 'avances' else None"><span class="ico">✅</span>Avances</a>
+                <a href="/app/pedidos" t-att-class="'viva' if nav_activo == 'pedidos' else None"><span class="ico">📋</span>Pedidos</a>
+                <a href="/app/corralon" t-att-class="'viva' if nav_activo == 'corralon' else None"><span class="ico">📦</span>Corralón</a>
+            </div>
             <div class="nav" t-else="">
                 <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
                 <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><span class="ico">✏️</span>Cargar</a>
@@ -232,6 +238,68 @@
                     <span t-if="a.state == 'validado'" class="chip ok">✓ Validado</span>
                     <span t-else="" class="chip espera">⏳ Lo revisa el coordinador</span>
                 </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ INICIO COORDINADOR ============ -->
+    <template id="home_coordinador" name="App: inicio coordinador">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <h1>Hola, <t t-esc="member.name.split(' ')[0]"/> 👋</h1>
+            <div class="sub" t-if="obras_coord">Coordinás: <t t-esc="', '.join(obras_coord.mapped('name'))"/></div>
+            <div class="sub" t-else="">Sin obra a cargo por ahora</div>
+
+            <div class="card" style="border-left:6px solid #f5a623">
+                <h3>PARA REVISAR HOY</h3>
+                <a class="fila" href="/app/validar" style="text-decoration:none;color:inherit">
+                    <div>👍 Avances para revisar</div>
+                    <span t-attf-class="chip {{'espera' if n_validar else 'ok'}}">
+                        <t t-esc="n_validar"/> <t t-if="not n_validar">✓</t>
+                    </span>
+                </a>
+                <a class="fila" href="/app/pedidos" style="text-decoration:none;color:inherit">
+                    <div>🧱 Pedidos de materiales</div>
+                    <span t-attf-class="chip {{'espera' if n_pedidos else 'ok'}}">
+                        <t t-esc="n_pedidos"/> <t t-if="not n_pedidos">✓</t>
+                    </span>
+                </a>
+                <a class="fila" href="/app/corralon" style="text-decoration:none;color:inherit">
+                    <div>📦 Armar órdenes al corralón</div>
+                    <span t-attf-class="chip {{'espera' if n_corralon else 'ok'}}">
+                        <t t-esc="n_corralon"/> <t t-if="not n_corralon">✓</t>
+                    </span>
+                </a>
+                <a class="fila" href="/app/herramientas" style="text-decoration:none;color:inherit;border:0">
+                    <div>🔧 Herramientas</div>
+                    <span class="chip ok">→</span>
+                </a>
+            </div>
+
+            <div class="card" t-if="asamblea" style="border-left:6px solid #f5a623">
+                <h3>🗳️ ASAMBLEA EN CURSO</h3>
+                <div style="font-size:16px;font-weight:700;margin-bottom:10px"><t t-esc="asamblea.name"/></div>
+                <a class="botonazo" style="min-height:50px;font-size:16px;margin:0" href="/app/asamblea">ENTRAR Y VOTAR</a>
+            </div>
+
+            <div class="card" t-if="relevamiento" style="border-left:6px solid #2d7ff9">
+                <h3>📐 TE ASIGNARON UN RELEVAMIENTO</h3>
+                <div style="font-size:15px;margin-bottom:10px">
+                    <t t-esc="relevamiento.orden_id.cliente_id.name"/> ·
+                    <t t-esc="relevamiento.orden_id.ubicacion or relevamiento.orden_id.name"/>
+                </div>
+                <a class="botonazo" style="min-height:50px;font-size:16px;margin:0"
+                   t-attf-href="/app/relevar/{{relevamiento.id}}">CARGAR RELEVAMIENTO</a>
+            </div>
+
+            <div class="card">
+                <h3>TU PRODUCCIÓN (COMO SOCIO)</h3>
+                <a class="fila" href="/app/cargar" style="text-decoration:none;color:inherit">
+                    <div>✏️ Cargar mi avance</div><span class="chip ok">→</span>
+                </a>
+                <a class="fila" href="/app/plata" style="text-decoration:none;color:inherit;border:0">
+                    <div>💵 Mi plata</div><span class="chip ok">→</span>
+                </a>
             </div>
         </t>
     </template>
@@ -999,7 +1067,7 @@
                     <input type="password" name="pin" placeholder="Tu PIN" inputmode="numeric" required="required"/>
                     <button type="submit">Entrar</button>
                 </form>
-                <div class="alt">¿Tenés usuario y contraseña? <a href="/web/login">Entrar por ahí</a></div>
+                <div class="alt">¿Sos de la administración? <a href="/web/login">Entrá a la oficina (escritorio) →</a></div>
             </div>
         </body>
         </html>
@@ -1322,6 +1390,20 @@
             <h1>📊 Administración</h1>
             <div class="sub"><t t-esc="member.name"/> · <t t-esc="len(resumenes)"/> obras activas</div>
 
+            <div class="card" t-if="creada" style="border-left:6px solid var(--verde)">
+                ✅ Trabajo creado. Si asignaste relevador, ya le llegó a su app para medir.
+            </div>
+            <a class="botonazo" href="/app/admin/nuevo">➕ NUEVO TRABAJO</a>
+            <a class="botonazo sec" href="/app/admin/corralon">🧱 PEDIR AL CORRALÓN</a>
+
+            <a class="card" t-if="n_relev" href="/app/admin/relevamientos"
+               style="border-left:6px solid #2d7ff9;text-decoration:none;color:inherit;display:block">
+                <div class="fila" style="border:0;padding:0">
+                    <div>📐 Relevamientos listos para presupuestar</div>
+                    <span class="chip espera"><t t-esc="n_relev"/> ver →</span>
+                </div>
+            </a>
+
             <a class="card" t-if="n_criticas" href="/app/admin/ruta"
                style="border-left:6px solid var(--rojo);text-decoration:none;color:inherit;display:block">
                 <div class="fila" style="border:0;padding:0">
@@ -1357,6 +1439,209 @@
             <div class="card" t-if="not resumenes">
                 <h3>SIN OBRAS ACTIVAS</h3>
                 <div>Cuando haya una obra activa, vas a ver su estado acá.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ADMIN: NUEVO TRABAJO (OT) + MANDAR A MEDIR ============ -->
+    <template id="admin_ot_nueva" name="App: admin nuevo trabajo">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin">← Volver</a>
+            <h1>➕ Nuevo trabajo</h1>
+            <div class="sub">Cargá el cliente y, si querés, mandá a un socio a medir.</div>
+            <form action="/app/admin/nuevo/crear" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="card">
+                    <input type="text" name="cliente" placeholder="Cliente (nombre)" required="required"
+                           style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px;margin-bottom:10px"/>
+                    <input type="tel" name="telefono" placeholder="Teléfono (opcional)" inputmode="tel"
+                           style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px;margin-bottom:10px"/>
+                    <input type="text" name="ubicacion" placeholder="Dónde es la obra (dirección/barrio)"
+                           style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px;margin-bottom:10px"/>
+                    <textarea name="descripcion" rows="3" placeholder="Qué pide el cliente..."
+                              style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:16px"/>
+                </div>
+                <div class="card">
+                    <h3>¿A quién mandás a medir?</h3>
+                    <select name="relevador_id"
+                            style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px">
+                        <option value="">— lo asigno después —</option>
+                        <option t-foreach="socios" t-as="s" t-att-value="s.id"><t t-esc="s.name"/></option>
+                    </select>
+                </div>
+                <button type="submit" class="botonazo">CREAR Y MANDAR A MEDIR</button>
+            </form>
+        </t>
+    </template>
+
+    <!-- ============ ADMIN: BANDEJA DE RELEVAMIENTOS CARGADOS ============ -->
+    <template id="admin_relevamientos" name="App: admin relevamientos cargados">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin">← Volver</a>
+            <h1>📐 Relevamientos listos</h1>
+            <div class="sub">Lo que cargaron los socios. Revisalos y armá el presupuesto.</div>
+            <div class="card" t-if="not rels">
+                <h3>NADA PENDIENTE</h3>
+                <div>Cuando un socio termine de medir, te aparece acá solo.</div>
+            </div>
+            <a class="card" t-foreach="rels" t-as="r"
+               t-attf-href="/app/admin/relevamiento/{{r.id}}"
+               style="text-decoration:none;color:inherit;display:block">
+                <div class="fila" style="border:0;padding:0 0 4px">
+                    <div style="font-weight:800"><t t-esc="r.orden_id.cliente_id.name"/></div>
+                    <span class="chip espera"><t t-esc="r.n_medidas"/> medidas</span>
+                </div>
+                <div style="font-size:13px;color:var(--gris)">
+                    <t t-esc="r.orden_id.name"/> ·
+                    <t t-esc="r.orden_id.ubicacion or '—'"/> ·
+                    relevó <t t-esc="r.member_id.name or '—'"/>
+                </div>
+            </a>
+        </t>
+    </template>
+
+    <template id="admin_relevamiento_detalle" name="App: admin detalle relevamiento">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin/relevamientos">← Volver</a>
+            <h1><t t-esc="rel.orden_id.cliente_id.name"/></h1>
+            <div class="sub"><t t-esc="rel.orden_id.name"/> · <t t-esc="rel.orden_id.ubicacion or '—'"/></div>
+            <div class="card">
+                <h3>QUÉ PIDIÓ EL CLIENTE</h3>
+                <div><t t-esc="rel.orden_id.descripcion or '—'"/></div>
+            </div>
+            <div class="card">
+                <h3>MEDIDAS (relevó <t t-esc="rel.member_id.name or '—'"/>)</h3>
+                <div class="fila" t-foreach="rel.medida_ids" t-as="m">
+                    <div><t t-esc="m.concepto"/></div>
+                    <span><b><t t-esc="'%g' % m.valor"/></b> <t t-esc="m.unidad or ''"/></span>
+                </div>
+                <div t-if="not rel.medida_ids" style="color:var(--gris)">Sin medidas cargadas.</div>
+            </div>
+            <div class="card" t-if="rel.observaciones">
+                <h3>OBSERVACIONES</h3>
+                <div><t t-esc="rel.observaciones"/></div>
+            </div>
+            <form action="/app/admin/relevamiento/validar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="rel_id" t-att-value="rel.id"/>
+                <button type="submit" class="botonazo">✓ VALIDAR RELEVAMIENTO</button>
+            </form>
+            <div class="card" style="border-left:6px solid #f5a623">
+                💻 El presupuesto fino se arma en la oficina: /web → Órdenes de trabajo → <t t-esc="rel.orden_id.name"/>.
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ ADMIN: ARMAR ORDEN AL CORRALÓN (rápido) ============ -->
+    <template id="admin_corralon" name="App: admin armar orden al corralón">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin">← Volver</a>
+            <h1>🧱 Pedir al corralón</h1>
+            <div class="sub">Elegí la obra y los materiales. El sistema busca solo el corralón más barato por cada material (acopio congelado primero) y arma la orden.</div>
+            <form action="/app/admin/corralon/crear" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="card">
+                    <select name="obra_id" required="required"
+                            style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px">
+                        <option value="">— obra —</option>
+                        <option t-foreach="obras" t-as="o" t-att-value="o.id"><t t-esc="o.name"/></option>
+                    </select>
+                </div>
+                <div class="card">
+                    <h3>MATERIALES</h3>
+                    <div t-foreach="filas" t-as="i" style="display:flex;gap:8px;margin-bottom:8px">
+                        <select t-attf-name="material_{{i}}"
+                                style="flex:2;min-width:0;box-sizing:border-box;padding:12px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                            <option value="">— material —</option>
+                            <option t-foreach="materiales" t-as="m" t-att-value="m.id"><t t-esc="m.name"/></option>
+                        </select>
+                        <input type="number" step="any" inputmode="decimal" t-attf-name="cantidad_{{i}}" placeholder="cant."
+                               style="flex:1;min-width:0;box-sizing:border-box;padding:12px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    </div>
+                </div>
+                <button type="submit" class="botonazo">OPTIMIZAR Y ARMAR</button>
+            </form>
+            <div class="card" t-if="ordenes">
+                <h3>ÚLTIMAS ÓRDENES</h3>
+                <a class="fila" t-foreach="ordenes" t-as="o"
+                   t-attf-href="/app/admin/corralon/{{o.id}}"
+                   style="text-decoration:none;color:inherit">
+                    <div><t t-esc="o.corralon_id.name"/> · <t t-esc="o.obra_id.name"/></div>
+                    <span class="chip"><t t-esc="estado_labels.get(o.estado, o.estado)"/></span>
+                </a>
+            </div>
+        </t>
+    </template>
+
+    <template id="admin_corralon_orden" name="App: admin orden al corralón (WhatsApp)">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin/corralon">← Volver</a>
+            <h1>🧱 <t t-esc="orden.corralon_id.name"/></h1>
+            <div class="sub"><t t-esc="orden.obra_id.name"/> · <t t-esc="estado_labels.get(orden.estado, orden.estado)"/></div>
+            <div class="card" t-if="orden.ahorro_estimado &gt; 0" style="border-left:6px solid var(--verde)">
+                💰 Ahorro estimado <b>$<t t-esc="'{:,.0f}'.format(orden.ahorro_estimado).replace(',', '.')"/></b> vs comprar hoy al mejor precio.
+            </div>
+            <div class="card">
+                <h3>QUÉ PEDISTE</h3>
+                <div t-foreach="orden.linea_ids" t-as="ln" style="padding:8px 0;border-bottom:1px solid #eef1f4">
+                    <div class="fila" style="border:0;padding:0">
+                        <div><t t-esc="ln.material_id.name"/></div>
+                        <span><b><t t-esc="'%g' % ln.cantidad"/></b> <t t-esc="ln.uom"/></span>
+                    </div>
+                    <div style="font-size:12px;color:var(--gris);margin-top:2px">
+                        <t t-esc="'📦 Acopio congelado' if ln.fuente == 'acopio' else '💲 Compra'"/> · <t t-esc="ln.razon or ''"/>
+                    </div>
+                </div>
+                <div t-if="not orden.linea_ids" style="color:var(--gris)">Sin materiales.</div>
+            </div>
+            <a t-if="wa_url" class="botonazo" t-att-href="wa_url" target="_blank">📲 MANDAR POR WHATSAPP</a>
+            <div class="card" t-if="not wa_url" style="border-left:6px solid #f5a623">
+                Este corralón no tiene WhatsApp cargado. Cargáselo en /web → Corralones.
+            </div>
+            <form t-if="orden.estado == 'borrador'" action="/app/admin/corralon/enviar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="orden_id" t-att-value="orden.id"/>
+                <button type="submit" class="botonazo sec">✓ Marcar como enviada</button>
+            </form>
+        </t>
+    </template>
+
+    <template id="admin_corralon_resultado" name="App: admin resultado optimizador corralón">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'tablero'"/>
+            <a class="atras" href="/app/admin/corralon">← Volver</a>
+            <h1>✅ Órdenes armadas</h1>
+            <div class="sub">El optimizador eligió la fuente más barata por material.</div>
+            <div class="card" t-if="not data">
+                <h3>NO SE PUDO ARMAR</h3>
+                <div>Ningún material tenía precio cargado (acopio o lista). Cargá precios en /web → Acopios / Listas de precio y reintentá.</div>
+            </div>
+            <div class="card" t-if="n_skip" style="border-left:6px solid #f5a623">
+                ⚠️ <t t-esc="n_skip"/> material(es) quedaron afuera por no tener precio cargado.
+            </div>
+            <div t-foreach="data" t-as="d">
+                <div class="card">
+                    <div class="fila" style="border:0;padding:0 0 6px">
+                        <div style="font-weight:800;font-size:16px">🏬 <t t-esc="d['orden'].corralon_id.name"/></div>
+                        <span t-if="d['orden'].ahorro_estimado &gt; 0" class="chip ok">ahorro $<t t-esc="'{:,.0f}'.format(d['orden'].ahorro_estimado).replace(',', '.')"/></span>
+                    </div>
+                    <div t-foreach="d['orden'].linea_ids" t-as="ln" style="padding:6px 0;border-bottom:1px solid #eef1f4">
+                        <div class="fila" style="border:0;padding:0">
+                            <div><t t-esc="ln.material_id.name"/></div>
+                            <span><b><t t-esc="'%g' % ln.cantidad"/></b> <t t-esc="ln.uom"/></span>
+                        </div>
+                        <div style="font-size:12px;color:var(--gris);margin-top:2px">
+                            <t t-esc="'📦 Acopio congelado' if ln.fuente == 'acopio' else '💲 Compra'"/> · <t t-esc="ln.razon or ''"/>
+                        </div>
+                    </div>
+                    <a t-if="d['wa_url']" class="botonazo" style="margin-top:10px" t-att-href="d['wa_url']" target="_blank">📲 MANDAR A <t t-esc="d['orden'].corralon_id.name"/></a>
+                    <a class="atras" t-attf-href="/app/admin/corralon/{{d['orden'].id}}" style="display:block;text-align:center;margin-top:8px">ver / marcar enviada →</a>
+                </div>
             </div>
         </t>
     </template>

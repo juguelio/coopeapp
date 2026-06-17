@@ -1,11 +1,13 @@
 {
     'name': 'Cooperativa - Branding y UI',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'summary': 'Marca coopeapp en el backoffice y el login + limpieza visual',
     'author': 'Coopeapp',
     'category': 'Cooperative',
     'depends': ['web'],
-    'data': [],
+    'data': [
+        'views/login.xml',
+    ],
     'assets': {
         'web.assets_backend': [
             'coop_ui/static/src/css/backend.css',

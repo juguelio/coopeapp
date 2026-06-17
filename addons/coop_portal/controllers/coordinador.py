@@ -45,6 +45,7 @@ class CoopPortalCoordinador(http.Controller):
         ], order='fecha desc')
         return request.render('coop_portal.coord_validar', {
             'member': member, 'avances': avances,
+            'nav_rol': 'coordinador', 'nav_activo': 'avances',
             'uom_labels': dict(request.env['coop.foja.item']
                                ._fields['uom'].selection),
             'medida_labels': dict(request.env['coop.avance.medicion']
@@ -77,6 +78,7 @@ class CoopPortalCoordinador(http.Controller):
         return request.render('coop_portal.coord_pedidos', {
             'member': member, 'pedidos': pedidos,
             'corralones': self._corralones(),
+            'nav_rol': 'coordinador', 'nav_activo': 'pedidos',
         })
 
     @http.route('/app/pedidos/accion', type='http', auth='user',
@@ -134,6 +136,7 @@ class CoopPortalCoordinador(http.Controller):
         return request.render('coop_portal.coord_corralon', {
             'member': member, 'sin_corralon': sin_corralon,
             'grupos': grupos_list, 'ordenes': ordenes,
+            'nav_rol': 'coordinador', 'nav_activo': 'corralon',
             'corralones': self._corralones(),
             'n_optimizables': len(sin_orden),
             'ahorro_borrador': ahorro_borrador,
@@ -225,6 +228,7 @@ class CoopPortalCoordinador(http.Controller):
             lineas_data.append({'linea': ln, 'opciones': opciones})
         return request.render('coop_portal.coord_orden', {
             'member': member, 'orden': orden,
+            'nav_rol': 'coordinador', 'nav_activo': 'corralon',
             'wa_url': wa_url, 'sms_url': sms_url, 'lineas_data': lineas_data,
             'estado_labels': dict(request.env['coop.orden.corralon']
                                   ._fields['estado'].selection),
