@@ -87,6 +87,9 @@ class CoopPortalSindico(http.Controller):
         if not self._es_sindico(member):
             return request.redirect('/app')
         env = request.env
+        # la selección se toma del campo FUENTE (coop.foja.item): el uom del
+        # avance es related y su .selection es una función, no una lista.
+        uom_labels = dict(env['coop.foja.item']._fields['uom'].selection)
         ops = []
         for a in env['coop.avance.medicion'].sudo().search(
                 [('state', '=', 'validado')], order='fecha desc', limit=15):
@@ -95,7 +98,7 @@ class CoopPortalSindico(http.Controller):
                 'quien': a.member_id.name, 'obra': a.obra_id.name,
                 'detalle': '%s — %g %s' % (
                     a.foja_item_id.name, a.cantidad,
-                    dict(a._fields['uom'].selection).get(a.uom, a.uom)),
+                    uom_labels.get(a.uom, a.uom)),
             })
         for p in env['coop.pedido.material'].sudo().search(
                 [('state', 'in', ['aceptado', 'rechazado'])],

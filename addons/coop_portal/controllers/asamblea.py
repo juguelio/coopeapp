@@ -13,6 +13,19 @@ class CoopPortalAsamblea(http.Controller):
             [('partner_id.user_ids', 'in', [request.env.uid]),
              ('state', '=', 'active')], limit=1)
 
+    def _nav_rol(self, member):
+        """La asamblea es compartida: la barra inferior debe ser la del rol de
+        quien la mira (síndico/admin/coordinador), no la del socio por defecto."""
+        if member.role == 'syndic':
+            return 'sindico'
+        if member.role == 'manager':
+            return 'admin'
+        es_coord = request.env['project.project'].sudo().search_count([
+            ('is_coop_obra', '=', True),
+            ('estado_obra', 'in', ['planificacion', 'activa']),
+            ('capataz_id', '=', member.id)])
+        return 'coordinador' if es_coord else None
+
     def _asamblea_actual(self):
         # convocada o en curso: durante ambas el socio puede marcar asistencia
         return request.env['coop.assembly'].sudo().search(
@@ -29,12 +42,15 @@ class CoopPortalAsamblea(http.Controller):
             return request.redirect('/app')
         asamblea = self._asamblea_actual()
         if not asamblea:
-            return request.render('coop_portal.asamblea_ninguna', {'member': member})
+            return request.render('coop_portal.asamblea_ninguna', {
+                'member': member, 'nav_rol': self._nav_rol(member),
+                'nav_activo': 'asamblea'})
         votos = []
         for v in asamblea.sudo().vote_ids.sorted('sequence'):
             votos.append({'vote': v, 'mi_voto': self._mi_ballot(v, member)})
         return request.render('coop_portal.asamblea', {
             'member': member, 'asamblea': asamblea, 'votos': votos,
+            'nav_rol': self._nav_rol(member), 'nav_activo': 'asamblea',
             'puntos': asamblea.sudo().point_ids.sorted('sequence'),
             'mi_presente': member in asamblea.attendee_ids,
             'mi_rol_firma': self._rol_firma(asamblea, member),
@@ -85,6 +101,7 @@ class CoopPortalAsamblea(http.Controller):
             return request.redirect('/app/asamblea')
         return request.render('coop_portal.votar', {
             'member': member, 'vote': vote,
+            'nav_rol': self._nav_rol(member), 'nav_activo': 'asamblea',
         })
 
     @http.route('/app/votar/confirmar', type='http', auth='user',
@@ -106,4 +123,5 @@ class CoopPortalAsamblea(http.Controller):
                 pass
         return request.render('coop_portal.votado', {
             'member': member, 'vote': vote,
+            'nav_rol': self._nav_rol(member), 'nav_activo': 'asamblea',
         })
