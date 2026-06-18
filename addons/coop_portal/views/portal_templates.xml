@@ -184,6 +184,9 @@
             <div class="sub" t-else="">Sin obra asignada por ahora</div>
 
             <a class="botonazo" href="/app/cargar">✏️ CARGAR LO QUE HICE</a>
+            <a class="card" href="/app/aporte" style="border-left:6px solid #2d7ff9;text-decoration:none;color:inherit;display:block">
+                <div class="fila" style="border:0;padding:0"><div>📊 Mi aporte (producción y plata)</div><span class="chip ok">ver →</span></div>
+            </a>
 
             <div class="card" t-if="asamblea" style="border-left:6px solid #f5a623">
                 <h3>🗳️ ASAMBLEA EN CURSO</h3>
@@ -292,6 +295,10 @@
                    t-attf-href="/app/relevar/{{relevamiento.id}}">CARGAR RELEVAMIENTO</a>
             </div>
 
+            <a class="card" href="/app/coord/avance" style="border-left:6px solid var(--verde);text-decoration:none;color:inherit;display:block">
+                <div class="fila" style="border:0;padding:0"><div>📊 Avance de la obra</div><span class="chip ok">ver →</span></div>
+            </a>
+
             <div class="card">
                 <h3>TU PRODUCCIÓN (COMO SOCIO)</h3>
                 <a class="fila" href="/app/cargar" style="text-decoration:none;color:inherit">
@@ -301,6 +308,90 @@
                     <div>💵 Mi plata</div><span class="chip ok">→</span>
                 </a>
             </div>
+        </t>
+    </template>
+
+    <!-- ============ SOCIO: MI APORTE ============ -->
+    <template id="mi_aporte" name="App: mi aporte (socio)">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app">← Volver</a>
+            <h1>📊 Mi aporte</h1>
+            <div class="sub">Lo que produjiste, tu plata y tu parte de la obra. Sin secretos.</div>
+
+            <div class="card">
+                <h3>JORNALES QUE PUSISTE</h3>
+                <div style="font-size:34px;font-weight:800;color:var(--verde)"><t t-esc="'%g' % jornales"/></div>
+                <div style="font-size:13px;color:var(--gris)">
+                    <t t-if="horas">+ <t t-esc="'%g' % horas"/> horas </t>
+                    <t t-if="tareas">+ <t t-esc="'%g' % tareas"/> tareas</t>
+                </div>
+            </div>
+
+            <div class="card" style="border-left:6px solid #2d7ff9">
+                <div class="fila" style="border:0;padding:0">
+                    <div>👁️ Tu aporte al avance de la obra</div>
+                    <span style="font-size:20px;font-weight:800;color:#2d7ff9"><t t-esc="'%g' % aporte"/>%</span>
+                </div>
+                <div style="font-size:12px;color:var(--gris);margin-top:4px">Lo mismo que ve el consejo.</div>
+            </div>
+
+            <div class="card">
+                <h3>TU PLATA</h3>
+                <div class="fila" style="border:0;padding:0 0 3px"><div>Ya cobrado</div><b>$ <t t-esc="'{:,.0f}'.format(cobrado).replace(',', '.')"/></b></div>
+                <div class="barra"><div t-attf-style="width:{{cobrado_pct}}%;background:var(--verde)"/></div>
+                <div class="fila" style="border:0;padding:12px 0 3px"><div>En camino <span style="font-size:12px;color:var(--gris)">(esperando validación)</span></div><b>$ <t t-esc="'{:,.0f}'.format(en_camino).replace(',', '.')"/></b></div>
+                <div class="barra"><div t-attf-style="width:{{camino_pct}}%;background:#e69a1f"/></div>
+            </div>
+
+            <div class="card" t-if="items">
+                <h3>LO QUE HICISTE</h3>
+                <div class="fila" t-foreach="items" t-as="it">
+                    <div><t t-esc="it['name']"/></div>
+                    <div style="text-align:right">
+                        <b><t t-esc="'%g' % it['cant']"/> <t t-esc="uom_labels.get(it['uom'], it['uom'])"/></b>
+                        <div t-if="it['prod']" style="font-size:11px;color:var(--gris)"><t t-esc="'%g' % it['prod']"/>/jornal</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" t-if="not items">
+                <div style="color:var(--gris)">Todavía no tenés avances validados. Cargá lo que hacés y, cuando el coordinador lo valida, aparece acá.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ COORDINADOR: AVANCE DE LA OBRA ============ -->
+    <template id="coord_avance" name="App: avance físico de la obra (coordinador)">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app">← Volver</a>
+            <h1>📊 Avance de la obra</h1>
+            <div class="sub">Cuánto está hecho de cada ítem. El % total está ponderado por la incidencia de cada uno.</div>
+            <t t-foreach="data" t-as="d">
+                <h2 style="margin:16px 0 6px;font-size:18px"><t t-esc="d['obra'].name"/></h2>
+                <div class="card">
+                    <div class="fila" style="border:0;padding:0 0 6px">
+                        <div style="font-size:32px;font-weight:800;color:var(--verde)"><t t-esc="'%g' % d['avance']"/>%</div>
+                        <div style="font-size:13px;color:var(--gris);text-align:right">
+                            <t t-esc="d['terminados']"/>/<t t-esc="d['n_items']"/> terminados<br/>
+                            <span t-if="d['trabados']" style="color:var(--rojo)"><t t-esc="d['trabados']"/> trabados</span>
+                        </div>
+                    </div>
+                    <div class="barra"><div t-attf-style="width:{{d['avance']}}%;background:var(--verde)"/></div>
+                </div>
+                <div class="card">
+                    <h3>POR ÍTEM DE LA FOJA</h3>
+                    <div t-foreach="d['rows']" t-as="r" style="padding:9px 0;border-top:1px solid #eef2f5">
+                        <div class="fila" style="border:0;padding:0 0 4px">
+                            <div><t t-esc="r['name']"/> <span t-if="r['trabado']" style="color:var(--rojo);font-size:11px">trabado</span></div>
+                            <b><t t-esc="'%g' % r['pct']"/>%</b>
+                        </div>
+                        <div class="barra"><div t-attf-style="width:{{max(r['pct'], 2)}}%;background:{{r['color']}}"/></div>
+                        <div style="font-size:11px;color:var(--gris);margin-top:3px"><t t-esc="'%g' % r['ejec']"/> de <t t-esc="'%g' % r['tot']"/> <t t-esc="uom_labels.get(r['uom'], r['uom'])"/></div>
+                    </div>
+                </div>
+            </t>
+            <div t-if="not data" class="card"><div style="color:var(--gris)">No coordinás ninguna obra activa.</div></div>
         </t>
     </template>
 
@@ -1699,55 +1790,145 @@
     </template>
 
     <!-- ============ ADMIN: RUTA CRÍTICA MULTI-OBRA ============ -->
-    <template id="admin_ruta" name="App: ruta crítica admin (editable por oficio)">
+    <template id="admin_ruta" name="App: hoja de ruta visual (Gantt CPM)">
         <t t-call="coop_portal.layout">
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'ruta'"/>
-            <h1>🔴 Ruta crítica</h1>
-            <div class="sub">Editá duración y oficio; la ruta se recalcula sola. Cada oficio es un carril.</div>
+            <h1>🔴 Hoja de ruta</h1>
+            <div class="sub">Cada fila es una tarea, agrupada por oficio. En rojo el camino crítico; la barra fina amarilla es la holgura. Tocá una tarea para ver su cadena.</div>
+
+            <div t-if="not data" class="card" style="font-size:14px;color:var(--gris)">
+                No hay obras activas con tareas. Cargá la ruta (tareas + dependencias) en el sistema para verla acá.
+            </div>
 
             <t t-foreach="data" t-as="d">
-                <h2 style="margin:18px 0 8px;font-size:18px"><t t-esc="d['obra'].name"/>
-                    <span style="font-size:13px;color:var(--gris);font-weight:400"> · fin estimado día <t t-esc="'%g' % d['fin_obra']"/></span>
-                </h2>
-                <div t-if="not d['carriles']" style="font-size:14px;color:var(--gris)" class="card">
-                    Sin tareas cargadas. Cargalas en el sistema (con dependencias) para ver la ruta.
+                <h2 style="margin:18px 0 6px;font-size:18px"><t t-esc="d['obra'].name"/></h2>
+                <div t-if="d.get('empty')" class="card" style="color:var(--gris);font-size:14px">Sin tareas cargadas todavía. Cargá las tareas y sus dependencias en el sistema para ver la hoja de ruta de esta obra.</div>
+                <t t-if="not d.get('empty')">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+                    <span class="chip">📅 fin: día <t t-esc="d['fin_obra']"/></span>
+                    <span class="chip espera"><t t-esc="d['n_criticas']"/>/<t t-esc="d['n_tareas']"/> críticas</span>
+                    <span t-if="d['cuello']" class="chip" style="background:#fdebd0;color:#8a5a00">🔻 cuello: <t t-esc="d['cuello']"/></span>
                 </div>
-                <div class="card" t-foreach="d['carriles']" t-as="c">
-                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-                        <div style="font-weight:800">🛠️ <t t-esc="cat_labels.get(c['oficio'], 'Otro')"/></div>
-                        <div style="font-size:13px;color:var(--gris)">
-                            <t t-esc="'%g' % c['dur']"/> días
-                            <t t-if="c['criticas']"> · <span style="color:var(--rojo)"><t t-esc="c['criticas']"/> crítica(s)</span></t>
+
+                <div class="gantt-wrap" t-att-data-adj="d['adj_json']" style="border:1px solid #e2e8ee;border-radius:12px;background:#fff;padding:4px 2px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+                    <svg t-attf-viewBox="0 0 {{d['svg_w']}} {{d['svg_h']}}" style="display:block;width:100%;height:auto">
+                        <defs>
+                            <marker id="ga" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c47f17"/></marker>
+                            <marker id="gc" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#b3261e"/></marker>
+                        </defs>
+                        <g t-foreach="d['axis']" t-as="ax">
+                            <line t-att-x1="ax['x']" t-att-y1="d['axis_h']" t-att-x2="ax['x']" t-att-y2="d['svg_h']-4" style="stroke:#eef1f4;stroke-width:1"/>
+                            <text t-att-x="ax['x']" t-att-y="d['axis_h']-9" style="fill:#9aa3ad;font-size:10" text-anchor="middle"><t t-esc="ax['label']"/></text>
+                        </g>
+                        <line t-att-x1="d['lw']" y1="6" t-att-x2="d['lw']" t-att-y2="d['svg_h']-4" style="stroke:#edf0f3;stroke-width:1"/>
+                        <line t-foreach="d['seps']" t-as="ys" x1="6" t-att-y1="ys" t-att-x2="d['svg_w']" t-att-y2="ys" style="stroke:#f2f4f6;stroke-width:1"/>
+                        <path t-foreach="d['conns']" t-as="c" t-att-d="c['d']" fill="none" class="gconn" t-att-data-from="c['from']" t-att-data-to="c['to']"
+                              t-attf-style="stroke:{{c['color']}};stroke-width:1.6" t-att-stroke-dasharray="c['dash']" t-att-marker-end="c['marker']"/>
+                        <t t-foreach="d['items']" t-as="it">
+                            <text t-if="it['g']" x="8" t-att-y="it['y']" style="fill:#33414d;font-size:11.5;font-weight:700"><t t-esc="it['label']"/></text>
+                            <g t-if="not it['g']">
+                                <circle cx="12" t-att-cy="it['cy']" r="3.5" t-att-fill="it['dot']"/>
+                                <text x="22" t-att-y="it['ty']" style="fill:#46535e;font-size:11.5"><t t-esc="it['name']"/></text>
+                            </g>
+                        </t>
+                        <g t-foreach="d['bars']" t-as="b" class="gtask" t-att-data-tid="b['tid']" style="cursor:pointer">
+                            <rect t-if="b['holg']" t-att-x="b['hx']" t-att-y="b['hy']" t-att-width="b['hw']" height="3" rx="1.5" fill="#edca85"/>
+                            <rect t-att-x="b['x']" t-att-y="b['y']" t-att-width="b['w']" t-att-height="b['h']" rx="3.5" t-att-fill="b['fill']"/>
+                            <text t-if="b['dlabel']" t-att-x="b['dx']" t-att-y="b['dy']" text-anchor="middle" style="fill:#ffffff;font-size:9.5"><t t-esc="b['dlabel']"/></text>
+                        </g>
+                    </svg>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--gris);margin:8px 0 4px">
+                    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:10px;border-radius:2px;background:#e24b4a"/>crítica</span>
+                    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:10px;border-radius:2px;background:#1a7f4e"/>con holgura</span>
+                    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:3px;border-radius:2px;background:#edca85"/>holgura disponible</span>
+                    <span style="display:flex;align-items:center;gap:5px"><span style="width:18px;border-top:2px dashed #c47f17"/>cruce entre oficios</span>
+                </div>
+
+                <div class="card" style="margin-top:6px">
+                    <h3>EDITAR TAREAS</h3>
+                    <div style="font-size:12px;color:var(--gris);margin-bottom:4px">Cambiá duración u oficio y la ruta se recalcula sola.</div>
+                    <div t-foreach="d['edit']" t-as="i" style="padding:10px 0;border-top:1px solid #eef2f5">
+                        <div style="font-size:14px;font-weight:600">
+                            <t t-esc="i['tk'].name"/>
+                            <span t-if="i['tk'].es_critica" class="chip espera" style="margin-left:6px">crítica</span>
+                            <span t-else="" class="chip ok" style="margin-left:6px">holgura <t t-esc="'%g' % i['tk'].holgura"/> d</span>
                         </div>
-                    </div>
-                    <div t-foreach="c['items']" t-as="i" style="padding:8px 0;border-top:1px solid #eef2f5">
-                        <div style="display:flex;justify-content:space-between;align-items:baseline">
-                            <div style="font-size:14px">
-                                <t t-esc="i['tk'].name"/>
-                                <span t-if="i['tk'].es_critica" class="chip espera" style="margin-left:6px">crítica · holgura <t t-esc="'%g' % i['tk'].holgura"/></span>
-                            </div>
+                        <div t-if="i['cruce']" style="font-size:12px;color:#a36b00;margin:3px 0">
+                            ⚠️ depende de otro oficio (<t t-esc="', '.join(i['cruce'])"/>)
                         </div>
-                        <div t-if="i['cruce']" style="font-size:12px;color:var(--amarillo);margin:2px 0">
-                            ⚠️ depende de otro oficio (<t t-esc="', '.join(i['cruce'])"/>) — ojo con la cadena falsa
-                        </div>
-                        <form action="/app/admin/ruta/editar" method="post" style="display:flex;gap:6px;margin-top:4px">
+                        <form action="/app/admin/ruta/editar" method="post" style="margin-top:6px">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <input type="hidden" name="task_id" t-att-value="i['tk'].id"/>
-                            <input type="number" name="duracion" step="any" min="0"
-                                   t-att-value="'%g' % i['tk'].duracion_dias"
-                                   style="width:90px;padding:8px;border:2px solid #d7dee5;border-radius:10px;font-size:14px"/>
                             <select name="categoria"
-                                    style="flex:1;padding:8px;border:2px solid #d7dee5;border-radius:10px;font-size:14px">
+                                    style="width:100%;box-sizing:border-box;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:14px;margin-bottom:6px">
                                 <option value="" t-att-selected="'selected' if not i['tk'].categoria_tarea else None">— sin oficio —</option>
                                 <option t-foreach="cat_labels.items()" t-as="cl" t-att-value="cl[0]"
                                         t-att-selected="'selected' if cl[0] == i['tk'].categoria_tarea else None"><t t-esc="cl[1]"/></option>
                             </select>
-                            <button class="botonazo sec" style="min-height:38px;margin:0;width:auto;padding:0 12px" type="submit">Guardar</button>
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <input type="number" name="duracion" step="any" min="0"
+                                       t-att-value="'%g' % i['tk'].duracion_dias"
+                                       style="width:90px;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:14px"/>
+                                <span style="font-size:13px;color:var(--gris)">días</span>
+                                <button class="botonazo sec" style="margin:0;min-height:40px;flex:1" type="submit">Guardar</button>
+                            </div>
                         </form>
                     </div>
                 </div>
+                </t>
             </t>
+
+            <script>
+                (function () {
+                    document.querySelectorAll('.gantt-wrap').forEach(function (wrap) {
+                        var adj;
+                        try { adj = JSON.parse(wrap.getAttribute('data-adj') || '{}'); }
+                        catch (e) { return; }
+                        var tasks = wrap.querySelectorAll('.gtask');
+                        var conns = wrap.querySelectorAll('.gconn');
+                        var active = null;
+                        function chain(id) {
+                            var seen = {}, stack = [String(id)];
+                            while (stack.length) {
+                                var x = stack.pop();
+                                if (seen[x]) { continue; }
+                                seen[x] = 1;
+                                var a = adj[x] || { p: [], s: [] };
+                                (a.p || []).forEach(function (p) { stack.push(String(p)); });
+                                (a.s || []).forEach(function (s) { stack.push(String(s)); });
+                            }
+                            return seen;
+                        }
+                        function reset() {
+                            tasks.forEach(function (t) { t.style.opacity = 1; });
+                            conns.forEach(function (c) { c.style.opacity = 1; });
+                            active = null;
+                        }
+                        function focus(id) {
+                            var ch = chain(id);
+                            tasks.forEach(function (t) {
+                                t.style.opacity = ch[t.getAttribute('data-tid')] ? 1 : 0.22;
+                            });
+                            conns.forEach(function (c) {
+                                var a = ch[c.getAttribute('data-from')] ? 1 : 0;
+                                var b = ch[c.getAttribute('data-to')] ? 1 : 0;
+                                c.style.opacity = (a * b) ? 1 : 0.12;
+                            });
+                            active = String(id);
+                        }
+                        tasks.forEach(function (t) {
+                            t.addEventListener('click', function (ev) {
+                                ev.stopPropagation();
+                                var id = t.getAttribute('data-tid');
+                                if (active === id) { reset(); } else { focus(id); }
+                            });
+                        });
+                        wrap.addEventListener('click', reset);
+                    });
+                })();
+            </script>
         </t>
     </template>
 

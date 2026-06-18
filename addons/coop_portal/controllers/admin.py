@@ -1,3 +1,4 @@
+import json
 import urllib.parse
 from datetime import timedelta
 
@@ -327,37 +328,143 @@ class CoopPortalAdmin(http.Controller):
         return request.redirect(
             '/app/admin/notas/%d' % obra.id if obra else '/app/admin/notas')
 
-    # ── ruta crítica multi-obra, editable por oficio (carriles) ──────
+    # ── hoja de ruta visual (Gantt CPM por oficio) — M9 ──────────────
     @http.route('/app/admin/ruta', type='http', auth='user', website=False)
     def ruta(self, **kw):
         member = self._member()
         if not self._es_admin(member):
             return request.redirect('/app')
         Task = request.env['project.task'].sudo()
+        cat_labels = dict(Task._fields['categoria_tarea'].selection)
         data = []
         for o in self._obras_activas():
-            tasks = Task.search(
-                [('project_id', '=', o.id)], order='categoria_tarea, fin_temprano')
-            carriles = {}
-            for tk in tasks:
-                # aviso anti-cadena-falsa: dependencia con OTRO oficio
-                cruces = tk.depend_on_ids.filtered(
-                    lambda d: d.categoria_tarea and tk.categoria_tarea
-                    and d.categoria_tarea != tk.categoria_tarea)
-                carriles.setdefault(tk.categoria_tarea or 'otro', []).append({
-                    'tk': tk, 'cruce': cruces.mapped('name')})
-            carriles_list = [{
-                'oficio': k, 'items': v,
-                'dur': sum(i['tk'].duracion_dias for i in v),
-                'criticas': sum(1 for i in v if i['tk'].es_critica),
-            } for k, v in carriles.items()]
-            data.append({'obra': o, 'carriles': carriles_list,
-                         'fin_obra': max(tasks.mapped('fin_temprano') or [0.0])})
+            tasks = Task.search([('project_id', '=', o.id)],
+                                order='inicio_temprano, id')
+            if tasks:
+                data.append(self._gantt(o, tasks, cat_labels))
+            else:
+                data.append({'obra': o, 'empty': True})
         return request.render('coop_portal.admin_ruta', {
-            'member': member, 'data': data,
-            'cat_labels': dict(
-                Task._fields['categoria_tarea'].selection),
+            'member': member, 'data': data, 'cat_labels': cat_labels,
+            'nav_rol': 'admin', 'nav_activo': 'ruta',
         })
+
+    @staticmethod
+    def _short(s, n=24):
+        s = s or 'Tarea'
+        return s if len(s) <= n else s[:n - 1] + '…'
+
+    def _gantt(self, obra, tasks, cat_labels):
+        """Gantt CPM profesional: UNA fila por tarea, agrupadas por oficio.
+        El nombre va en la columna izquierda (no se pisa), la barra en la línea
+        de tiempo, la holgura como una barra fina, y SOLO los conectores que
+        importan (camino crítico + cruce entre oficios). Toda la geometría se
+        calcula acá; el template solo dibuja. `adj_json` alimenta el resaltado
+        de cadena al tocar una tarea."""
+        LANE_SHORT = {'excavacion': 'Excavación', 'estructura': 'Estructura',
+                      'albanileria': 'Albañilería', 'electricidad': 'Eléctrica',
+                      'sanitaria': 'Sanitaria', 'terminaciones': 'Terminaciones',
+                      'otro': 'Otro'}
+        order = {c: i for i, c in enumerate(
+            ['excavacion', 'estructura', 'albanileria', 'electricidad',
+             'sanitaria', 'terminaciones', 'otro'])}
+        ts = sorted(tasks, key=lambda t: (
+            order.get(t.categoria_tarea or 'otro', 99),
+            t.inicio_temprano, t.id))
+        ids = set(tasks.ids)
+        max_day = max(1.0, max(
+            t.inicio_temprano + t.duracion_dias + max(t.holgura, 0.0) for t in ts))
+        W, LW, pad_r = 720.0, 150.0, 30.0
+        x0 = LW + 4
+        px = (W - x0 - pad_r) / max_day
+        axis_h, group_h, row_h, bar_h = 28.0, 22.0, 30.0, 18.0
+        xof = lambda d: round(x0 + d * px, 1)
+
+        items, bars, midy, seps = [], [], {}, []
+        y, last = axis_h, None
+        for t in ts:
+            of = t.categoria_tarea or 'otro'
+            if of != last:
+                if last is not None:
+                    seps.append(round(y, 1))
+                items.append({'g': True, 'y': round(y + 15, 1),
+                              'label': LANE_SHORT.get(of, of)})
+                y += group_h
+                last = of
+            by = y + (row_h - bar_h) / 2.0
+            mid = round(by + bar_h / 2.0, 1)
+            x = xof(t.inicio_temprano)
+            w = max(t.duracion_dias * px, 4.0)
+            hw = max(t.holgura, 0.0) * px
+            crit = t.es_critica
+            midy[t.id] = mid
+            items.append({'g': False, 'name': self._short(t.name), 'cy': mid,
+                          'ty': round(mid + 3.5, 1), 'tid': t.id,
+                          'dot': '#e24b4a' if crit else '#1a7f4e'})
+            bars.append({
+                'tid': t.id, 'x': x, 'y': round(by, 1), 'w': round(w, 1),
+                'h': bar_h, 'fill': '#e24b4a' if crit else '#1a7f4e',
+                'holg': hw > 0.5, 'hx': round(x + w, 1), 'hw': round(hw, 1),
+                'hy': round(by + bar_h - 3, 1),
+                'dlabel': ('%gd' % t.duracion_dias) if w >= 22 else '',
+                'dx': round(x + w / 2.0, 1), 'dy': round(mid + 3, 1),
+            })
+            y += row_h
+        svg_h = round(y + 8, 1)
+
+        step = 5 if max_day <= 32 else (10 if max_day <= 80 else 20)
+        axis, d = [], 0
+        while d <= max_day + 0.001:
+            axis.append({'x': xof(d), 'label': str(int(d))})
+            d += step
+
+        bx = {b['tid']: b for b in bars}
+        conns, adj = [], {}
+        for t in ts:
+            adj.setdefault(t.id, {'p': [], 's': []})
+            for dprec in t.depend_on_ids:
+                if dprec.id not in ids:
+                    continue
+                adj.setdefault(t.id, {'p': [], 's': []})['p'].append(dprec.id)
+                adj.setdefault(dprec.id, {'p': [], 's': []})['s'].append(t.id)
+                cruza = (dprec.categoria_tarea or 'otro') != (t.categoria_tarea or 'otro')
+                crit = t.es_critica and dprec.es_critica
+                if not (cruza or crit):
+                    continue
+                pb, sb = bx[dprec.id], bx[t.id]
+                x1, y1 = round(pb['x'] + pb['w'], 1), midy[dprec.id]
+                x2, y2 = sb['x'], midy[t.id]
+                xr = round(x1 + 6, 1)
+                conns.append({
+                    'from': dprec.id, 'to': t.id,
+                    'd': 'M %s %s H %s V %s H %s' % (x1, y1, xr, y2, x2),
+                    'color': '#c47f17' if cruza else '#b3261e',
+                    'dash': '4 3' if cruza else '0',
+                    'marker': 'url(#ga)' if cruza else 'url(#gc)',
+                })
+
+        cuello, best = '', 0
+        for t in ts:
+            if not t.es_critica:
+                continue
+            n = sum(1 for dprec in t.depend_on_ids if dprec.id in ids
+                    and (dprec.categoria_tarea or 'otro') != (t.categoria_tarea or 'otro'))
+            if n > best:
+                best, cuello = n, t.name
+        edit = [{
+            'tk': t, 'cruce': t.depend_on_ids.filtered(
+                lambda d: (d.categoria_tarea or 'otro')
+                != (t.categoria_tarea or 'otro')).mapped('name'),
+        } for t in ts]
+        fin_real = max(t.inicio_temprano + t.duracion_dias for t in ts)
+        return {
+            'obra': obra, 'fin_obra': int(round(fin_real)),
+            'n_criticas': sum(1 for t in ts if t.es_critica),
+            'n_tareas': len(ts), 'cuello': cuello,
+            'items': items, 'bars': bars, 'conns': conns, 'axis': axis,
+            'seps': seps, 'svg_w': W, 'svg_h': svg_h, 'axis_h': axis_h,
+            'lw': LW, 'adj_json': json.dumps(adj), 'edit': edit,
+        }
 
     @http.route('/app/admin/ruta/editar', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
@@ -379,7 +486,9 @@ class CoopPortalAdmin(http.Controller):
                 except (TypeError, ValueError):
                     pass
             cats = dict(Task._fields['categoria_tarea'].selection)
-            if categoria in cats:
+            if categoria == '':
+                vals['categoria_tarea'] = False
+            elif categoria in cats:
                 vals['categoria_tarea'] = categoria
             if vals:
                 tk.write(vals)

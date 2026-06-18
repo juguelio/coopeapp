@@ -99,6 +99,52 @@ class CoopPortal(http.Controller):
             'asamblea': asamblea, 'relevamiento': relevamiento,
         })
 
+    # ── mi aporte: producción + plata + transparencia del socio ──────
+    @http.route('/app/aporte', type='http', auth='user', website=False)
+    def aporte(self, **kw):
+        member = self._member()
+        if not member:
+            return request.render('coop_portal.sin_socio')
+        Av = request.env['coop.avance.medicion'].sudo()
+        val = Av.search([('member_id', '=', member.id), ('state', '=', 'validado')])
+        borr = Av.search([('member_id', '=', member.id), ('state', '=', 'borrador')])
+        jornales = sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'jornal')
+        horas = sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'hora')
+        tareas = sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'tarea')
+        # producción por ítem (validada) con su productividad
+        porit = {}
+        for a in val:
+            it = a.foja_item_id
+            d = porit.setdefault(it.id, {
+                'name': it.name, 'uom': a.uom, 'cant': 0.0, 'jor': 0.0,
+                'itemcant': it.cantidad, 'inc': it.incidencia})
+            d['cant'] += a.cantidad
+            if a.medida_trabajo == 'jornal':
+                d['jor'] += a.cantidad_trabajo
+        # aporte al avance de la obra: su producción ponderada por incidencia,
+        # acotada por ítem (no puede aportar más que el 100% del ítem).
+        aporte = 0.0
+        for d in porit.values():
+            if d['itemcant']:
+                aporte += min(d['cant'] / d['itemcant'], 1.0) * d['inc']
+            d['prod'] = round(d['cant'] / d['jor'], 1) if d['jor'] else 0.0
+            d['cant'] = round(d['cant'], 1)
+        items = sorted(porit.values(), key=lambda d: -d['cant'])
+        # plata: cobrado (liquidaciones pagadas) vs en camino (producción
+        # cargada esperando validación, valuada al precio del ítem)
+        cobrado = sum(request.env['coop.payroll'].sudo().search(
+            [('member_id', '=', member.id), ('state', '=', 'paid')]).mapped('net_amount'))
+        en_camino = sum(a.cantidad * a.foja_item_id.precio_unitario for a in borr)
+        tot = cobrado + en_camino
+        return self._render('coop_portal.mi_aporte', {
+            'member': member, 'items': items[:8],
+            'jornales': jornales, 'horas': horas, 'tareas': tareas,
+            'aporte': round(aporte, 1), 'cobrado': cobrado, 'en_camino': en_camino,
+            'n_borrador': len(borr),
+            'cobrado_pct': round(cobrado / tot * 100, 0) if tot else 0,
+            'camino_pct': round(en_camino / tot * 100, 0) if tot else 0,
+        })
+
     # ── cargar avance (wizard 3 pasos) ───────────────────────────────
     @http.route('/app/cargar', type='http', auth='user', website=False)
     def cargar_paso1(self, obra_id=None, **kw):

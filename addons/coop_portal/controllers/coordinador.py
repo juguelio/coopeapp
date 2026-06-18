@@ -33,6 +33,38 @@ class CoopPortalCoordinador(http.Controller):
             [('active', '=', True)], order='name')
 
     # ── bandeja de avances a validar ─────────────────────────────────
+    # ── avance físico de la obra (panel visual del coordinador) ──────
+    @http.route('/app/coord/avance', type='http', auth='user', website=False)
+    def avance(self, **kw):
+        member = self._member()
+        obras = self._obras_coordina(member)
+        if not obras:
+            return request.redirect('/app')
+        Foja = request.env['coop.foja.item'].sudo()
+        data = []
+        for o in obras:
+            items = Foja.search([('obra_id', '=', o.id)], order='item')
+            rows = [{
+                'name': it.name, 'pct': round(it.avance_pct, 0), 'uom': it.uom,
+                'ejec': round(it.cantidad_ejecutada, 1), 'tot': round(it.cantidad, 1),
+                'color': '#1a7f4e' if it.avance_pct >= 70 else (
+                    '#ba7517' if it.avance_pct >= 1 else '#e24b4a'),
+                'trabado': it.avance_pct <= 0.01,
+            } for it in items]
+            data.append({
+                'obra': o,
+                'avance': min(round(sum(items.mapped('aporte_pct')), 0), 100.0),
+                'n_items': len(items),
+                'terminados': sum(1 for it in items if it.avance_pct >= 99.99),
+                'trabados': sum(1 for it in items if it.avance_pct <= 0.01),
+                'rows': rows,
+            })
+        return request.render('coop_portal.coord_avance', {
+            'member': member, 'data': data,
+            'nav_rol': 'coordinador', 'nav_activo': 'inicio',
+            'uom_labels': dict(Foja._fields['uom'].selection),
+        })
+
     @http.route('/app/validar', type='http', auth='user', website=False)
     def validar(self, **kw):
         member = self._member()
