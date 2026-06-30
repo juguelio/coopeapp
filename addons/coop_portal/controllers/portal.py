@@ -99,6 +99,28 @@ class CoopPortal(http.Controller):
             'asamblea': asamblea, 'relevamiento': relevamiento,
         })
 
+    # ── ayuda: preguntas frecuentes por rol ──────────────────────────
+    @http.route('/app/ayuda', type='http', auth='user', website=False)
+    def ayuda(self, **kw):
+        member = self._member()
+        if not member:
+            return request.render('coop_portal.sin_socio')
+        if member.role == 'syndic':
+            rol, nav_rol = 'sindico', 'sindico'
+        elif member.role == 'manager':
+            rol, nav_rol = 'admin', 'admin'
+        elif request.env['project.project'].sudo().search_count([
+                ('is_coop_obra', '=', True),
+                ('estado_obra', 'in', ['planificacion', 'activa']),
+                ('capataz_id', '=', member.id)]):
+            rol, nav_rol = 'coordinador', 'coordinador'
+        else:
+            rol, nav_rol = 'socio', None
+        return self._render('coop_portal.ayuda', {
+            'member': member, 'rol': rol, 'nav_rol': nav_rol,
+            'nav_activo': 'ayuda',
+        })
+
     # ── mi aporte: producción + plata + transparencia del socio ──────
     @http.route('/app/aporte', type='http', auth='user', website=False)
     def aporte(self, **kw):

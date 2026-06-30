@@ -67,11 +67,23 @@
                         border:2px solid #d7dee5;border-radius:var(--radio);padding:16px 14px;
                         font-size:17px;font-weight:600;margin-bottom:10px;cursor:pointer}
                 label.radio input{width:22px;height:22px;accent-color:var(--verde)}
+                details.faq{background:var(--blanco);border-radius:var(--radio);
+                       box-shadow:0 1px 4px rgba(0,0,0,.08);padding:0;margin-bottom:10px;overflow:hidden}
+                details.faq summary{list-style:none;cursor:pointer;padding:15px 16px;font-size:16px;
+                       font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px}
+                details.faq summary::-webkit-details-marker{display:none}
+                details.faq summary::after{content:'+';color:var(--verde);font-size:24px;font-weight:800;line-height:1}
+                details.faq[open] summary::after{content:'\2212'}
+                details.faq .resp{padding:0 16px 16px;font-size:15px;color:var(--tinta);line-height:1.5}
+                details.faq .resp b{color:var(--verde)}
             </style>
         </head>
         <body>
             <t t-out="0"/>
             <div style="text-align:center;padding:20px 0 90px">
+                <a href="/app/ayuda"
+                   style="color:var(--gris);font-size:14px;text-decoration:none">❓ Preguntas frecuentes</a>
+                <span style="color:#cbd3da;margin:0 8px">·</span>
                 <a href="/web/session/logout?redirect=/app/ingresar"
                    style="color:var(--gris);font-size:14px;text-decoration:none">↪ Cerrar sesión</a>
             </div>
@@ -1966,6 +1978,95 @@
                         <br/><span style="font-size:12px;color:var(--gris)"><t t-esc="o['fecha'].strftime('%d/%m')"/> · <t t-esc="o['obra']"/></span></div>
                 </div>
                 <div t-if="not ops" style="text-align:center;color:var(--gris);padding:14px">Sin operaciones en el período.</div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ AYUDA: PREGUNTAS FRECUENTES POR ROL ============ -->
+    <template id="ayuda" name="App: preguntas frecuentes por rol">
+        <t t-call="coop_portal.layout">
+            <h1>❓ Preguntas frecuentes</h1>
+            <div class="sub" t-if="rol == 'socio'">Para socios · todo lo que necesitás para usar la app</div>
+            <div class="sub" t-if="rol == 'coordinador'">Para el capataz · cómo manejar tu obra desde el celular</div>
+            <div class="sub" t-if="rol == 'admin'">Para la administración · operación de la cooperativa</div>
+            <div class="sub" t-if="rol == 'sindico'">Para el síndico · control y firma de actas</div>
+
+            <!-- ===== SOCIO ===== -->
+            <t t-if="rol == 'socio'">
+                <details class="faq"><summary>¿Cómo entro a la app?</summary>
+                    <div class="resp">Con tu <b>teléfono</b> y tu <b>PIN</b> (los <b>últimos 4 números de tu DNI</b>). Si entrás desde el celular, tocá "Agregar a pantalla de inicio" para tenerla como una app más.</div></details>
+                <details class="faq"><summary>¿Cómo cargo lo que hice hoy?</summary>
+                    <div class="resp">Tocá <b>Cargar</b> abajo → elegí la obra → elegí qué hiciste → poné cuánto (un jornal, las horas, o la tarea terminada) → <b>Confirmar</b>. Listo, queda registrado.</div></details>
+                <details class="faq"><summary>Cargué algo sin señal, ¿se pierde?</summary>
+                    <div class="resp">No. Si estás sin internet, lo que cargás <b>se guarda en el teléfono</b> y se envía solo cuando vuelve la señal. Vas a ver un aviso amarillo mientras tanto.</div></details>
+                <details class="faq"><summary>¿Por qué mi avance dice "en espera"?</summary>
+                    <div class="resp">Porque todavía <b>el capataz no lo validó</b>. Cuando lo aprueba, pasa a contar para tu plata y para el avance de la obra.</div></details>
+                <details class="faq"><summary>¿Dónde veo cuánta plata tengo?</summary>
+                    <div class="resp">En <b>Mi plata</b>. Vas a ver lo que ya <b>cobraste</b> y lo que tenés <b>en camino</b> (trabajo cargado que todavía no se liquidó).</div></details>
+                <details class="faq"><summary>¿Qué es "Mi aporte"?</summary>
+                    <div class="resp">Es tu aporte real a la obra: cuántos jornales pusiste y qué porcentaje del trabajo hiciste. Es la <b>transparencia</b> de la cooperativa — todos ven lo que cada uno aportó.</div></details>
+                <details class="faq"><summary>¿Cómo pido materiales?</summary>
+                    <div class="resp">Desde <b>Obra</b> podés pedir el material que necesitás. El pedido le llega al <b>capataz</b>, que lo junta con los demás y lo manda al corralón.</div></details>
+                <details class="faq"><summary>¿Cómo voto en la asamblea?</summary>
+                    <div class="resp">Cuando hay una asamblea abierta, te aparece una tarjeta en el inicio. Tu <b>voto es secreto</b>: nadie, ni el administrador, puede ver qué votaste.</div></details>
+                <details class="faq"><summary>Me olvidé el PIN, ¿qué hago?</summary>
+                    <div class="resp">Avisale al <b>administrador de la cooperativa</b>: él te lo puede restablecer. Por seguridad, conviene cambiarlo la primera vez que entrás.</div></details>
+            </t>
+
+            <!-- ===== COORDINADOR (CAPATAZ) ===== -->
+            <t t-if="rol == 'coordinador'">
+                <details class="faq"><summary>¿Qué tengo que hacer cada día?</summary>
+                    <div class="resp">En tu inicio está <b>"Para revisar hoy"</b>: avances de los socios para validar, pedidos de material, y consolidar el corralón. Esos tres son tu rutina.</div></details>
+                <details class="faq"><summary>¿Cómo valido los avances de los socios?</summary>
+                    <div class="resp">Tocá <b>Avances</b> → revisás cada carga → <b>aprobás</b> o <b>rechazás</b>. Recién cuando aprobás cuenta para la plata del socio y para el avance de la obra.</div></details>
+                <details class="faq"><summary>¿Cómo veo cómo viene la obra?</summary>
+                    <div class="resp">En <b>"Avance de la obra"</b> ves el porcentaje hecho por cada ítem de la foja (verde/amarillo/rojo) y cuántos ítems están terminados o trabados.</div></details>
+                <details class="faq"><summary>¿Cómo armo un pedido al corralón?</summary>
+                    <div class="resp">En <b>Pedidos</b> aceptás lo que pidieron los socios. Después, en <b>Corralón</b>, se juntan por proveedor en una orden y la mandás por <b>WhatsApp</b> con un toque.</div></details>
+                <details class="faq"><summary>¿Qué hace el botón "Optimizar"?</summary>
+                    <div class="resp">Busca el <b>precio más barato</b> para cada material: primero usa lo que ya está en <b>acopio</b> (precio congelado), y lo que falta lo compra al corralón más conveniente. Te muestra el <b>ahorro</b>.</div></details>
+                <details class="faq"><summary>¿Por qué no me aparece una obra?</summary>
+                    <div class="resp">Porque solo ves las obras donde estás asignado como <b>capataz</b>. Si falta una, que el administrador te asigne a esa obra.</div></details>
+            </t>
+
+            <!-- ===== ADMINISTRADOR ===== -->
+            <t t-if="rol == 'admin'">
+                <details class="faq"><summary>¿Cómo creo un trabajo nuevo?</summary>
+                    <div class="resp">Tocá <b>Nuevo trabajo</b> en el tablero. Cargás el cliente y, si querés, asignás un socio para que vaya a <b>medir/relevar</b>: le llega solo a su app.</div></details>
+                <details class="faq"><summary>¿Dónde veo los relevamientos cargados?</summary>
+                    <div class="resp">Aparecen <b>solos en el tablero</b> cuando el socio termina de medir. Los abrís, ves las medidas y los <b>validás</b> para pasar al presupuesto.</div></details>
+                <details class="faq"><summary>¿Cómo armo el presupuesto?</summary>
+                    <div class="resp">El presupuesto se arma en el <b>escritorio (web)</b>, no en la app: Construcción → Presupuestos. Sale con IVA y PDF con membrete. Al aprobarlo, <b>se crea la obra sola</b>.</div></details>
+                <details class="faq"><summary>¿Cómo cargo un acopio?</summary>
+                    <div class="resp">En el escritorio: <b>Construcción → Materiales → Acopios → Nuevo</b>. Cargás número, corralón, obra, monto, y la <b>lista de precios congelada</b> (un precio por material). El saldo se descuenta solo a medida que se retira.</div></details>
+                <details class="faq"><summary>¿Cómo pido al corralón con el mejor precio?</summary>
+                    <div class="resp">Desde <b>Pedir al corralón</b> en el tablero: elegís obra y materiales y el sistema arma la orden buscando lo más barato (acopio o compra), con el <b>ahorro</b> y el WhatsApp al proveedor.</div></details>
+                <details class="faq"><summary>¿Por qué el optimizador no calcula ahorro?</summary>
+                    <div class="resp">Porque a esa obra le <b>faltan precios cargados</b> (precios de acopio o lista de precios del corralón). Sin precios, el material va a "sin precio" y no se puede optimizar.</div></details>
+                <details class="faq"><summary>¿Cómo leo la hoja de ruta?</summary>
+                    <div class="resp">En <b>Ruta</b> ves el diagrama de tiempos de la obra. Las barras y conectores <b>rojos</b> son la <b>ruta crítica</b> (lo que no puede atrasarse); tocá una tarea para resaltar su cadena.</div></details>
+                <details class="faq"><summary>¿Cómo doy de alta un socio?</summary>
+                    <div class="resp">En el escritorio: <b>Cooperativa → Socios → Nuevo</b>. Al guardar, <b>el acceso a la app se crea solo</b> (entra con su teléfono y PIN = últimos 4 del DNI). Después tocá Aprobar.</div></details>
+                <details class="faq"><summary>¿Cómo le paso datos al contador?</summary>
+                    <div class="resp">En <b>Reportes</b> filtrás por tipo y <b>exportás a Excel</b>. Ese archivo es el que le pasás al contador.</div></details>
+            </t>
+
+            <!-- ===== SÍNDICO ===== -->
+            <t t-if="rol == 'sindico'">
+                <details class="faq"><summary>¿Qué controlo desde la app?</summary>
+                    <div class="resp">En <b>Control</b> tenés el panel de todas las obras: avances, certificados y movimientos. Es tu mirada de conjunto sin tener que entrar al escritorio.</div></details>
+                <details class="faq"><summary>¿Cómo firmo un certificado?</summary>
+                    <div class="resp">En <b>Firmar</b> revisás el certificado y lo firmás. La firma queda con un <b>código de seguridad (hash)</b> que prueba qué se firmó.</div></details>
+                <details class="faq"><summary>¿Qué pasa si el acta cambia después de firmada?</summary>
+                    <div class="resp">La firma se <b>invalida automáticamente</b>. El código de seguridad deja de coincidir, así que cualquier cambio posterior queda en evidencia. Es la garantía de que nadie modifica un acta firmada.</div></details>
+                <details class="faq"><summary>¿Para qué sirve Auditoría?</summary>
+                    <div class="resp">Es el <b>registro de todo lo que pasó</b> (quién cargó, validó, pidió, firmó) en orden y <b>no editable</b>. Solo lectura: desde ahí no se modifica nada.</div></details>
+                <details class="faq"><summary>¿Cómo participo de la asamblea?</summary>
+                    <div class="resp">En <b>Asamblea</b> ves el quórum en vivo y el orden del día. Como síndico también firmás el <b>acta</b> con tu rol al cierre.</div></details>
+            </t>
+
+            <div class="card" style="background:var(--verde-claro);border:0;text-align:center;font-size:14px;color:var(--tinta);margin-top:6px">
+                ¿No encontrás tu respuesta? Escribinos y lo sumamos acá.
             </div>
         </t>
     </template>
