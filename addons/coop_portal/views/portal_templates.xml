@@ -1377,7 +1377,7 @@
                 <div class="fila" style="border:0;padding:0">
                     <div>Lo que ve el consejo</div><span class="chip ok">= lo que ve cada socio</span>
                 </div>
-                <div style="font-size:13px;color:var(--gris);margin-top:6px">Principio ACI 5. <t t-esc="n_obras"/> obras activas.</div>
+                <div style="font-size:13px;color:var(--gris);margin-top:6px">Principio ACI 5. <t t-esc="n_obras"/> <t t-esc="'obra activa' if n_obras == 1 else 'obras activas'"/>.</div>
             </div>
         </t>
     </template>
@@ -1491,7 +1491,7 @@
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <h1>📊 Administración</h1>
-            <div class="sub"><t t-esc="member.name"/> · <t t-esc="len(resumenes)"/> obras activas</div>
+            <div class="sub"><t t-esc="member.name"/> · <t t-esc="len(resumenes)"/> <t t-esc="'obra activa' if len(resumenes) == 1 else 'obras activas'"/></div>
 
             <div class="card" t-if="creada" style="border-left:6px solid var(--verde)">
                 ✅ Trabajo creado. Si asignaste relevador, ya le llegó a su app para medir.
