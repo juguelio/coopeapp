@@ -13,9 +13,14 @@ de la primera cooperativa, sin romper nada.
 ## Decisión: purga en la misma base (recomendado)
 
 El demo está **etiquetado** (email `@demo.coop`, logins conocidos, nombres de
-obra/materiales). Hay un script de purga probado (`scripts/purge_demo.py`) que
+obra/materiales). Hay un script de purga (`scripts/purge_demo.py`) que
 borra **solo lo demo** y deja intacta la configuración, los módulos y cualquier
 dato real. Es lo más rápido y seguro para el piloto.
+
+> ⚠️ El script **nunca se corrió en real**: antes del día D, restaurar el backup
+> en una base staging y correrlo ahí (de paso valida el restore). El script
+> ABORTA solo si detecta socios reales cargados (guarda anti-arrasamiento) y
+> termina con `PURGA INCOMPLETA` visible si algún borrado falló.
 
 > Alternativa "base nueva de cero" (máxima limpieza, numeración desde 1): recrear
 > `coop_piloto` con `-i ... --without-demo=all`. Más prolijo pero hay que volver a

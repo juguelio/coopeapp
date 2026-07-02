@@ -26,7 +26,11 @@ class CoopPortalCoordinador(http.Controller):
         ])
 
     def _coordina_obra(self, member, obra):
-        return bool(obra) and obra.capataz_id.id == member.id
+        # OJO: member y obra.capataz_id pueden ser recordsets vacíos
+        # (.id == False) → False == False pasaría la guarda. Mismo patrón
+        # ya corregido en herramientas.py.
+        return (bool(member) and bool(obra) and bool(obra.capataz_id)
+                and obra.capataz_id.id == member.id)
 
     def _corralones(self):
         return request.env['coop.corralon'].sudo().search(

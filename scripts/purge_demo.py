@@ -18,6 +18,9 @@ from odoo import fields  # noqa: F401
 env = env  # noqa: F821 — inyectado por odoo shell
 
 
+_avisos = []
+
+
 def _safe_unlink(records):
     if records:
         try:
@@ -27,6 +30,7 @@ def _safe_unlink(records):
                 records.sudo().unlink()
                 print("  borradas %d de %s" % (n, model), file=sys.stderr)
         except Exception as e:  # noqa: BLE001
+            _avisos.append(records._name)
             print("  (aviso) no se pudo borrar %s: %s" % (records._name, e),
                   file=sys.stderr)
 
@@ -38,6 +42,20 @@ def _search(model, domain):
 
 
 print("=== PURGA GO-LIVE: borrando datos demo ===", file=sys.stderr)
+
+# GUARDA: si ya hay socios reales cargados (partner sin @demo.coop), abortar.
+# Este script matchea catálogos por nombre ('Cemento', 'Arena', listas de
+# precio de los corralones demo...) y arrasaría datos reales. Solo debe
+# correrse ANTES de cargar lo real (paso 2 del runbook go-live-datos.md).
+# (total - demo, y no 'not like', porque un email NULL no matchea 'not like')
+_reales = (env['coop.member'].sudo().search_count([])
+           - env['coop.member'].sudo().search_count(
+               [('partner_id.email', 'like', '@demo.coop')]))
+if _reales:
+    print("!!! ABORTADO: hay %d socios NO-demo en la base. Este script solo "
+          "puede correrse antes de cargar datos reales." % _reales,
+          file=sys.stderr)
+    sys.exit(1)
 
 _demo_partners = env['res.partner'].sudo().search([('email', 'like', '@demo.coop')])
 _demo_members = env['coop.member'].sudo().search(
@@ -66,13 +84,18 @@ for _o in _demo_obras:
     _safe_unlink(_o)
 
 # Catálogos demo
+# OJO orden: lista.precio ANTES que material (lista.precio.material_id es
+# ondelete='restrict' → si material va primero, el unlink falla y quedan
+# materiales demo vivos). Y el dominio va acotado a los corralones demo:
+# dominio vacío borraría precios reales si esto se re-corre por accidente.
+_safe_unlink(_search('coop.lista.precio', [('corralon_id.name', 'in', [
+    'Corralón Austral', 'Corralón El Roble', 'Corralón Don Pedro'])]))
 _safe_unlink(_search('coop.material', [('name', 'in', [
     'Cemento', 'Cal hidratada', 'Arena', 'Ladrillo hueco 12x18x33',
     'Hierro aletado 8mm', 'Pintura látex blanca'])]))
 _safe_unlink(_search('coop.unidad.produccion', [('name', 'in', [
     'Pintura interior', 'Pintura en altura', 'Mampostería ladrillo hueco',
     'Colocación cañería', 'Contrapiso'])]))
-_safe_unlink(_search('coop.lista.precio', []))
 _safe_unlink(_search('coop.corralon', [('name', 'in', [
     'Corralón Austral', 'Corralón El Roble', 'Corralón Don Pedro'])]))
 
@@ -89,15 +112,20 @@ if _demo_members:
     _safe_unlink(_search('coop.payroll', [('member_id', 'in', _demo_members.ids)]))
     _safe_unlink(_search('coop.work.entry', [('member_id', 'in', _demo_members.ids)]))
     _safe_unlink(_search('coop.contribution', [('member_id', 'in', _demo_members.ids)]))
-    _demo_assemblies = env['coop.assembly'].sudo().search(
-        ['|', ('president_id', 'in', _demo_members.ids),
-              ('attendee_ids', 'in', _demo_members.ids)])
-    if _demo_assemblies:
-        _safe_unlink(_search('coop.ballot', [('vote_id.assembly_id', 'in', _demo_assemblies.ids)]))
-        _safe_unlink(_search('coop.vote', [('assembly_id', 'in', _demo_assemblies.ids)]))
-        _safe_unlink(_search('coop.assembly.point', [('assembly_id', 'in', _demo_assemblies.ids)]))
-        _safe_unlink(_search('coop.acta.firma', [('assembly_id', 'in', _demo_assemblies.ids)]))
-        _safe_unlink(_demo_assemblies)
+# Asambleas: también por nombre — si una corrida parcial ya borró los members,
+# la búsqueda por president/attendee no las encontraría nunca más.
+_demo_assemblies = env['coop.assembly'].sudo().search([
+    '|', '|',
+    ('name', 'in', ['Asamblea Ordinaria - Marzo 2026',
+                    'Asamblea Extraordinaria - Junio 2026']),
+    ('president_id', 'in', _demo_members.ids),
+    ('attendee_ids', 'in', _demo_members.ids)])
+if _demo_assemblies:
+    _safe_unlink(_search('coop.ballot', [('vote_id.assembly_id', 'in', _demo_assemblies.ids)]))
+    _safe_unlink(_search('coop.vote', [('assembly_id', 'in', _demo_assemblies.ids)]))
+    _safe_unlink(_search('coop.assembly.point', [('assembly_id', 'in', _demo_assemblies.ids)]))
+    _safe_unlink(_search('coop.acta.firma', [('assembly_id', 'in', _demo_assemblies.ids)]))
+    _safe_unlink(_demo_assemblies)
 
 # Usuarios → socios → contactos demo (en ese orden)
 _safe_unlink(_demo_users)
@@ -105,8 +133,33 @@ _safe_unlink(_demo_members)
 _safe_unlink(_demo_partners)
 
 env.cr.commit()
-restantes = env['res.partner'].sudo().search_count([('email', 'like', '@demo.coop')])
-print("=== PURGA COMPLETA. Partners demo restantes: %d ===" % restantes,
-      file=sys.stderr)
-print("Si quedó algo con (aviso), revisalo a mano; el resto está limpio.",
-      file=sys.stderr)
+
+# Verificación final HONESTA: contar remanentes de todos los marcadores demo,
+# no solo partners. Si hubo avisos o quedó algo, terminar con FAIL visible.
+_restos = {
+    'partners @demo.coop': env['res.partner'].sudo().search_count(
+        [('email', 'like', '@demo.coop')]),
+    'obra demo': env['project.project'].sudo().search_count(
+        [('name', '=', 'Obra Piloto San Martín de los Andes')]),
+    'users demo': env['res.users'].sudo().search_count(
+        [('login', 'in', ['carlos', 'lucas', 'sofia', 'analia'])]),
+    'materiales demo': len(_search('coop.material', [('name', 'in', [
+        'Cemento', 'Cal hidratada', 'Arena', 'Ladrillo hueco 12x18x33',
+        'Hierro aletado 8mm', 'Pintura látex blanca'])])),
+    'corralones demo': len(_search('coop.corralon', [('name', 'in', [
+        'Corralón Austral', 'Corralón El Roble', 'Corralón Don Pedro'])])),
+    'herramientas (demo)': len(_search('maintenance.equipment',
+                                       [('name', 'like', '(demo)')])),
+}
+_quedo = {k: v for k, v in _restos.items() if v}
+if _avisos or _quedo:
+    print("=== PURGA INCOMPLETA ===", file=sys.stderr)
+    if _avisos:
+        print("  fallaron unlinks en: %s" % ', '.join(sorted(set(_avisos))),
+              file=sys.stderr)
+    for k, v in _quedo.items():
+        print("  quedan %d: %s" % (v, k), file=sys.stderr)
+    print("Re-corré el script (es idempotente) o revisá a mano.",
+          file=sys.stderr)
+    sys.exit(1)
+print("=== PURGA COMPLETA. Sin remanentes demo. ===", file=sys.stderr)
