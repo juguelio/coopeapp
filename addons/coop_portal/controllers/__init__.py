@@ -7,3 +7,4 @@ from . import relevamiento
 from . import herramientas
 from . import pwa
 from . import auth
+from . import home
