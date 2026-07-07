@@ -12,7 +12,14 @@
                     <button name="action_confirm_leaving" string="Confirmar baja" type="object" class="btn-danger" invisible="state != 'leaving'"/>
                     <button name="action_reactivate" string="Reactivar" type="object" invisible="state not in ('suspended', 'leaving')"/>
                     <button name="action_dar_acceso_app" string="Dar acceso a la app" type="object"
+                            invisible="has_app_access"
                             help="Crea el usuario, le asigna el rol y le pone un PIN inicial (los últimos 4 del DNI). Si ya tiene acceso, no hace nada."/>
+                    <button name="action_resetear_pin" string="Reiniciar PIN" type="object"
+                            invisible="not has_app_access"
+                            help="Vuelve el PIN a los últimos 4 dígitos del DNI (para cuando el socio se queda afuera)."/>
+                    <button name="action_cambiar_pin" string="Cambiar PIN" type="object"
+                            invisible="not has_app_access"
+                            help="Definir un PIN a mano (4 a 8 dígitos)."/>
                     <field name="state" widget="statusbar" statusbar_visible="prospect,active,former"/>
                 </header>
                 <sheet>
@@ -33,6 +40,20 @@
                             <field name="leaving_reason" invisible="state not in ('leaving', 'former')"/>
                             <field name="employee_id"/>
                         </group>
+                    </group>
+                    <group string="Acceso a la app">
+                        <field name="has_app_access"/>
+                        <field name="app_login" invisible="not has_app_access"/>
+                        <div colspan="2" class="text-muted"
+                             invisible="not has_app_access">
+                            Entra con teléfono + PIN. PIN inicial = últimos 4 del DNI.
+                            Usá "Reiniciar PIN" o "Cambiar PIN" (arriba) para gestionarlo.
+                        </div>
+                        <div colspan="2" class="text-muted"
+                             invisible="has_app_access">
+                            Todavía sin acceso. Al guardar con DNI y contacto se crea solo,
+                            o usá el botón "Dar acceso a la app".
+                        </div>
                     </group>
                     <group string="Capital social" col="4">
                         <field name="initial_contribution"/>

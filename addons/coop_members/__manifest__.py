@@ -1,6 +1,6 @@
 {
     'name': 'Cooperativa - Gestión de Socios',
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.4.0',
     'summary': 'Gestión de socios cooperativos: altas, bajas, aportes y capital social',
     'description': """
         Módulo de gestión de socios para cooperativas de trabajo.
@@ -26,6 +26,7 @@
         'views/coop_member_views.xml',
         'views/coop_contribution_views.xml',
         'views/coop_member_menus.xml',
+        'wizards/coop_member_pin_wizard_views.xml',
     ],
     'demo': [],
     'installable': True,

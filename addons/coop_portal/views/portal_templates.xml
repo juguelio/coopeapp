@@ -1176,6 +1176,48 @@
         </html>
     </template>
 
+    <!-- ============ CAMBIO DE PIN (PRIMER INGRESO) ============ -->
+    <template id="cambiar_pin" name="App: cambiar PIN">
+        &lt;!DOCTYPE html&gt;
+        <html lang="es">
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+            <meta name="theme-color" content="#1a7f4e"/>
+            <link rel="manifest" href="/app/manifest.webmanifest"/>
+            <link rel="apple-touch-icon" href="/coop_portal/static/img/icon.svg"/>
+            <title>coopeapp · cambiar PIN</title>
+            <style>
+                body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#f4f6f8;margin:0;padding:0;color:#1a2430}
+                .wrap{max-width:420px;margin:0 auto;padding:40px 20px;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center}
+                .logo{text-align:center;margin-bottom:20px}
+                .logo img{width:72px;height:72px}
+                h1{text-align:center;font-size:23px;margin:0 0 6px}
+                .sub{text-align:center;color:#6b7785;font-size:15px;margin-bottom:22px}
+                input{width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px;margin-bottom:12px}
+                button{width:100%;padding:16px;background:#1a7f4e;color:#fff;border:0;border-radius:12px;font-size:18px;font-weight:700}
+                .err{background:#fdeceb;color:#b3261e;padding:12px;border-radius:12px;font-size:14px;margin-bottom:12px;text-align:center}
+                .aviso{background:#fdf3e0;color:#a36b00;padding:12px;border-radius:12px;font-size:14px;margin-bottom:16px;text-align:center}
+            </style>
+        </head>
+        <body>
+            <div class="wrap">
+                <div class="logo"><img src="/coop_portal/static/img/icon.svg" alt="coopeapp"/></div>
+                <h1>Elegí tu PIN</h1>
+                <div class="sub">Por seguridad, cambiá el PIN inicial por uno tuyo.</div>
+                <div class="aviso">Tu PIN es tu clave para entrar. No se lo des a nadie.</div>
+                <div class="err" t-if="error"><t t-esc="error"/></div>
+                <form action="/app/cambiar-pin/guardar" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="password" name="pin" placeholder="Nuevo PIN (4 a 8 números)" inputmode="numeric" required="required"/>
+                    <input type="password" name="pin2" placeholder="Repetí el nuevo PIN" inputmode="numeric" required="required"/>
+                    <button type="submit">Guardar mi PIN</button>
+                </form>
+            </div>
+        </body>
+        </html>
+    </template>
+
     <!-- ============ CARGA OFFLINE: ENCOLADO ============ -->
     <template id="cargar_encolado" name="App: avance encolado offline">
         <t t-call="coop_portal.layout">

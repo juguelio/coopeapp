@@ -50,10 +50,22 @@ class CoopMember(models.Model):
 
     role = fields.Selection([
         ('worker', 'Operario'),
+        ('coordinator', 'Coordinador de Obra'),
         ('board', 'Consejo de Administración'),
         ('syndic', 'Síndico'),
         ('manager', 'Administrador'),
-    ], string='Rol', default='worker', required=True, tracking=True)
+    ], string='Rol', default='worker', required=True, tracking=True,
+       help='Define los permisos del socio en la app. Operario y Consejo '
+            'entran como socio; Coordinador valida avances y pedidos; '
+            'Síndico y Administrador tienen acceso ampliado.')
+
+    # ── Acceso a la app (solo lectura, informativo) ──────────────────
+    app_user_id = fields.Many2one('res.users', string='Usuario de la app',
+                                  compute='_compute_app_user', store=False)
+    has_app_access = fields.Boolean(string='Tiene acceso a la app',
+                                    compute='_compute_app_user', store=False)
+    app_login = fields.Char(string='Usuario (login)',
+                            compute='_compute_app_user', store=False)
 
     is_board_member = fields.Boolean(string='Miembro del Consejo', compute='_compute_is_board', store=True)
     notes = fields.Html(string='Notas internas')
@@ -116,6 +128,31 @@ class CoopMember(models.Model):
     def action_reactivate(self):
         self.write({'state': 'active', 'date_leaving': False})
 
+    # ── Acceso a la app: cómputo informativo ─────────────────────────
+    @api.depends('partner_id', 'partner_id.user_ids')
+    def _compute_app_user(self):
+        for member in self:
+            user = member.partner_id.user_ids[:1] if member.partner_id else False
+            member.app_user_id = user
+            member.has_app_access = bool(user)
+            member.app_login = user.login if user else False
+
+    # Mapa Rol de socio → grupo cooperativo de la app.
+    _ROLE_GROUP_XMLID = {
+        'worker': 'coop_members.group_coop_member',
+        'board': 'coop_members.group_coop_member',
+        'coordinator': 'coop_members.group_coop_coordinador',
+        'syndic': 'coop_members.group_coop_syndic',
+        'manager': 'coop_members.group_coop_manager',
+    }
+
+    def _coop_group(self):
+        """Grupo cooperativo que corresponde al rol de este socio."""
+        self.ensure_one()
+        xmlid = self._ROLE_GROUP_XMLID.get(self.role,
+                                           'coop_members.group_coop_member')
+        return self.env.ref(xmlid, raise_if_not_found=False)
+
     # ── Alta automática del acceso a la app (M7) ─────────────────────
     @api.model_create_multi
     def create(self, vals_list):
@@ -124,6 +161,15 @@ class CoopMember(models.Model):
             for m in members:
                 m._provision_portal_user()
         return members
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Si cambia el Rol y el socio ya tiene acceso, sincronizar su grupo
+        # para que el "tipo de usuario" sea efectivo sin recrear el usuario.
+        if 'role' in vals and not self.env.context.get('skip_role_sync'):
+            for m in self:
+                m._sync_app_role()
+        return res
 
     def _provision_portal_user(self):
         """Crea el acceso a la app del socio (usuario + rol + PIN) si todavía
@@ -136,11 +182,7 @@ class CoopMember(models.Model):
             return False
         if self.phone and not (partner.phone or partner.mobile):
             partner.phone = self.phone
-        grupo_xmlid = {
-            'syndic': 'coop_members.group_coop_syndic',
-            'manager': 'coop_members.group_coop_manager',
-        }.get(self.role, 'coop_members.group_coop_member')
-        grupo = self.env.ref(grupo_xmlid, raise_if_not_found=False)
+        grupo = self._coop_group()
         interno = self.env.ref('base.group_user', raise_if_not_found=False)
         if not grupo or not interno:
             return False
@@ -160,7 +202,66 @@ class CoopMember(models.Model):
             'dígitos del DNI (recomendá cambiarlo).') % self.dni)
         return user
 
+    def _sync_app_role(self):
+        """Actualiza el grupo cooperativo del usuario para que refleje el rol
+        actual del socio. Quita los otros grupos cooperativos y deja solo el
+        que corresponde (los grupos implicados se agregan solos)."""
+        self.ensure_one()
+        user = self.partner_id.user_ids[:1] if self.partner_id else False
+        grupo = self._coop_group()
+        if not user or not grupo:
+            return False
+        coop_groups = self.env['res.groups']
+        for xmlid in set(self._ROLE_GROUP_XMLID.values()):
+            g = self.env.ref(xmlid, raise_if_not_found=False)
+            if g:
+                coop_groups |= g
+        cmds = [(3, g.id) for g in coop_groups] + [(4, grupo.id)]
+        user.sudo().write({'groups_id': cmds})
+        self.message_post(body=_('Rol actualizado a %s en la app.')
+                          % dict(self._fields['role'].selection).get(self.role))
+        return True
+
     def action_dar_acceso_app(self):
         """Botón para (re)crear el acceso a la app a mano."""
         for m in self:
             m._provision_portal_user()
+
+    def action_resetear_pin(self):
+        """Reinicia el PIN del socio a los últimos 4 dígitos del DNI."""
+        self.ensure_one()
+        user = self.app_user_id
+        if not user:
+            raise ValidationError(_(
+                'Este socio todavía no tiene acceso a la app. Primero usá '
+                '"Dar acceso a la app".'))
+        pin = ''.join(c for c in (self.dni or '') if c.isdigit())[-4:]
+        if len(pin) != 4:
+            raise ValidationError(_(
+                'El DNI no tiene 4 dígitos para armar un PIN. Usá '
+                '"Cambiar PIN" para poner uno a mano.'))
+        user.sudo().set_coop_pin(pin)
+        self.message_post(body=_(
+            'PIN reiniciado a los últimos 4 dígitos del DNI.'))
+        return {
+            'type': 'ir.actions.client', 'tag': 'display_notification',
+            'params': {'title': _('PIN reiniciado'),
+                       'message': _('El PIN quedó en los últimos 4 del DNI.'),
+                       'type': 'success', 'sticky': False},
+        }
+
+    def action_cambiar_pin(self):
+        """Abre el asistente para poner un PIN personalizado."""
+        self.ensure_one()
+        if not self.app_user_id:
+            raise ValidationError(_(
+                'Este socio todavía no tiene acceso a la app. Primero usá '
+                '"Dar acceso a la app".'))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Cambiar PIN'),
+            'res_model': 'coop.member.pin.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_member_id': self.id},
+        }

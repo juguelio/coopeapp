@@ -54,6 +54,8 @@ class CoopPortalAuth(http.Controller):
                     'login': user.login, 'type': 'password', 'coop_pin': pin})
                 user.sudo().write({'coop_pin_intentos': 0,
                                    'coop_pin_bloqueo': False})
+                if user.sudo().coop_pin_debe_cambiar:
+                    return request.redirect('/app/cambiar-pin')
                 return request.redirect('/app')
             except AccessDenied:
                 intentos = user.coop_pin_intentos + 1
@@ -65,3 +67,28 @@ class CoopPortalAuth(http.Controller):
                 user.sudo().write(vals)
         return request.render('coop_portal.ingresar', {
             'error': 'Teléfono o PIN incorrecto.'})
+
+    # ── Cambio de PIN forzado en el primer ingreso ───────────────────
+    @http.route('/app/cambiar-pin', type='http', auth='user', website=False)
+    def cambiar_pin(self, **kw):
+        return request.render('coop_portal.cambiar_pin', {'error': None})
+
+    @http.route('/app/cambiar-pin/guardar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def cambiar_pin_guardar(self, pin=None, pin2=None, **kw):
+        user = request.env.user
+        nuevo = re.sub(r'\D', '', pin or '')
+        rep = re.sub(r'\D', '', pin2 or '')
+        if not (4 <= len(nuevo) <= 8):
+            return request.render('coop_portal.cambiar_pin', {
+                'error': 'El PIN tiene que ser de 4 a 8 números.'})
+        if nuevo != rep:
+            return request.render('coop_portal.cambiar_pin', {
+                'error': 'Los dos PIN no coinciden. Volvé a escribirlos.'})
+        # Que no deje el PIN inicial (los últimos 4 del DNI): si el nuevo
+        # todavía valida contra el actual, pedimos uno distinto.
+        if user.sudo()._verifica_pin(nuevo):
+            return request.render('coop_portal.cambiar_pin', {
+                'error': 'Elegí un PIN distinto al que tenías.'})
+        user.sudo().set_coop_pin(nuevo, force_change=False)
+        return request.redirect('/app')

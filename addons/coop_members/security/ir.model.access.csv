@@ -5,3 +5,4 @@ access_coop_member_syndic,coop.member sindico,model_coop_member,group_coop_syndi
 access_coop_contribution_member,coop.contribution socio,model_coop_contribution,group_coop_member,1,0,0,0
 access_coop_contribution_manager,coop.contribution admin,model_coop_contribution,group_coop_manager,1,1,1,0
 access_coop_contribution_syndic,coop.contribution sindico,model_coop_contribution,group_coop_syndic,1,0,0,0
+access_coop_member_pin_wizard,coop.member.pin.wizard admin,model_coop_member_pin_wizard,group_coop_manager,1,1,1,1

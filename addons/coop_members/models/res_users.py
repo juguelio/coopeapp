@@ -36,6 +36,11 @@ class ResUsers(models.Model):
                                        groups='base.group_system')
     coop_pin_bloqueo = fields.Datetime(string='PIN bloqueado hasta', copy=False,
                                        groups='base.group_system')
+    coop_pin_debe_cambiar = fields.Boolean(
+        string='Debe cambiar el PIN', default=False, copy=False,
+        groups='base.group_system',
+        help='Si está activo, en el próximo ingreso a la app se le exige '
+             'definir un PIN nuevo (para no dejar el PIN inicial del DNI).')
 
     def create(self, vals_list):
         users = super().create(vals_list)
@@ -48,14 +53,18 @@ class ResUsers(models.Model):
             )
         return users
 
-    def set_coop_pin(self, pin):
-        """Define el PIN del usuario (hash). pin = string de 4-8 dígitos."""
+    def set_coop_pin(self, pin, force_change=True):
+        """Define el PIN del usuario (hash). pin = string de 4-8 dígitos.
+        force_change=True marca que el socio deberá cambiarlo en el próximo
+        ingreso (para PIN puesto por el admin o el inicial del DNI). El propio
+        socio, al cambiarlo desde la app, lo llama con force_change=False."""
         self.ensure_one()
         pin = (pin or '').strip()
         if not (pin.isdigit() and 4 <= len(pin) <= 8):
             return False
         self.sudo().write({'coop_pin_hash': _hash_pin(pin),
-                           'coop_pin_intentos': 0, 'coop_pin_bloqueo': False})
+                           'coop_pin_intentos': 0, 'coop_pin_bloqueo': False,
+                           'coop_pin_debe_cambiar': force_change})
         return True
 
     def _verifica_pin(self, pin):

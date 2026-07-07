@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_member_pin_wizard_form" model="ir.ui.view">
+        <field name="name">coop.member.pin.wizard.form</field>
+        <field name="model">coop.member.pin.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cambiar PIN">
+                <group>
+                    <field name="member_id" readonly="1"/>
+                    <field name="pin" password="True"
+                           placeholder="Ej: 4827 (4 a 8 dígitos)"/>
+                </group>
+                <footer>
+                    <button name="action_set_pin" string="Guardar PIN"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
