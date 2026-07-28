@@ -35,9 +35,22 @@ def _safe_unlink(records):
                   file=sys.stderr)
 
 
+def _all(model):
+    """Accessor único de la purga: SIEMPRE con `active_test=False`.
+
+    En Odoo `search()` esconde los registros archivados por defecto. Para una
+    purga eso es exactamente al revés de lo que hace falta: lo archivado es lo
+    que más se olvida (una obra que se archiva para sacarla del tablero antes
+    de una demo) y por lo tanto lo que sobreviviría al go-live, quedando a la
+    vista de la cooperativa real. Todo lo que la purga busque o cuente tiene
+    que ver también lo archivado.
+    """
+    return env[model].sudo().with_context(active_test=False)
+
+
 def _search(model, domain):
     if model in env:
-        return env[model].sudo().search(domain)
+        return _all(model).search(domain)
     return env['res.partner'].sudo().browse()
 
 
@@ -47,25 +60,57 @@ print("=== PURGA GO-LIVE: borrando datos demo ===", file=sys.stderr)
 # Este script matchea catálogos por nombre ('Cemento', 'Arena', listas de
 # precio de los corralones demo...) y arrasaría datos reales. Solo debe
 # correrse ANTES de cargar lo real (paso 2 del runbook go-live-datos.md).
-# (total - demo, y no 'not like', porque un email NULL no matchea 'not like')
-_reales = (env['coop.member'].sudo().search_count([])
-           - env['coop.member'].sudo().search_count(
-               [('partner_id.email', 'like', '@demo.coop')]))
-if _reales:
-    print("!!! ABORTADO: hay %d socios NO-demo en la base. Este script solo "
-          "puede correrse antes de cargar datos reales." % _reales,
+# OJO con el email NULL: un socio cargado a mano suele no tener email, y
+# 'not like' NO matchea NULL en SQL — hay que preguntar por el vacío aparte.
+_no_demo = _all('coop.member').search(
+    ['|', ('partner_id.email', '=', False),
+          ('partner_id.email', 'not like', '@demo.coop')])
+if _no_demo:
+    # Nombrar los registros, no solo contarlos: este abort ocurre el día del
+    # go-live, con el backup recién hecho y la cooperativa esperando. Saber
+    # CUÁL socio bloquea convierte un callejón sin salida en una decisión.
+    print("!!! ABORTADO: hay %d socio(s) NO-demo en la base. Este script solo "
+          "puede correrse antes de cargar datos reales." % len(_no_demo),
+          file=sys.stderr)
+    for _m in _no_demo:
+        print("      coop.member id=%s · %s · %s" % (
+            _m.id, _m.partner_id.display_name,
+            _m.partner_id.email or '(sin email)'), file=sys.stderr)
+    print("    Si son restos de pruebas manuales, borralos a mano y volvé a "
+          "correr. Si son socios reales, NO corras este script.",
           file=sys.stderr)
     sys.exit(1)
 
-_demo_partners = env['res.partner'].sudo().search([('email', 'like', '@demo.coop')])
-_demo_members = env['coop.member'].sudo().search(
+_demo_partners = _all('res.partner').search([('email', 'like', '@demo.coop')])
+_demo_members = _all('coop.member').search(
     [('partner_id', 'in', _demo_partners.ids)]) if _demo_partners else \
     env['coop.member'].sudo().browse()
-_demo_obras = env['project.project'].sudo().search(
+_demo_obras = _all('project.project').search(
     ['|', ('name', '=', 'Obra Piloto San Martín de los Andes'),
           ('comitente_id', 'in', _demo_partners.ids)])
-_demo_users = env['res.users'].sudo().search(
+_demo_users = _all('res.users').search(
     [('login', 'in', ['carlos', 'lucas', 'sofia', 'analia'])])
+
+# GUARDA 2: obras que la purga NO reconoce como demo.
+# Este script solo sabe borrar lo ETIQUETADO (nombre de la obra demo, o
+# comitente @demo.coop). Una obra creada a mano desde la app durante las
+# pruebas no lleva marcador — y no es que quede como resto inofensivo: sus
+# hijos (órdenes al corralón, pedidos) apuntan con FK restrict a los materiales
+# y corralones demo, así que impiden borrarlos y la purga termina a mitad de
+# camino, con la base medio limpia. Verificado sobre una copia el 2026-07-28.
+# Por eso se corta ANTES de borrar nada: media purga es peor que ninguna.
+_obras_sueltas = _all('project.project').search([('id', 'not in', _demo_obras.ids)])
+if _obras_sueltas:
+    print("!!! ABORTADO: hay %d obra(s) que la purga no reconoce como demo:"
+          % len(_obras_sueltas), file=sys.stderr)
+    for _o in _obras_sueltas:
+        print("      project.project id=%s · %s%s" % (
+            _o.id, _o.display_name,
+            '  [ARCHIVADA]' if not _o.active else ''), file=sys.stderr)
+    print("    Si son restos de pruebas, borralas con su árbol de hijos y "
+          "volvé a correr. Si alguna es real, NO corras este script.",
+          file=sys.stderr)
+    sys.exit(1)
 
 # Obras demo con todo su árbol de hijos (orden hijo→padre para no dejar orphans)
 for _o in _demo_obras:
@@ -100,8 +145,22 @@ _safe_unlink(_search('coop.corralon', [('name', 'in', [
     'Corralón Austral', 'Corralón El Roble', 'Corralón Don Pedro'])]))
 
 # Pipeline comercial demo + herramientas demo
-_safe_unlink(_search('coop.orden.trabajo',
-                     [('cliente_id', 'in', _demo_partners.ids)]))
+# La OT no se identifica solo por su cliente: una OT cargada a mano desde la app
+# durante las pruebas suele tener un cliente sin marcar (o ninguno), pero SIEMPRE
+# queda administrada/relevada por un socio demo. Y `administrador_id` es un FK
+# restrict contra coop.member: si esa OT sobrevive, después no se pueden borrar
+# los socios demo y la purga termina en PURGA INCOMPLETA.
+_demo_ots = _search('coop.orden.trabajo',
+                    ['|', '|',
+                     ('cliente_id', 'in', _demo_partners.ids),
+                     ('administrador_id', 'in', _demo_members.ids),
+                     ('relevador_id', 'in', _demo_members.ids)])
+if _demo_ots:
+    # hijos antes que la OT (mismo criterio que el árbol de la obra)
+    _safe_unlink(_search('coop.presupuesto', [('orden_id', 'in', _demo_ots.ids)]))
+    _safe_unlink(_search('coop.relevamiento', [('orden_id', 'in', _demo_ots.ids)]))
+    _safe_unlink(_search('coop.ot.etapa', [('orden_id', 'in', _demo_ots.ids)]))
+    _safe_unlink(_demo_ots)
 _safe_unlink(_search('maintenance.equipment', [('name', 'like', '(demo)')]))
 _safe_unlink(_search('maintenance.equipment.category',
                      [('name', '=', 'Herramientas de obra (demo)')]))
@@ -114,7 +173,7 @@ if _demo_members:
     _safe_unlink(_search('coop.contribution', [('member_id', 'in', _demo_members.ids)]))
 # Asambleas: también por nombre — si una corrida parcial ya borró los members,
 # la búsqueda por president/attendee no las encontraría nunca más.
-_demo_assemblies = env['coop.assembly'].sudo().search([
+_demo_assemblies = _all('coop.assembly').search([
     '|', '|',
     ('name', 'in', ['Asamblea Ordinaria - Marzo 2026',
                     'Asamblea Extraordinaria - Junio 2026']),
@@ -130,6 +189,11 @@ if _demo_assemblies:
 # Usuarios → socios → contactos demo (en ese orden)
 _safe_unlink(_demo_users)
 _safe_unlink(_demo_members)
+# Odoo cuelga del partner las suscripciones de push del navegador, con FK
+# restrict: si alguien aceptó notificaciones probando la PWA con un usuario
+# demo, ese registro impide borrar el contacto. Es residuo del navegador, no
+# dato de la cooperativa.
+_safe_unlink(_search('mail.push.device', [('partner_id', 'in', _demo_partners.ids)]))
 _safe_unlink(_demo_partners)
 
 env.cr.commit()
@@ -137,11 +201,11 @@ env.cr.commit()
 # Verificación final HONESTA: contar remanentes de todos los marcadores demo,
 # no solo partners. Si hubo avisos o quedó algo, terminar con FAIL visible.
 _restos = {
-    'partners @demo.coop': env['res.partner'].sudo().search_count(
+    'partners @demo.coop': _all('res.partner').search_count(
         [('email', 'like', '@demo.coop')]),
-    'obra demo': env['project.project'].sudo().search_count(
+    'obra demo': _all('project.project').search_count(
         [('name', '=', 'Obra Piloto San Martín de los Andes')]),
-    'users demo': env['res.users'].sudo().search_count(
+    'users demo': _all('res.users').search_count(
         [('login', 'in', ['carlos', 'lucas', 'sofia', 'analia'])]),
     'materiales demo': len(_search('coop.material', [('name', 'in', [
         'Cemento', 'Cal hidratada', 'Arena', 'Ladrillo hueco 12x18x33',
@@ -162,4 +226,5 @@ if _avisos or _quedo:
     print("Re-corré el script (es idempotente) o revisá a mano.",
           file=sys.stderr)
     sys.exit(1)
-print("=== PURGA COMPLETA. Sin remanentes demo. ===", file=sys.stderr)
+print("=== PURGA COMPLETA. Sin remanentes de los marcadores demo. ===",
+      file=sys.stderr)

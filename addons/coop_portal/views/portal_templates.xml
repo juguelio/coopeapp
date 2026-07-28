@@ -1143,6 +1143,7 @@
             <meta name="theme-color" content="#1a7f4e"/>
             <link rel="manifest" href="/app/manifest.webmanifest"/>
             <link rel="apple-touch-icon" href="/coop_portal/static/img/icon.svg"/>
+            <link rel="icon" href="/coop_portal/static/img/icon.svg"/>
             <title>coopeapp · ingresar</title>
             <style>
                 body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#f4f6f8;margin:0;padding:0;color:#1a2430}
@@ -1186,6 +1187,7 @@
             <meta name="theme-color" content="#1a7f4e"/>
             <link rel="manifest" href="/app/manifest.webmanifest"/>
             <link rel="apple-touch-icon" href="/coop_portal/static/img/icon.svg"/>
+            <link rel="icon" href="/coop_portal/static/img/icon.svg"/>
             <title>coopeapp · cambiar PIN</title>
             <style>
                 body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#f4f6f8;margin:0;padding:0;color:#1a2430}

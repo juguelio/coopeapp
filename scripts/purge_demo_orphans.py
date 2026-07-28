@@ -18,7 +18,10 @@ def borrar(records):
         except Exception as e:  # noqa: BLE001
             print(f"  (aviso) {records._name}: {e}", file=sys.stderr)
 
-obras = env['project.project'].sudo().search([('name', '=', NOMBRE)], order='id')
+# active_test=False: una obra vieja archivada sigue en la base y seguiría
+# arrastrando sus hijos; search() la esconde por defecto (ver purge_demo.py).
+obras = env['project.project'].sudo().with_context(active_test=False).search(
+    [('name', '=', NOMBRE)], order='id')
 if len(obras) <= 1:
     print("No hay obras duplicadas para purgar.", file=sys.stderr)
 else:
