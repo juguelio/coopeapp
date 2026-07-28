@@ -31,21 +31,47 @@ jobs:
 
       - name: Detectar módulos cambiados
         id: mods
+        # El input va por env y NO interpolado en el script: este valor termina
+        # dentro de un comando que corre por SSH en el VPS de producción, así
+        # que un `${{ }}` acá es ejecución remota de comandos disfrazada de
+        # nombre de módulo. Además se valida el formato antes de usarlo.
+        env:
+          MANUAL: ${{ github.event.inputs.modulos }}
         run: |
           set -e
-          MANUAL="${{ github.event.inputs.modulos }}"
           if [ -n "$MANUAL" ]; then
+            case "$MANUAL" in
+              *[!A-Za-z0-9_,-]*)
+                echo "::error::Input inválido. Solo nombres de módulo" \
+                     "separados por coma (letras, números, _ y -)."
+                exit 1 ;;
+            esac
             MODS="$MANUAL"
           else
             BEFORE="${{ github.event.before }}"
             if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
               BEFORE="HEAD~1"
             fi
-            MODS=$(git diff --name-only "$BEFORE" HEAD -- 'addons/*/' \
+            # OJO el pathspec: 'addons/' sin barra-asterisco-barra. Con
+            # 'addons/*/' git no matchea NADA en --name-only (lista blobs, y
+            # ese patrón pide una entrada que termine en /), así que la
+            # detección devolvía vacío y el deploy se salteaba en silencio
+            # dando verde. Pasó en los 3 pushes anteriores.
+            MODS=$(git diff --name-only "$BEFORE" HEAD -- 'addons/' \
               | sed -nE 's#^addons/([^/]+)/.*#\1#p' | sort -u | paste -sd, -)
           fi
           echo "modulos=$MODS" >> "$GITHUB_OUTPUT"
           echo "Módulos a deployar: ${MODS:-(ninguno)}"
+          # Sin módulos no hay nada que hacer, y este workflow solo se dispara
+          # cuando cambió algo en addons/**: llegar acá vacío significa que la
+          # detección falló. Fallar es obligatorio — un deploy que no deploya
+          # pero reporta éxito es peor que uno que revienta.
+          if [ -z "$MODS" ]; then
+            echo "::error::No se detectó ningún módulo para deployar. La" \
+                 "detección falló o el push no tocó addons/. Revisá el" \
+                 "pathspec antes de dar el deploy por hecho."
+            exit 1
+          fi
 
       - name: Configurar SSH
         if: steps.mods.outputs.modulos != ''
