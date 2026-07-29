@@ -27,41 +27,55 @@ volumen  ~5,1 MB el dump + ~4,3 MB el filestore por día (~144 MB en total)
 Estado verificado el 2026-07-28: **12 dumps + 12 filestore, sin huecos**, el más
 reciente de ese mismo día 03:00.
 
-> ⚠️ **Deuda 1 — el script que corre no está versionado.** `~/odoo-coop/backup.sh`
-> vive solo en el VPS. Si se pierde el server, se pierde también el script que
-> hacía los backups. `scripts/backup-vps.sh` (en este repo) es una versión
-> **anterior y distinta** — otro destino (`~/backups/`), otros nombres de archivo
-> y retención de 30 días — que **no es la que está en cron**. No la uses como
-> referencia: ignorala o alineala antes de tocar nada.
->
-> ⚠️ **Deuda 2 — no hay copia offsite.** Ver la sección de abajo. Es lo que falta
-> para que esto sea un backup de verdad y no una copia local.
+> ✅ **Deuda 1 (script sin versionar) — SALDADA 2026-07-29.** `scripts/backup-vps.sh`
+> en este repo **es** el script que corre. Si lo editás, subilo:
+> `scp scripts/backup-vps.sh coopeapp-vps:~/odoo-coop/backup.sh`.
+> La versión anterior del VPS quedó guardada como `backup.sh.bak-2026-07-29`.
 
-## Copia offsite — PENDIENTE (bloqueante para datos reales)
+## Copia offsite — ✅ ACTIVA (2026-07-29)
 
-Hoy los 24 archivos viven en el **mismo VPS** cuya base respaldan. Un incidente
-del server (disco, borrado, baja del proveedor) se lleva la nómina, las actas y
-los certificados firmados de una cooperativa real, junto con sus backups.
+Backblaze B2, bucket **privado** `coopeapp-backups`, remoto rclone `b2remote`.
+La app key está restringida a ese bucket (no es la master key) y vive solo en
+`~/.config/rclone/rclone.conf` del VPS, con permisos 600.
 
-Configurar una vez, en el VPS:
+`rclone` está instalado como binario de usuario en `~/bin/rclone` (el VPS no
+tiene sudo sin password). **El script lo llama por ruta absoluta a propósito:**
+cron corre con un PATH mínimo que no incluye `~/bin`, así que un `rclone` pelado
+fallaría en silencio todas las noches.
+
+> ⚠️ **Nada de `|| true` en la subida.** Una versión previa de este runbook lo
+> sugería y estaba mal: se traga el error y el backup termina diciendo "OK" sin
+> haber copiado nada. Es el mismo modo de falla que tuvo el auto-deploy del CI
+> durante 3 pushes. Si la copia offsite falla, el script corta con
+> `[ALERT][backup]` y sale con código 1.
+
+Retención: **14 días en local, sin límite en offsite**. Es deliberado — el objeto
+de la copia remota es sobrevivir a un borrado accidental de este server,
+incluido uno hecho por este mismo script. A ~10 MB/día entran años en los 10 GB
+gratis de B2.
+
+### Verificar que sigue viva (check externo, no la palabra del script)
 
 ```bash
 ssh coopeapp-vps
-rclone config          # crear un remoto "b2" (Backblaze B2: gratis hasta 10 GB)
+~/bin/rclone ls b2remote:coopeapp-backups/ | tail -4   # tiene que estar el dump de hoy
+~/bin/rclone size b2remote:coopeapp-backups/
+grep '\[ALERT\]' ~/odoo-coop/backups/backup.log        # vacío = ninguna noche falló
 ```
 
-Y agregar al final de `~/odoo-coop/backup.sh`, **antes** del `echo` final:
+La prueba dura es bajar el dump **remoto** y confirmar que se puede leer:
 
 ```bash
-rclone copy "$BACKUP_DIR/db_${DB_NAME}_${DATE}.dump" b2:coopeapp-backups/ || true
-rclone copy "$BACKUP_DIR/filestore_${DATE}.tar.gz"   b2:coopeapp-backups/ || true
+~/bin/rclone copy b2remote:coopeapp-backups/db_coop_piloto_AAAA-MM-DD_HHMMSS.dump /tmp/verif/
+docker exec -i odoo-coop-db pg_restore -l < /tmp/verif/db_coop_piloto_*.dump | grep -c '^[0-9]'
+rm -rf /tmp/verif
 ```
 
-Check externo de que anda (no alcanza con "lo configuré"):
-
-```bash
-rclone ls b2:coopeapp-backups/ | tail -3     # tiene que aparecer el dump de hoy
-```
+Verificado el 2026-07-29: checksums local↔remoto sin diferencias, y el dump
+bajado de B2 devuelve **9312 objetos** legibles por `pg_restore`. Los dos caminos
+de error probados a mano (remoto inexistente, `rclone` ausente) cortan con
+`[ALERT]` y exit 1 en vez de reportar éxito. Cobertura inicial subida de una:
+**15 días** (2026-07-15 → 2026-07-29), 167 MB.
 
 ## Restore — PROBADO ✅
 
@@ -122,5 +136,19 @@ Ver `docs/go-live-datos.md`.
 - [x] `backup.sh` corre sin errores (12 días corridos verificados).
 - [x] Cron diario configurado (`0 3 * * *`).
 - [x] **Restore probado end-to-end** (2026-07-28).
-- [ ] **Copia offsite (rclone) configurada** ← lo único que falta.
-- [ ] Script de backup versionado en el repo.
+- [x] **Copia offsite configurada y verificada** (2026-07-29, B2).
+- [x] Script de backup versionado en el repo (`scripts/backup-vps.sh`).
+- [x] El script falla ruidosamente en vez de reportar éxito falso.
+
+Con esto los backups dejan de ser el bloqueante para cargar datos reales.
+
+## Lo que sigue sin cubrir (asumido, no olvidado)
+
+- **Nadie avisa si el cron deja de correr.** Si el server se apaga o el cron
+  muere, no hay backup y tampoco hay alerta: el log simplemente deja de crecer.
+  Un chequeo semanal a mano (`rclone ls` + fecha del último dump) alcanza para el
+  piloto; si la coop se vuelve crítica, conviene un dead-man's switch.
+- **La app key vive solo en el VPS.** Si se pierde el server hay que generar una
+  nueva en Backblaze para bajar los backups — no es un bloqueo (los datos están
+  en B2 y se accede desde la consola web), pero conviene tener el par guardado
+  también en el vault.

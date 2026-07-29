@@ -1,39 +1,64 @@
-#!/usr/bin/env bash
-# Backup diario de coopeapp en el VPS: dump de la DB + filestore, con retención.
-# Pensado para correr por cron EN EL VPS (no desde la Mac).
-#   crontab -e  →  15 3 * * *  /home/odoo-admin/odoo-coop/scripts/backup-vps.sh >> /home/odoo-admin/backups/backup.log 2>&1
+#!/bin/bash
+# Backup diario de coopeapp: dump de la DB + filestore, copia offsite y retención.
 #
-# Requiere: docker compose corriendo en ~/odoo-coop. Ajustá DB/SERVICE si difieren.
-set -euo pipefail
+# ESTE es el script que corre en el VPS. Vive en ~/odoo-coop/backup.sh y se
+# dispara por cron:
+#     0 3 * * *  /home/odoo-admin/odoo-coop/backup.sh >> /home/odoo-admin/odoo-coop/backups/backup.log 2>&1
+# Si lo editás acá, subilo:  scp scripts/backup-vps.sh coopeapp-vps:~/odoo-coop/backup.sh
+#
+# Regla de oro: este script NUNCA puede terminar diciendo "OK" si algo falló.
+# Un backup que reporta éxito sin haber respaldado es peor que uno que revienta,
+# porque nadie vuelve a mirarlo.
+set -uo pipefail
 
-COMPOSE_DIR="${COMPOSE_DIR:-$HOME/odoo-coop}"
-DB="${DB:-coop_piloto}"
-DB_SERVICE="${DB_SERVICE:-db}"        # nombre del servicio Postgres en docker compose
-DB_USER="${DB_USER:-odoo}"
-DEST="${DEST:-$HOME/backups}"
-RETENCION_DIAS="${RETENCION_DIAS:-30}"
-FECHA="$(date +%Y%m%d-%H%M)"
+BACKUP_DIR="$HOME/odoo-coop/backups"
+DATE=$(date +%Y-%m-%d_%H%M%S)
+DB_NAME="coop_piloto"
+DB_CONTAINER="odoo-coop-db"
+# Ruta absoluta a propósito: cron corre con un PATH mínimo y ~/bin no está en
+# él, así que un `rclone` pelado acá fallaría en silencio todas las noches.
+RCLONE="$HOME/bin/rclone"
+REMOTO="b2remote:coopeapp-backups"
 
-mkdir -p "$DEST"
-cd "$COMPOSE_DIR"
+DUMP="$BACKUP_DIR/db_${DB_NAME}_${DATE}.dump"
+FILESTORE="$BACKUP_DIR/filestore_${DATE}.tar.gz"
 
-echo "→ [$FECHA] Dump de la base $DB..."
-docker compose exec -T "$DB_SERVICE" pg_dump -U "$DB_USER" -Fc "$DB" \
-  > "$DEST/${DB}-${FECHA}.dump"
+fallo() {
+    # Prefijo grepeable para revisar el log de un vistazo:
+    #   grep '\[ALERT\]' ~/odoo-coop/backups/backup.log
+    echo "[ALERT][backup][$DATE] $*"
+    exit 1
+}
 
-echo "→ Backup del filestore..."
-# El filestore vive dentro del contenedor de Odoo en ~/.local/share/Odoo/filestore/<DB>.
-# Lo copiamos a un tar. Si usás un volumen/bind distinto, ajustá la ruta.
-docker compose exec -T odoo tar czf - -C /var/lib/odoo/filestore "$DB" \
-  > "$DEST/filestore-${DB}-${FECHA}.tar.gz" 2>/dev/null \
-  || echo "  (aviso: revisá la ruta del filestore si esto falló)"
+mkdir -p "$BACKUP_DIR"
 
-echo "→ Retención: borro backups de más de $RETENCION_DIAS días..."
-find "$DEST" -name "${DB}-*.dump" -mtime "+$RETENCION_DIAS" -delete
-find "$DEST" -name "filestore-${DB}-*.tar.gz" -mtime "+$RETENCION_DIAS" -delete
+# ── Base de datos ────────────────────────────────────────────────────────────
+# La redirección crea el archivo aunque pg_dump falle, así que no alcanza con
+# mirar que exista: hay que chequear el código de salida Y que no esté vacío.
+docker exec "$DB_CONTAINER" pg_dump -U odoo -Fc "$DB_NAME" > "$DUMP" \
+    || fallo "pg_dump falló para $DB_NAME"
+[ -s "$DUMP" ] || fallo "el dump quedó vacío: $DUMP"
 
-# ── Copia offsite (descomentá y configurá rclone una vez: rclone config) ──
-# rclone copy "$DEST/${DB}-${FECHA}.dump" "b2:coopeapp-backups/" 2>/dev/null || true
-# rclone copy "$DEST/filestore-${DB}-${FECHA}.tar.gz" "b2:coopeapp-backups/" 2>/dev/null || true
+# ── Filestore (adjuntos: actas, certificados, fotos) ─────────────────────────
+tar czf "$FILESTORE" -C "$HOME/odoo-coop/odoo-data" . 2>/dev/null
+[ -s "$FILESTORE" ] || fallo "el filestore quedó vacío: $FILESTORE"
 
-echo "✓ Backup completo: $DEST/${DB}-${FECHA}.dump"
+# ── Copia offsite ────────────────────────────────────────────────────────────
+# Sin esto los backups viven en el mismo server cuya base respaldan, y un
+# incidente del VPS se lleva los datos y las copias en el mismo movimiento.
+# Por eso va SIN "|| true": si la subida falla, el backup del día no está
+# completo y tiene que gritar.
+[ -x "$RCLONE" ] || fallo "no encuentro $RCLONE — la copia offsite no corrió"
+"$RCLONE" copy "$DUMP" "$REMOTO/" \
+    || fallo "rclone no pudo subir el dump a $REMOTO"
+"$RCLONE" copy "$FILESTORE" "$REMOTO/" \
+    || fallo "rclone no pudo subir el filestore a $REMOTO"
+
+# ── Retención ────────────────────────────────────────────────────────────────
+# Solo LOCAL. Lo offsite se acumula a propósito: es la copia que tiene que
+# sobrevivir a un borrado accidental de este server, incluido uno hecho por
+# este mismo script. A ~10 MB/día entran años en el tier gratis de B2.
+find "$BACKUP_DIR" -name "db_*.dump"          -mtime +14 -delete
+find "$BACKUP_DIR" -name "filestore_*.tar.gz" -mtime +14 -delete
+
+echo "Backup OK: $DATE (local + offsite en $REMOTO)"
