@@ -20,8 +20,27 @@ env = env  # noqa: F821 — inyectado por odoo shell
 
 _avisos = []
 
+# ─── Bloque cargante: el orden de este archivo es de seguridad, no de estilo ───
+# Toda la protección del script son las DOS GUARDAS que corren más abajo (socios
+# no-demo, obras no reconocidas). Después de ellas, `_safe_unlink` borra en
+# serio y commitea: no hay undo. Un `_safe_unlink` movido por encima de las
+# guardas borraría datos reales sin que nada avise.
+#
+# Para que eso no dependa de que el próximo lector note el detalle, la
+# habilitación es explícita: `_safe_unlink` se niega a borrar mientras
+# `_GUARDAS_OK` sea False. Si mañana alguien reordena el archivo, el script
+# aborta en vez de arrasar.
+_GUARDAS_OK = False
+
 
 def _safe_unlink(records):
+    if not _GUARDAS_OK:
+        # No es un chequeo defensivo decorativo: llegar acá significa que se
+        # intentó borrar antes de validar la base.
+        print("!!! ABORTADO: se intentó borrar %s antes de pasar las guardas. "
+              "No se tocó nada. Revisá el orden del script." % records._name,
+              file=sys.stderr)
+        sys.exit(1)
     if records:
         try:
             with env.cr.savepoint():
@@ -111,6 +130,11 @@ if _obras_sueltas:
           "volvé a correr. Si alguna es real, NO corras este script.",
           file=sys.stderr)
     sys.exit(1)
+
+# ─── Las dos guardas pasaron: recién ACÁ se habilita el borrado ───
+# Nada de lo que está arriba de esta línea puede borrar. Si movés una llamada a
+# `_safe_unlink` por encima, el script aborta a propósito (ver `_GUARDAS_OK`).
+_GUARDAS_OK = True
 
 # Obras demo con todo su árbol de hijos (orden hijo→padre para no dejar orphans)
 for _o in _demo_obras:
