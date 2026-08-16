@@ -3,6 +3,15 @@ from urllib.parse import quote
 from odoo import http
 from odoo.http import request
 
+# Valor centinela del wizard de pedidos: el socio pide algo que no está en el
+# catálogo y lo escribe a mano. Evita que el catálogo incompleto lo trabe.
+OTRO = 'otro'
+UOM_OPCIONES = [
+    ('unidad', 'Unidad'), ('bolsa', 'Bolsa'), ('m3', 'm³'),
+    ('barra', 'Barra'), ('lata', 'Lata'), ('ml', 'Metro lineal'),
+    ('m2', 'm²'), ('otro', 'Otro'),
+]
+
 
 class CoopPortalCoordinador(http.Controller):
     """Coordinador en /app: valida avances y gestiona pedidos de SUS obras
@@ -368,38 +377,57 @@ class CoopPortalCoordinador(http.Controller):
     @http.route('/app/pedir/cantidad', type='http', auth='user', website=False)
     def pedir_paso2(self, obra_id, material_id, **kw):
         member = self._member()
-        material = request.env['coop.material'].sudo().browse(
-            int(material_id)).exists()
         obra = request.env['project.project'].sudo().browse(
             int(obra_id)).exists()
-        if not member or not material or not obra:
+        if not member or not obra:
+            return request.redirect('/app/pedir')
+        uom_labels = dict(request.env['coop.material']._fields['uom'].selection)
+        # "otro": el socio escribe el material que no está en el catálogo. El
+        # coordinador lo resuelve al aceptar el pedido.
+        if material_id == OTRO:
+            return request.render('coop_portal.pedir_paso2_otro', {
+                'member': member, 'obra': obra, 'uoms': UOM_OPCIONES,
+                'uom_compra_labels': uom_labels,
+            })
+        material = request.env['coop.material'].sudo().browse(
+            int(material_id)).exists()
+        if not material:
             return request.redirect('/app/pedir')
         return request.render('coop_portal.pedir_paso2', {
             'member': member, 'obra': obra, 'material': material,
-            'uom_compra_labels': dict(request.env['coop.material']
-                                      ._fields['uom'].selection),
+            'uom_compra_labels': uom_labels,
         })
 
     @http.route('/app/pedir/confirmar', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
-    def pedir_confirmar(self, obra_id, material_id, cantidad, nota=None, **kw):
+    def pedir_confirmar(self, obra_id, material_id, cantidad, nota=None,
+                        descripcion=None, uom=None, **kw):
         member = self._member()
-        material = request.env['coop.material'].sudo().browse(
-            int(material_id)).exists()
         obra = request.env['project.project'].sudo().browse(
             int(obra_id)).exists()
         try:
             cant = float(str(cantidad).replace(',', '.'))
         except (TypeError, ValueError):
             cant = 0.0
-        if not member or not material or not obra or cant <= 0:
+        if not member or not obra or cant <= 0:
             return request.redirect('/app/pedir')
+        if material_id == OTRO:
+            texto = (descripcion or '').strip()
+            unidad = uom if uom in [u[0] for u in UOM_OPCIONES] else 'unidad'
+            if not texto:
+                return request.redirect('/app/pedir')
+            vals = {'descripcion_libre': texto, 'uom': unidad}
+            material = request.env['coop.material'].sudo().browse()
+        else:
+            material = request.env['coop.material'].sudo().browse(
+                int(material_id)).exists()
+            if not material:
+                return request.redirect('/app/pedir')
+            vals = {'material_id': material.id, 'uom': material.uom}
         # crear como el usuario: la record rule (propio + pendiente) aplica
-        pedido = request.env['coop.pedido.material'].create({
-            'obra_id': obra.id, 'member_id': member.id,
-            'material_id': material.id, 'uom': material.uom,
-            'cantidad': cant, 'nota': nota or False,
-        })
+        pedido = request.env['coop.pedido.material'].create(dict(
+            vals, obra_id=obra.id, member_id=member.id,
+            cantidad=cant, nota=nota or False))
         return request.render('coop_portal.pedir_listo', {
             'member': member, 'pedido': pedido.sudo(), 'material': material,
         })

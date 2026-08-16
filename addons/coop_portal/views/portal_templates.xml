@@ -644,10 +644,16 @@
                style="margin-bottom:14px">📦 Armar órdenes al corralón →</a>
 
             <div class="card" t-foreach="pedidos" t-as="p">
-                <div style="font-weight:800;font-size:16px"><t t-esc="p.member_id.name"/></div>
+                <div style="font-weight:800;font-size:16px">
+                    <t t-esc="p.member_id.name"/>
+                    <span t-if="not p.material_id" class="chip espera" style="margin-left:6px">✏️ fuera del catálogo</span>
+                </div>
                 <div style="font-size:14px;color:var(--gris);margin-bottom:10px">
                     <b><t t-esc="p.name"/></b> · <t t-esc="p.obra_id.name"/>
                     <t t-if="p.nota"> · <t t-esc="p.nota"/></t>
+                </div>
+                <div t-if="not p.material_id" style="font-size:13px;color:#8a5a00;margin:-6px 0 10px">
+                    Lo escribió el socio. Si lo aceptás, conviene darlo de alta en el catálogo después.
                 </div>
                 <form action="/app/pedidos/accion" method="post" style="margin-bottom:8px">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -914,10 +920,42 @@
                 <span><t t-esc="m.icono or '📦'"/> <t t-esc="m.name"/></span>
                 <span style="margin-left:auto;color:var(--gris)"><t t-esc="m.detalle or ''"/></span>
             </a>
+            <a class="opcion" t-attf-href="/app/pedir/cantidad?obra_id={{obra.id}}&amp;material_id=otro">
+                <span>✏️ Otro material</span>
+                <span style="margin-left:auto;color:var(--gris)">lo escribís vos</span>
+            </a>
             <div class="card" t-if="not materiales">
                 <h3>SIN CATÁLOGO</h3>
-                <div>El administrador todavía no cargó materiales. Avisale.</div>
+                <div>Todavía no hay materiales cargados, pero podés pedir igual con <b>Otro material</b>: lo escribís y el coordinador lo resuelve.</div>
             </div>
+        </t>
+    </template>
+
+    <template id="pedir_paso2_otro" name="App: pedir material que no está en el catálogo">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'obra'"/>
+            <a class="atras" t-attf-href="/app/pedir?obra_id={{obra.id}}">← Volver</a>
+            <div class="paso">PEDIR MATERIALES</div>
+            <div class="pregunta">¿Qué necesitás?</div>
+            <div class="sub">Escribilo con tus palabras. El coordinador lo revisa cuando lo acepta.</div>
+            <form action="/app/pedir/confirmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="obra_id" t-att-value="obra.id"/>
+                <input type="hidden" name="material_id" value="otro"/>
+                <input type="text" name="descripcion" required="required" maxlength="120"
+                       placeholder="Ej: membrana asfáltica 4mm"
+                       style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px;margin-bottom:10px"/>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+                    <input class="numero-grande" style="margin:0;flex:1" type="number" name="cantidad" step="any"
+                           min="0.01" required="required" inputmode="decimal" placeholder="Cantidad"/>
+                    <select name="uom" style="padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px">
+                        <option t-foreach="uoms" t-as="u" t-att-value="u[0]"><t t-esc="u[1]"/></option>
+                    </select>
+                </div>
+                <input type="text" name="nota" placeholder="¿Para qué? (opcional)"
+                       style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px;margin-bottom:10px"/>
+                <button class="botonazo" type="submit">PEDIR ✓</button>
+            </form>
         </t>
     </template>
 
