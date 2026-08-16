@@ -25,15 +25,17 @@ class CoopPortalAuth(http.Controller):
         member = Member.browse()
         if len(num) >= 6:
             tail = num[-8:]
-            # pre-filtro SQL por los últimos 6 dígitos (casi siempre contiguos al
-            # final), después match exacto por dígitos en Python → tolera
-            # guiones/espacios SIN escanear toda la tabla de socios.
-            suf = num[-6:]
+            # pre-filtro SQL por los últimos 4 dígitos, después match exacto por
+            # dígitos en Python → tolera guiones/espacios SIN escanear toda la
+            # tabla de socios. Son 4 y no 6 porque Odoo formatea el teléfono
+            # cargado a mano (2616413081 → +54 261 641-3081) y el guion parte
+            # los últimos 6 dígitos; los últimos 4 quedan contiguos.
+            suf = num[-4:]
             cand = Member.search([
                 ('state', '=', 'active'),
                 '|', ('partner_id.phone', 'like', suf),
                      ('partner_id.mobile', 'like', suf)],
-                order='id', limit=50)
+                order='id', limit=200)
             member = next(
                 (m for m in cand
                  if re.sub(r'\D', '', m.partner_id.phone or '')[-8:] == tail
