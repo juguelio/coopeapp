@@ -1864,6 +1864,7 @@
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
                     <span class="chip">📅 fin: día <t t-esc="d['fin_obra']"/></span>
                     <span class="chip espera"><t t-esc="d['n_criticas']"/>/<t t-esc="d['n_tareas']"/> críticas</span>
+                    <span t-if="d['n_terminadas']" class="chip ok">✓ <t t-esc="d['n_terminadas']"/>/<t t-esc="d['n_tareas']"/> terminadas</span>
                     <span t-if="d['cuello']" class="chip" style="background:#fdebd0;color:#8a5a00">🔻 cuello: <t t-esc="d['cuello']"/></span>
                 </div>
 
@@ -1885,12 +1886,13 @@
                             <text t-if="it['g']" x="8" t-att-y="it['y']" style="fill:#33414d;font-size:11.5;font-weight:700"><t t-esc="it['label']"/></text>
                             <g t-if="not it['g']">
                                 <circle cx="12" t-att-cy="it['cy']" r="3.5" t-att-fill="it['dot']"/>
-                                <text x="22" t-att-y="it['ty']" style="fill:#46535e;font-size:11.5"><t t-esc="it['name']"/></text>
+                                <text t-if="it['done']" x="12" t-att-y="it['ty']" text-anchor="middle" style="fill:#ffffff;font-size:8;font-weight:700">✓</text>
+                                <text x="22" t-att-y="it['ty']" t-attf-style="font-size:11.5;fill:{{'#9aa3ad' if it['done'] else '#46535e'}}"><t t-esc="it['name']"/></text>
                             </g>
                         </t>
                         <g t-foreach="d['bars']" t-as="b" class="gtask" t-att-data-tid="b['tid']" style="cursor:pointer">
                             <rect t-if="b['holg']" t-att-x="b['hx']" t-att-y="b['hy']" t-att-width="b['hw']" height="3" rx="1.5" fill="#edca85"/>
-                            <rect t-att-x="b['x']" t-att-y="b['y']" t-att-width="b['w']" t-att-height="b['h']" rx="3.5" t-att-fill="b['fill']"/>
+                            <rect t-att-x="b['x']" t-att-y="b['y']" t-att-width="b['w']" t-att-height="b['h']" rx="3.5" t-att-fill="b['fill']" t-att-opacity="0.55 if b['done'] else None"/>
                             <text t-if="b['dlabel']" t-att-x="b['dx']" t-att-y="b['dy']" text-anchor="middle" style="fill:#ffffff;font-size:9.5"><t t-esc="b['dlabel']"/></text>
                         </g>
                     </svg>
@@ -1898,6 +1900,7 @@
                 <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--gris);margin:8px 0 4px">
                     <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:10px;border-radius:2px;background:#e24b4a"/>crítica</span>
                     <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:10px;border-radius:2px;background:#1a7f4e"/>con holgura</span>
+                    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:10px;border-radius:2px;background:#9aa3ad;opacity:.55"/>terminada</span>
                     <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:3px;border-radius:2px;background:#edca85"/>holgura disponible</span>
                     <span style="display:flex;align-items:center;gap:5px"><span style="width:18px;border-top:2px dashed #c47f17"/>cruce entre oficios</span>
                 </div>
@@ -1906,14 +1909,22 @@
                     <h3>EDITAR TAREAS</h3>
                     <div style="font-size:12px;color:var(--gris);margin-bottom:4px">Cambiá duración u oficio y la ruta se recalcula sola.</div>
                     <div t-foreach="d['edit']" t-as="i" style="padding:10px 0;border-top:1px solid #eef2f5">
-                        <div style="font-size:14px;font-weight:600">
+                        <div t-attf-style="font-size:14px;font-weight:600{{';color:#9aa3ad' if i['tk'].esta_terminada else ''}}">
                             <t t-esc="i['tk'].name"/>
-                            <span t-if="i['tk'].es_critica" class="chip espera" style="margin-left:6px">crítica</span>
+                            <span t-if="i['tk'].esta_terminada" class="chip ok" style="margin-left:6px">✓ terminada</span>
+                            <span t-elif="i['tk'].es_critica" class="chip espera" style="margin-left:6px">crítica</span>
                             <span t-else="" class="chip ok" style="margin-left:6px">holgura <t t-esc="'%g' % i['tk'].holgura"/> d</span>
                         </div>
-                        <div t-if="i['cruce']" style="font-size:12px;color:#a36b00;margin:3px 0">
+                        <div t-if="i['cruce'] and not i['tk'].esta_terminada" style="font-size:12px;color:#a36b00;margin:3px 0">
                             ⚠️ depende de otro oficio (<t t-esc="', '.join(i['cruce'])"/>)
                         </div>
+                        <form action="/app/admin/ruta/terminar" method="post" style="margin-top:6px">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="task_id" t-att-value="i['tk'].id"/>
+                            <input type="hidden" name="hecho" t-att-value="'0' if i['tk'].esta_terminada else '1'"/>
+                            <button t-if="not i['tk'].esta_terminada" class="botonazo" style="margin:0;min-height:40px;width:100%" type="submit">✓ Marcar terminada</button>
+                            <button t-else="" class="botonazo sec" style="margin:0;min-height:40px;width:100%" type="submit">Reabrir tarea</button>
+                        </form>
                         <form action="/app/admin/ruta/editar" method="post" style="margin-top:6px">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <input type="hidden" name="task_id" t-att-value="i['tk'].id"/>

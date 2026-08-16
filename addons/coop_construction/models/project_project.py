@@ -99,7 +99,11 @@ class ProjectProject(models.Model):
         Marca es_critica, holgura, inicio y fin temprano de cada tarea.
         """
         self.ensure_one()
-        tasks = self.task_ids
+        # OJO: `task_ids` excluye las tareas cerradas. Si se usa acá, marcar una
+        # tarea como terminada la saca del cálculo y el plan se comprime como si
+        # esos días nunca se hubieran trabajado (las que venían después pasan a
+        # arrancar el día 0). La ruta se calcula sobre TODAS las tareas.
+        tasks = self.env['project.task'].search([('project_id', '=', self.id)])
         if not tasks:
             raise UserError('La obra no tiene tareas para calcular.')
 
@@ -155,7 +159,11 @@ class ProjectProject(models.Model):
                 'inicio_temprano': es,
                 'fin_temprano': ef,
                 'holgura': holgura,
-                'es_critica': abs(holgura) < 0.01,
+                # Una tarea terminada ya no puede atrasar la obra, así que sale
+                # del camino crítico aunque su holgura siga siendo cero. La
+                # duración NO se toca: esos días se consumieron de verdad y las
+                # tareas que venían después no arrancan antes por cerrarla.
+                'es_critica': abs(holgura) < 0.01 and not task.esta_terminada,
             })
 
     def action_open_etapas(self) -> dict:

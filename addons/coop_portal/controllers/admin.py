@@ -5,6 +5,11 @@ from datetime import timedelta
 from odoo import fields, http
 from odoo.http import request
 
+# Estados nativos de project.task que usa la hoja de ruta. Cerrar una tarea a
+# mano la saca del camino crítico (ver coop_construction/project_project.py).
+ESTADO_TERMINADA = '1_done'
+ESTADO_EN_CURSO = '01_in_progress'
+
 
 class CoopPortalAdmin(http.Controller):
     """Administrador en /app: máxima información, cero operativa (no valida
@@ -396,16 +401,18 @@ class CoopPortalAdmin(http.Controller):
             x = xof(t.inicio_temprano)
             w = max(t.duracion_dias * px, 4.0)
             hw = max(t.holgura, 0.0) * px
+            term = t.esta_terminada
             crit = t.es_critica
+            color = '#9aa3ad' if term else ('#e24b4a' if crit else '#1a7f4e')
             midy[t.id] = mid
             items.append({'g': False, 'name': self._short(t.name), 'cy': mid,
                           'ty': round(mid + 3.5, 1), 'tid': t.id,
-                          'dot': '#e24b4a' if crit else '#1a7f4e'})
+                          'done': term, 'dot': color})
             bars.append({
                 'tid': t.id, 'x': x, 'y': round(by, 1), 'w': round(w, 1),
-                'h': bar_h, 'fill': '#e24b4a' if crit else '#1a7f4e',
-                'holg': hw > 0.5, 'hx': round(x + w, 1), 'hw': round(hw, 1),
-                'hy': round(by + bar_h - 3, 1),
+                'h': bar_h, 'fill': color, 'done': term,
+                'holg': hw > 0.5 and not term, 'hx': round(x + w, 1),
+                'hw': round(hw, 1), 'hy': round(by + bar_h - 3, 1),
                 'dlabel': ('%gd' % t.duracion_dias) if w >= 22 else '',
                 'dx': round(x + w / 2.0, 1), 'dy': round(mid + 3, 1),
             })
@@ -460,6 +467,7 @@ class CoopPortalAdmin(http.Controller):
         return {
             'obra': obra, 'fin_obra': int(round(fin_real)),
             'n_criticas': sum(1 for t in ts if t.es_critica),
+            'n_terminadas': sum(1 for t in ts if t.esta_terminada),
             'n_tareas': len(ts), 'cuello': cuello,
             'items': items, 'bars': bars, 'conns': conns, 'axis': axis,
             'seps': seps, 'svg_w': W, 'svg_h': svg_h, 'axis_h': axis_h,
@@ -496,6 +504,28 @@ class CoopPortalAdmin(http.Controller):
                     tk.project_id.action_calcular_ruta_critica()
                 except Exception:  # noqa: BLE001 — sin tareas o ciclo
                     pass
+        return request.redirect('/app/admin/ruta')
+
+    @http.route('/app/admin/ruta/terminar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def ruta_terminar(self, task_id, hecho='1', **kw):
+        """Marca a mano una tarea de la hoja de ruta como terminada (o la
+        reabre) y recalcula la ruta crítica para que el Gantt lo refleje."""
+        member = self._member()
+        if not self._es_admin(member):
+            return request.redirect('/app')
+        Task = request.env['project.task'].sudo()
+        try:
+            tk = Task.browse(int(task_id)).exists()
+        except (TypeError, ValueError):
+            return request.redirect('/app/admin/ruta')
+        if tk and tk.project_id in self._obras_activas():
+            tk.write({'state': ESTADO_TERMINADA if hecho == '1'
+                      else ESTADO_EN_CURSO})
+            try:
+                tk.project_id.action_calcular_ruta_critica()
+            except Exception:  # noqa: BLE001 — sin tareas o ciclo
+                pass
         return request.redirect('/app/admin/ruta')
 
     # ── reportes: sobre la vista unificada coop.operacion (M6) ───────

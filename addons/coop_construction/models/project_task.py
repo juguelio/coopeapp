@@ -1,8 +1,20 @@
-from odoo import models, fields
+from odoo import api, models, fields
+
+ESTADO_TERMINADA = '1_done'
 
 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
+
+    esta_terminada = fields.Boolean(
+        string='Terminada', compute='_compute_esta_terminada', store=True,
+        help='La tarea está cerrada. Sale del camino crítico, pero conserva '
+             'su duración: esos días ya se consumieron.')
+
+    @api.depends('state')
+    def _compute_esta_terminada(self) -> None:
+        for task in self:
+            task.esta_terminada = task.state == ESTADO_TERMINADA
 
     categoria_tarea = fields.Selection([
         ('excavacion', 'Excavación y movimiento de suelos'),
