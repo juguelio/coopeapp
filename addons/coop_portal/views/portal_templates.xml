@@ -1270,6 +1270,7 @@
                 <form t-if="not mi_presente" action="/app/asamblea/presente" method="post" style="margin-top:10px">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <button class="botonazo" style="margin:0" type="submit">✋ Estoy presente</button>
+                    <div style="font-size:13px;color:var(--gris);margin-top:6px">Marcate presente para poder votar: el quórum se cuenta con los socios presentes.</div>
                 </form>
                 <div t-else="" class="fila" style="border:0;padding:4px 0">
                     <div>Tu asistencia</div><span class="chip ok">✓ Presente</span>
@@ -1303,6 +1304,19 @@
                     <div class="fila" style="border:0;padding:4px 0">
                         <div>Tu voto</div>
                         <span class="chip ok">✓ <t t-esc="choice_labels.get(v['mi_voto'].choice, v['mi_voto'].choice)"/></span>
+                    </div>
+                </t>
+                <t t-elif="v['vote'].state == 'open' and not mi_presente">
+                    <div style="background:#fdf3e3;border-left:4px solid #c47f17;border-radius:10px;padding:10px 12px">
+                        <div style="font-weight:700;font-size:14px;color:#8a5a00;margin-bottom:4px">Todavía no podés votar este punto</div>
+                        <div style="font-size:14px;color:#6b5326">
+                            Para votar tenés que estar marcado <b>presente</b>. El quórum de la
+                            asamblea se cuenta con los socios presentes, así que el voto también.
+                        </div>
+                        <form action="/app/asamblea/presente" method="post" style="margin-top:8px">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button class="botonazo" style="margin:0;min-height:44px" type="submit">✋ Marcarme presente y votar</button>
+                        </form>
                     </div>
                 </t>
                 <t t-elif="v['vote'].state == 'open'">

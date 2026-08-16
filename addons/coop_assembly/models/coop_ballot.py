@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class CoopBallot(models.Model):
@@ -26,6 +27,22 @@ class CoopBallot(models.Model):
         ('un_voto_por_socio', 'UNIQUE(vote_id, member_id)',
          'Cada socio vota una sola vez por votación.'),
     ]
+
+    @api.constrains('vote_id', 'member_id')
+    def _check_socio_presente(self) -> None:
+        """Solo vota el socio marcado presente en la asamblea.
+
+        El quórum se calcula sobre la asistencia real, así que un voto de un
+        ausente lo contradice: la votación quedaría decidida por gente que no
+        cuenta para el quórum que la habilitó.
+        """
+        for ballot in self:
+            asamblea = ballot.sudo().vote_id.assembly_id
+            if ballot.member_id not in asamblea.sudo().attendee_ids:
+                raise ValidationError(
+                    'Para votar hay que estar marcado presente en la '
+                    'asamblea. %s no figura entre los presentes.'
+                    % ballot.member_id.name)
 
     @api.model_create_multi
     def create(self, vals_list):

@@ -91,11 +91,19 @@ class CoopPortalAsamblea(http.Controller):
             asamblea.sudo().write({'attendee_ids': [(4, member.id)]})
         return request.redirect('/app/asamblea')
 
+    def _puede_votar(self, vote, member):
+        """El quórum sale de la asistencia real, así que solo vota quien está
+        marcado presente. Sin esto la votación la puede decidir gente que no
+        cuenta para el quórum que la habilitó."""
+        return bool(member) and member in vote.sudo().assembly_id.attendee_ids
+
     @http.route('/app/votar', type='http', auth='user', website=False)
     def votar(self, vote_id, **kw):
         member = self._member()
         vote = request.env['coop.vote'].sudo().browse(int(vote_id)).exists()
         if not member or not vote or vote.state != 'open':
+            return request.redirect('/app/asamblea')
+        if not self._puede_votar(vote, member):
             return request.redirect('/app/asamblea')
         if self._mi_ballot(vote, member):
             return request.redirect('/app/asamblea')
@@ -113,6 +121,8 @@ class CoopPortalAsamblea(http.Controller):
             return request.redirect('/app/asamblea')
         if choice not in ('yes', 'no', 'abstain'):
             return request.redirect('/app/asamblea')
+        if not self._puede_votar(vote, member):
+            return request.redirect('/app/asamblea')
         if not self._mi_ballot(vote, member):
             # crear como el usuario: la record rule (solo propio) aplica
             try:
@@ -121,6 +131,11 @@ class CoopPortalAsamblea(http.Controller):
                 })
             except Exception:  # noqa: BLE001 — carrera: ya votó
                 pass
+            # Si el voto no quedó, no mostrar la pantalla de "listo": el socio
+            # se iría creyendo que votó. Vuelve a la asamblea, que muestra el
+            # estado real de cada punto.
+            if not self._mi_ballot(vote, member):
+                return request.redirect('/app/asamblea')
         return request.render('coop_portal.votado', {
             'member': member, 'vote': vote,
             'nav_rol': self._nav_rol(member), 'nav_activo': 'asamblea',
