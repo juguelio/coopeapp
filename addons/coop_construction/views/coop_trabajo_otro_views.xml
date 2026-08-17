@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_coop_trabajo_otro_list" model="ir.ui.view">
+        <field name="name">coop.trabajo.otro.list</field>
+        <field name="model">coop.trabajo.otro</field>
+        <field name="arch" type="xml">
+            <list string="Trabajo sin ítem de foja"
+                  decoration-warning="state == 'pendiente'"
+                  decoration-muted="state == 'rechazado'">
+                <field name="fecha"/>
+                <field name="obra_id"/>
+                <field name="member_id"/>
+                <field name="descripcion"/>
+                <field name="medida_trabajo"/>
+                <field name="cantidad_trabajo"/>
+                <field name="state"/>
+                <field name="avance_id" optional="hide"/>
+                <field name="resuelto_por" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_trabajo_otro_form" model="ir.ui.view">
+        <field name="name">coop.trabajo.otro.form</field>
+        <field name="model">coop.trabajo.otro</field>
+        <field name="arch" type="xml">
+            <form string="Trabajo sin ítem de foja">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="descripcion" placeholder="Qué hizo el socio"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="obra_id"/>
+                            <field name="member_id"/>
+                            <field name="fecha"/>
+                        </group>
+                        <group>
+                            <field name="medida_trabajo"/>
+                            <field name="cantidad_trabajo"/>
+                            <field name="state"/>
+                        </group>
+                    </group>
+                    <group string="Resolución del coordinador">
+                        <field name="avance_id" readonly="1"/>
+                        <field name="resuelto_por" readonly="1"/>
+                        <field name="nota_coordinador"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        Esto <b>no</b> suma al avance físico ni a la certificación: no tiene
+                        unidad medible. Sí suma a los jornales y al aporte del socio.
+                        Para que se vuelva avance certificable hay que mapearlo a un ítem
+                        de la foja desde la app del coordinador.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coop_trabajo_otro" model="ir.actions.act_window">
+        <field name="name">Trabajo sin foja</field>
+        <field name="res_model">coop.trabajo.otro</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiley_face">Todavía no hay trabajo cargado fuera de la foja</p>
+            <p>Acá cae lo que el socio hizo y no estaba previsto en la foja de medición.</p>
+        </field>
+    </record>
+
+</odoo>

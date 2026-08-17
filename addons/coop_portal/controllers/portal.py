@@ -67,7 +67,7 @@ class CoopPortal(http.Controller):
             ('estado_obra', 'in', ['planificacion', 'activa']),
             ('capataz_id', '=', member.id),
         ])
-        n_validar = n_pedidos = n_corralon = 0
+        n_validar = n_pedidos = n_corralon = n_otros = 0
         if obras_coord:
             n_validar = request.env['coop.avance.medicion'].sudo().search_count([
                 ('foja_item_id.obra_id', 'in', obras_coord.ids),
@@ -77,6 +77,8 @@ class CoopPortal(http.Controller):
             n_corralon = request.env['coop.pedido.material'].sudo().search_count([
                 ('obra_id', 'in', obras_coord.ids), ('state', '=', 'aceptado'),
                 ('orden_id', '=', False)])
+            n_otros = request.env['coop.trabajo.otro'].sudo().search_count([
+                ('obra_id', 'in', obras_coord.ids), ('state', '=', 'pendiente')])
         # asamblea en curso (votación abierta)
         asamblea = request.env['coop.assembly'].sudo().search(
             [('state', '=', 'open')], order='date desc', limit=1)
@@ -88,14 +90,15 @@ class CoopPortal(http.Controller):
             return self._render('coop_portal.home_coordinador', {
                 'member': member, 'obras_coord': obras_coord,
                 'n_validar': n_validar, 'n_pedidos': n_pedidos,
-                'n_corralon': n_corralon, 'asamblea': asamblea,
+                'n_corralon': n_corralon, 'n_otros': n_otros,
+                'asamblea': asamblea,
                 'relevamiento': relevamiento, 'nav_rol': 'coordinador',
             })
         return self._render('coop_portal.home', {
             'member': member, 'obras': obras, 'avances': avances,
             'es_coordinador': bool(obras_coord),
             'n_validar': n_validar, 'n_pedidos': n_pedidos,
-            'n_corralon': n_corralon,
+            'n_corralon': n_corralon, 'n_otros': n_otros,
             'asamblea': asamblea, 'relevamiento': relevamiento,
         })
 
@@ -130,9 +133,20 @@ class CoopPortal(http.Controller):
         Av = request.env['coop.avance.medicion'].sudo()
         val = Av.search([('member_id', '=', member.id), ('state', '=', 'validado')])
         borr = Av.search([('member_id', '=', member.id), ('state', '=', 'borrador')])
-        jornales = sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'jornal')
-        horas = sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'hora')
-        tareas = sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'tarea')
+        # El trabajo cargado como "otro" no suma al avance físico (no tiene
+        # unidad medible) pero SÍ a los jornales del socio: es lo que sostiene
+        # que cargue lo que hizo aunque no estuviera previsto en la foja.
+        Otro = request.env['coop.trabajo.otro']
+        jornales = (sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'jornal')
+                    + Otro.jornales_de(member, 'jornal'))
+        horas = (sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'hora')
+                 + Otro.jornales_de(member, 'hora'))
+        tareas = (sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'tarea')
+                  + Otro.jornales_de(member, 'tarea'))
+        otros = Otro.sudo().search([
+            ('member_id', '=', member.id),
+            ('state', 'in', ['pendiente', 'registrado', 'mapeado']),
+        ], order='fecha desc', limit=8)
         # producción por ítem (validada) con su productividad
         porit = {}
         for a in val:
@@ -162,7 +176,7 @@ class CoopPortal(http.Controller):
             'member': member, 'items': items[:8],
             'jornales': jornales, 'horas': horas, 'tareas': tareas,
             'aporte': round(aporte, 1), 'cobrado': cobrado, 'en_camino': en_camino,
-            'n_borrador': len(borr),
+            'n_borrador': len(borr), 'otros': otros,
             'cobrado_pct': round(cobrado / tot * 100, 0) if tot else 0,
             'camino_pct': round(en_camino / tot * 100, 0) if tot else 0,
         })
@@ -180,6 +194,43 @@ class CoopPortal(http.Controller):
             [('obra_id', '=', obra.id)], order='item')
         return self._render('coop_portal.cargar_paso1', {
             'member': member, 'obra': obra, 'obras': obras, 'items': items,
+        })
+
+    # ── cargar "otro": trabajo que no entra en ningún ítem de la foja ──
+    @http.route('/app/cargar/otro', type='http', auth='user', website=False)
+    def cargar_otro(self, obra_id=None, **kw):
+        member = self._member()
+        if not member:
+            return request.render('coop_portal.sin_socio')
+        obra, obras = self._obra_o_primera(member, obra_id)
+        if not obra:
+            return self._render('coop_portal.sin_obra', {'member': member})
+        return self._render('coop_portal.cargar_otro', {
+            'member': member, 'obra': obra, 'medidas': MEDIDAS_TRABAJO,
+        })
+
+    @http.route('/app/cargar/otro/confirmar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def cargar_otro_confirmar(self, obra_id, descripcion, medida_trabajo,
+                              cantidad_trabajo, **kw):
+        member = self._member()
+        obra, _obras = self._obra_o_primera(member, obra_id)
+        texto = (descripcion or '').strip()
+        trabajo = self._a_numero(cantidad_trabajo)
+        if not member or not obra or not texto or trabajo <= 0:
+            return request.redirect('/app/cargar')
+        if medida_trabajo not in [m[0] for m in MEDIDAS_TRABAJO]:
+            return request.redirect('/app/cargar')
+        # crear como usuario: la ACL y la record rule (propio + pendiente) aplican
+        trabajo_otro = request.env['coop.trabajo.otro'].create({
+            'obra_id': obra.id,
+            'member_id': member.id,
+            'descripcion': texto,
+            'medida_trabajo': medida_trabajo,
+            'cantidad_trabajo': trabajo,
+        })
+        return self._render('coop_portal.cargar_otro_listo', {
+            'member': member, 'trabajo': trabajo_otro.sudo(), 'obra': obra,
         })
 
     @http.route('/app/cargar/cantidad', type='http', auth='user', website=False)

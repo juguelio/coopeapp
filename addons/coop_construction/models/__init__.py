@@ -3,6 +3,7 @@ from . import project_task
 from . import coop_certificado
 from . import coop_etapa
 from . import coop_foja
+from . import coop_trabajo_otro
 from . import coop_pedido
 from . import coop_corralon
 from . import coop_acopio

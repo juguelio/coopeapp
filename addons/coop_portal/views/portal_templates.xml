@@ -230,6 +230,12 @@
                         <t t-esc="n_pedidos"/> <t t-if="not n_pedidos">✓</t>
                     </span>
                 </a>
+                <a class="fila" href="/app/otros" style="text-decoration:none;color:inherit">
+                    <div>✏️ Trabajo fuera de la foja</div>
+                    <span t-attf-class="chip {{'espera' if n_otros else 'ok'}}">
+                        <t t-esc="n_otros"/> <t t-if="not n_otros">✓</t>
+                    </span>
+                </a>
                 <a class="fila" href="/app/corralon" style="text-decoration:none;color:inherit">
                     <div>📦 Armar órdenes al corralón</div>
                     <span t-attf-class="chip {{'espera' if n_corralon else 'ok'}}">
@@ -277,6 +283,12 @@
                     <div>🧱 Pedidos de materiales</div>
                     <span t-attf-class="chip {{'espera' if n_pedidos else 'ok'}}">
                         <t t-esc="n_pedidos"/> <t t-if="not n_pedidos">✓</t>
+                    </span>
+                </a>
+                <a class="fila" href="/app/otros" style="text-decoration:none;color:inherit">
+                    <div>✏️ Trabajo fuera de la foja</div>
+                    <span t-attf-class="chip {{'espera' if n_otros else 'ok'}}">
+                        <t t-esc="n_otros"/> <t t-if="not n_otros">✓</t>
                     </span>
                 </a>
                 <a class="fila" href="/app/corralon" style="text-decoration:none;color:inherit">
@@ -369,6 +381,25 @@
             <div class="card" t-if="not items">
                 <div style="color:var(--gris)">Todavía no tenés avances validados. Cargá lo que hacés y, cuando el coordinador lo valida, aparece acá.</div>
             </div>
+
+            <div class="card" t-if="otros">
+                <h3>OTRAS COSAS QUE HICISTE</h3>
+                <div style="font-size:12px;color:var(--gris);margin-bottom:6px">Trabajo que no estaba en la foja. Suma a tus jornales; no mueve el % de avance de la obra.</div>
+                <div class="fila" t-foreach="otros" t-as="o">
+                    <div>
+                        <t t-esc="o.descripcion"/>
+                        <div style="font-size:11px;color:var(--gris)"><t t-esc="o.fecha"/></div>
+                    </div>
+                    <div style="text-align:right">
+                        <b><t t-esc="'%g' % o.cantidad_trabajo"/></b>
+                        <div style="font-size:11px">
+                            <span t-if="o.state == 'pendiente'" class="chip espera">esperando al coordinador</span>
+                            <span t-if="o.state == 'registrado'" class="chip ok">registrado</span>
+                            <span t-if="o.state == 'mapeado'" class="chip ok">✓ pasó a la foja</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </t>
     </template>
 
@@ -429,9 +460,128 @@
                     <t t-esc="uom_labels.get(i.uom, i.uom)"/>
                 </span>
             </a>
+            <a class="opcion" t-attf-href="/app/cargar/otro?obra_id={{obra.id}}">
+                <span>✏️ Otra cosa que hice</span>
+                <span style="margin-left:auto;color:var(--gris)">no está en la lista</span>
+            </a>
             <div class="card" t-if="not items">
                 <h3>SIN ÍTEMS</h3>
-                <div>La obra todavía no tiene foja de medición cargada. Avisale al coordinador.</div>
+                <div>La obra todavía no tiene foja de medición cargada, pero podés cargar igual lo que hiciste con <b>Otra cosa que hice</b>: el coordinador lo resuelve.</div>
+            </div>
+        </t>
+    </template>
+
+    <template id="cargar_otro" name="App: cargar trabajo sin ítem de foja">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'cargar'"/>
+            <a class="atras" t-attf-href="/app/cargar?obra_id={{obra.id}}">← Volver</a>
+            <div class="paso">OTRA COSA QUE HICE · <t t-esc="obra.name"/></div>
+            <div class="pregunta">¿Qué hiciste?</div>
+            <div class="sub">Escribilo con tus palabras. El coordinador lo revisa después.</div>
+            <form action="/app/cargar/otro/confirmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="obra_id" t-att-value="obra.id"/>
+                <input type="text" name="descripcion" required="required" maxlength="200"
+                       placeholder="Ej: limpieza del terreno después de la lluvia"
+                       style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px;margin-bottom:14px"/>
+                <div class="pregunta" style="font-size:18px">¿Cuánto trabajo te llevó?</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+                    <input class="numero-grande" style="margin:0;flex:1" type="number" name="cantidad_trabajo"
+                           step="any" min="0.01" required="required" inputmode="decimal" placeholder="Cantidad"/>
+                    <select name="medida_trabajo" style="padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px">
+                        <option t-foreach="medidas" t-as="m" t-att-value="m[0]"><t t-esc="m[1]"/></option>
+                    </select>
+                </div>
+                <div class="card" style="margin-bottom:12px">
+                    <div style="font-size:13px;color:var(--gris)">
+                        Esto <b>suma a tus jornales y a tu aporte</b>. No mueve el porcentaje de
+                        avance de la obra, porque no hay una cantidad medible contra la foja.
+                        Si corresponde, el coordinador lo pasa a un ítem de la foja.
+                    </div>
+                </div>
+                <button class="botonazo" type="submit">CARGAR ✓</button>
+            </form>
+        </t>
+    </template>
+
+    <template id="cargar_otro_listo" name="App: trabajo sin foja cargado">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'cargar'"/>
+            <div class="listo">
+                <div class="check">✅</div>
+                <h1>Quedó cargado</h1>
+                <p class="sub" style="margin-top:8px">
+                    <b><t t-esc="trabajo.descripcion"/></b><br/>
+                    <t t-esc="'%g' % trabajo.cantidad_trabajo"/> <t t-esc="trabajo.medida_trabajo"/>.
+                    Ya cuenta para tus jornales. El coordinador lo revisa.
+                </p>
+                <a class="botonazo" href="/app/aporte">Ver mi aporte</a>
+                <a class="atras" href="/app/cargar">Cargar otra cosa</a>
+            </div>
+        </t>
+    </template>
+
+    <template id="coord_otros" name="App: coordinador resuelve trabajo sin foja">
+        <t t-call="coop_portal.layout">
+            <a class="atras" href="/app">← Volver</a>
+            <h1>✏️ Trabajo fuera de la foja</h1>
+            <div class="sub">Lo que los socios hicieron y no estaba previsto. Decidí qué hacer con cada uno.</div>
+
+            <div class="card" t-foreach="trabajos" t-as="t">
+                <div style="font-weight:800;font-size:16px"><t t-esc="t.member_id.name"/></div>
+                <div style="font-size:15px;margin:4px 0"><b><t t-esc="t.descripcion"/></b></div>
+                <div style="font-size:13px;color:var(--gris);margin-bottom:10px">
+                    <t t-esc="t.obra_id.name"/> · <t t-esc="t.fecha"/> ·
+                    <t t-esc="'%g' % t.cantidad_trabajo"/> <t t-esc="medida_labels.get(t.medida_trabajo, t.medida_trabajo)"/>
+                </div>
+
+                <form action="/app/otros/accion" method="post" style="margin-bottom:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
+                    <input type="hidden" name="accion" value="mapear"/>
+                    <div style="font-size:13px;font-weight:700;margin-bottom:4px">Pasarlo a un ítem de la foja</div>
+                    <select name="foja_item_id" style="width:100%;box-sizing:border-box;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px;margin-bottom:6px">
+                        <option value="">Elegí el ítem…</option>
+                        <t t-foreach="items" t-as="i">
+                            <option t-if="i.obra_id.id == t.obra_id.id" t-att-value="i.id"><t t-esc="i.item"/> · <t t-esc="i.name"/></option>
+                        </t>
+                    </select>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <input type="number" name="cantidad" step="any" min="0.01"
+                               placeholder="Cantidad producida"
+                               style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                        <button class="botonazo" style="min-height:44px;font-size:15px;margin:0;width:auto;padding:0 16px" type="submit">✓ Certificar</button>
+                    </div>
+                    <div style="font-size:12px;color:var(--gris);margin-top:4px">La cantidad la ponés vos: el socio no la cargó porque no había ítem contra el cual medirla.</div>
+                </form>
+
+                <form action="/app/otros/accion" method="post" style="margin-bottom:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
+                    <input type="hidden" name="accion" value="registrar"/>
+                    <button class="botonazo sec" style="min-height:44px;font-size:15px;margin:0" type="submit">Dejarlo registrado sin certificar</button>
+                </form>
+
+                <form action="/app/otros/accion" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
+                    <input type="hidden" name="accion" value="rechazar"/>
+                    <button class="botonazo sec" style="min-height:40px;font-size:14px;margin:0" type="submit">✗ Rechazar</button>
+                </form>
+            </div>
+
+            <div class="card" t-if="not trabajos" style="text-align:center">
+                <div style="font-size:32px">✓</div>
+                <h3>NADA PENDIENTE</h3>
+                <div style="font-size:14px;color:var(--gris)">No hay trabajo fuera de la foja esperando resolución.</div>
+            </div>
+
+            <div class="card">
+                <div style="font-size:13px;color:var(--gris)">
+                    ¿Falta un ítem en la foja? Se crea desde el backoffice (Medición → Foja de
+                    Medición), porque necesita cantidad y precio: esos números cambian la
+                    incidencia de todos los ítems de la obra.
+                </div>
             </div>
         </t>
     </template>

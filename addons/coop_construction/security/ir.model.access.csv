@@ -80,3 +80,7 @@ access_coop_nota_member,coop.nota member,model_coop_nota,coop_members.group_coop
 access_coop_nota_coordinador,coop.nota coordinador,model_coop_nota,coop_members.group_coop_coordinador,1,1,1,0
 access_coop_nota_manager,coop.nota manager,model_coop_nota,coop_members.group_coop_manager,1,1,1,1
 access_coop_nota_syndic,coop.nota syndic,model_coop_nota,coop_members.group_coop_syndic,1,0,0,0
+access_coop_trabajo_otro_member,coop.trabajo.otro member,model_coop_trabajo_otro,coop_members.group_coop_member,1,1,1,0
+access_coop_trabajo_otro_manager,coop.trabajo.otro manager,model_coop_trabajo_otro,coop_members.group_coop_manager,1,1,1,1
+access_coop_trabajo_otro_coordinador,coop.trabajo.otro coord,model_coop_trabajo_otro,coop_members.group_coop_coordinador,1,1,1,0
+access_coop_trabajo_otro_syndic,coop.trabajo.otro sindico,model_coop_trabajo_otro,coop_members.group_coop_syndic,1,0,0,0

@@ -35,6 +35,12 @@
               action="action_coop_foja_item"
               sequence="20"/>
 
+    <menuitem id="menu_coop_trabajo_otro"
+              name="Trabajo sin foja"
+              parent="menu_coop_medicion"
+              action="action_coop_trabajo_otro"
+              sequence="30"/>
+
     <!-- Economía: plata de la obra -->
     <menuitem id="menu_coop_economia"
               name="Economía"

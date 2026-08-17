@@ -110,6 +110,50 @@ class CoopPortalCoordinador(http.Controller):
                 avance.action_borrador()  # vuelve al socio; queda registro
         return request.redirect('/app/validar')
 
+    # ── bandeja de trabajo sin ítem de foja ("otro") ─────────────────
+    @http.route('/app/otros', type='http', auth='user', website=False)
+    def otros(self, **kw):
+        member = self._member()
+        obras = self._obras_coordina(member)
+        if not obras:
+            return request.redirect('/app')
+        trabajos = request.env['coop.trabajo.otro'].sudo().search([
+            ('obra_id', 'in', obras.ids), ('state', '=', 'pendiente'),
+        ], order='fecha desc')
+        # ítems de foja de las mismas obras, para poder mapear
+        items = request.env['coop.foja.item'].sudo().search(
+            [('obra_id', 'in', obras.ids)], order='obra_id, item')
+        return request.render('coop_portal.coord_otros', {
+            'member': member, 'trabajos': trabajos, 'items': items,
+            'nav_rol': 'coordinador', 'nav_activo': 'avances',
+            'medida_labels': dict(request.env['coop.trabajo.otro']
+                                  ._fields['medida_trabajo'].selection),
+        })
+
+    @http.route('/app/otros/accion', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def otros_accion(self, trabajo_id, accion, foja_item_id=None,
+                     cantidad=None, nota=None, **kw):
+        member = self._member()
+        trabajo = request.env['coop.trabajo.otro'].sudo().browse(
+            int(trabajo_id)).exists()
+        if not trabajo or not self._coordina_obra(member, trabajo.obra_id):
+            return request.redirect('/app/otros')
+        if accion == 'registrar':
+            trabajo.action_registrar(resuelto_por=member, nota=nota)
+        elif accion == 'rechazar':
+            trabajo.action_rechazar(resuelto_por=member, nota=nota)
+        elif accion == 'mapear':
+            item = request.env['coop.foja.item'].sudo().browse(
+                int(foja_item_id or 0)).exists()
+            try:
+                cant = float(str(cantidad).replace(',', '.'))
+            except (TypeError, ValueError):
+                cant = 0.0
+            if item and cant > 0:
+                trabajo.action_mapear(item, cant, resuelto_por=member)
+        return request.redirect('/app/otros')
+
     # ── bandeja de pedidos ───────────────────────────────────────────
     @http.route('/app/pedidos', type='http', auth='user', website=False)
     def pedidos(self, **kw):
