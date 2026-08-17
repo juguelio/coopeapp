@@ -108,7 +108,7 @@
             <div class="nav" t-else="">
                 <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
                 <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><span class="ico">✏️</span>Cargar</a>
-                <a href="/app/plata" t-att-class="'viva' if nav_activo == 'plata' else None"><span class="ico">💵</span>Mi plata</a>
+                <a href="/app/pedir" t-att-class="'viva' if nav_activo == 'pedir' else None"><span class="ico">🧱</span>Pedir</a>
                 <a href="/app/obra" t-att-class="'viva' if nav_activo == 'obra' else None"><span class="ico">🏗️</span>Obra</a>
             </div>
 
@@ -196,6 +196,7 @@
             <div class="sub" t-else="">Sin obra asignada por ahora</div>
 
             <a class="botonazo" href="/app/cargar">✏️ CARGAR LO QUE HICE</a>
+            <a class="botonazo sec" href="/app/pedir">🧱 PEDIR MATERIALES</a>
             <a class="card" href="/app/aporte" style="border-left:6px solid #2d7ff9;text-decoration:none;color:inherit;display:block">
                 <div class="fila" style="border:0;padding:0"><div>📊 Mi aporte (producción y plata)</div><span class="chip ok">ver →</span></div>
             </a>

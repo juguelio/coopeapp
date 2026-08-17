@@ -416,6 +416,7 @@ class CoopPortalCoordinador(http.Controller):
             [('active', '=', True)], order='name')
         return request.render('coop_portal.pedir_paso1', {
             'member': member, 'obra': obra, 'materiales': materiales,
+            'nav_activo': 'pedir',
         })
 
     @http.route('/app/pedir/cantidad', type='http', auth='user', website=False)
