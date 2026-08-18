@@ -367,6 +367,9 @@
                 <div class="barra"><div t-attf-style="width:{{cobrado_pct}}%;background:var(--verde)"/></div>
                 <div class="fila" style="border:0;padding:12px 0 3px"><div>En camino <span style="font-size:12px;color:var(--gris)">(esperando validación)</span></div><b>$ <t t-esc="'{:,.0f}'.format(en_camino).replace(',', '.')"/></b></div>
                 <div class="barra"><div t-attf-style="width:{{camino_pct}}%;background:#e69a1f"/></div>
+                <a class="fila" href="/app/plata" style="text-decoration:none;color:inherit;border:0;padding-top:12px">
+                    <div>💵 Ver mis liquidaciones</div><span class="chip ok">→</span>
+                </a>
             </div>
 
             <div class="card" t-if="items">
@@ -650,7 +653,10 @@
     <!-- ============ MI PLATA ============ -->
     <template id="plata" name="App: mi plata">
         <t t-call="coop_portal.layout">
-            <t t-set="nav_activo" t-value="'plata'"/>
+            <!-- 'plata' salió de la barra del socio: se llega desde Mi aporte,
+                 que cuelga de Inicio. Marcamos Inicio, como hace mi_aporte, para
+                 que la barra no quede sin ninguna pestaña activa. -->
+            <t t-set="nav_activo" t-value="'inicio'"/>
             <h1>Mi plata</h1>
             <div class="sub">Tus liquidaciones y tu producción</div>
 
@@ -1062,7 +1068,7 @@
     <!-- ============ SOCIO: PEDIR MATERIALES (paso 1) ============ -->
     <template id="pedir_paso1" name="App: pedir material paso 1">
         <t t-call="coop_portal.layout">
-            <t t-set="nav_activo" t-value="'obra'"/>
+            <t t-set="nav_activo" t-value="'pedir'"/>
             <a class="atras" href="/app/obra">← Volver</a>
             <div class="paso">PEDIR MATERIALES · <t t-esc="obra.name"/></div>
             <div class="pregunta">¿Qué necesitás?</div>
@@ -1084,7 +1090,7 @@
 
     <template id="pedir_paso2_otro" name="App: pedir material que no está en el catálogo">
         <t t-call="coop_portal.layout">
-            <t t-set="nav_activo" t-value="'obra'"/>
+            <t t-set="nav_activo" t-value="'pedir'"/>
             <a class="atras" t-attf-href="/app/pedir?obra_id={{obra.id}}">← Volver</a>
             <div class="paso">PEDIR MATERIALES</div>
             <div class="pregunta">¿Qué necesitás?</div>
@@ -1113,7 +1119,7 @@
     <!-- ============ SOCIO: PEDIR MATERIALES (paso 2) ============ -->
     <template id="pedir_paso2" name="App: pedir material paso 2">
         <t t-call="coop_portal.layout">
-            <t t-set="nav_activo" t-value="'obra'"/>
+            <t t-set="nav_activo" t-value="'pedir'"/>
             <a class="atras" t-attf-href="/app/pedir?obra_id={{obra.id}}">← Volver</a>
             <div class="paso">PEDIR MATERIALES</div>
             <div class="pregunta">¿Cuánto?</div>
@@ -1136,7 +1142,7 @@
     <!-- ============ SOCIO: PEDIDO ENVIADO ============ -->
     <template id="pedir_listo" name="App: pedido enviado">
         <t t-call="coop_portal.layout">
-            <t t-set="nav_activo" t-value="'obra'"/>
+            <t t-set="nav_activo" t-value="'pedir'"/>
             <div class="listo">
                 <div class="check">🧱</div>
                 <h1>Pedido enviado</h1>
