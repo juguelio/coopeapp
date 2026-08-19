@@ -389,18 +389,28 @@
             <div class="card" t-if="otros">
                 <h3>OTRAS COSAS QUE HICISTE</h3>
                 <div style="font-size:12px;color:var(--gris);margin-bottom:6px">Trabajo que no estaba en la foja. Suma a tus jornales; no mueve el % de avance de la obra.</div>
-                <div class="fila" t-foreach="otros" t-as="o">
-                    <div>
-                        <t t-esc="o.descripcion"/>
-                        <div style="font-size:11px;color:var(--gris)"><t t-esc="o.fecha"/></div>
-                    </div>
-                    <div style="text-align:right">
-                        <b><t t-esc="'%g' % o.cantidad_trabajo"/></b>
-                        <div style="font-size:11px">
-                            <span t-if="o.state == 'pendiente'" class="chip espera">esperando al coordinador</span>
-                            <span t-if="o.state == 'registrado'" class="chip ok">registrado</span>
-                            <span t-if="o.state == 'mapeado'" class="chip ok">✓ pasó a la foja</span>
+                <div t-foreach="otros" t-as="o" style="padding:10px 0;border-bottom:1px solid #eef2f5">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <div>
+                            <t t-esc="o.descripcion"/>
+                            <div style="font-size:11px;color:var(--gris)">
+                                <t t-esc="o.fecha"/>
+                                <t t-if="o.foto_id"> · <a t-attf-href="/app/otros/foto/{{o.id}}" style="color:var(--gris)">📷 tu foto</a></t>
+                            </div>
                         </div>
+                        <div style="text-align:right;white-space:nowrap">
+                            <b><t t-esc="o.trabajo_texto"/></b>
+                            <div style="font-size:11px">
+                                <span t-if="o.state == 'pendiente'" class="chip espera">esperando al coordinador</span>
+                                <span t-if="o.state == 'registrado'" class="chip ok">registrado</span>
+                                <span t-if="o.state == 'mapeado'" class="chip ok">✓ pasó a la foja</span>
+                                <span t-if="o.state == 'rechazado'" class="chip" style="background:#fdecea;color:#b3261e">✗ rechazado</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div t-if="o.nota_coordinador"
+                         t-attf-style="font-size:13px;margin-top:6px;padding:8px 10px;border-radius:8px;background:{{'#fdecea' if o.state == 'rechazado' else '#f6f8fa'}};color:{{'#8a2018' if o.state == 'rechazado' else 'var(--gris)'}}">
+                        <b><t t-esc="o.resuelto_por.name or 'El coordinador'"/>:</b> <t t-esc="o.nota_coordinador"/>
                     </div>
                 </div>
             </div>
@@ -482,12 +492,25 @@
             <div class="paso">OTRA COSA QUE HICE · <t t-esc="obra.name"/></div>
             <div class="pregunta">¿Qué hiciste?</div>
             <div class="sub">Escribilo con tus palabras. El coordinador lo revisa después.</div>
-            <form action="/app/cargar/otro/confirmar" method="post">
+            <form action="/app/cargar/otro/confirmar" method="post" enctype="multipart/form-data" id="form-otro">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                 <input type="hidden" name="obra_id" t-att-value="obra.id"/>
                 <input type="text" name="descripcion" required="required" maxlength="200"
                        placeholder="Ej: limpieza del terreno después de la lluvia"
                        style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px;margin-bottom:14px"/>
+
+                <div class="pregunta" style="font-size:18px">Sacale una foto (opcional)</div>
+                <div class="sub" style="margin-bottom:8px">Es lo único que el coordinador va a ver de lo que hiciste. Con foto le queda mucho más fácil reconocértelo.</div>
+                <label class="botonazo sec" style="margin-bottom:6px" for="foto-otro">📷 Sacar o elegir foto</label>
+                <input id="foto-otro" type="file" name="foto" accept="image/*" capture="environment" style="display:none"/>
+                <div id="foto-preview" style="display:none;margin-bottom:10px">
+                    <img id="foto-img" alt="Foto de lo que hiciste" style="width:100%;border-radius:var(--radio);display:block"/>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                        <span id="foto-peso" style="font-size:12px;color:var(--gris)"/>
+                        <button type="button" id="foto-quitar" style="background:none;border:0;color:var(--gris);font-size:13px;text-decoration:underline;cursor:pointer">Quitar foto</button>
+                    </div>
+                </div>
+
                 <div class="pregunta" style="font-size:18px">¿Cuánto trabajo te llevó?</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
                     <input class="numero-grande" style="margin:0;flex:1" type="number" name="cantidad_trabajo"
@@ -505,6 +528,82 @@
                 </div>
                 <button class="botonazo" type="submit">CARGAR ✓</button>
             </form>
+
+            <script>
+                <![CDATA[
+                // El socio está en obra con datos móviles: una foto de cámara son
+                // 3-5 MB. Se redimensiona y recomprime en el teléfono ANTES de
+                // subir. Si algo falla (navegador viejo, sin canvas), se sube el
+                // original y el server tiene su propio límite.
+                (function () {
+                    var LADO_MAX = 1280, CALIDAD = 0.7;
+                    var input = document.getElementById('foto-otro');
+                    var form = document.getElementById('form-otro');
+                    var caja = document.getElementById('foto-preview');
+                    var img = document.getElementById('foto-img');
+                    var peso = document.getElementById('foto-peso');
+                    var quitar = document.getElementById('foto-quitar');
+                    if (!input || !form) { return; }
+                    var comprimida = null;
+
+                    function kb(b) { return Math.round(b / 1024) + ' KB'; }
+
+                    function mostrar(blob) {
+                        img.src = URL.createObjectURL(blob);
+                        peso.textContent = 'Se va a subir a ' + kb(blob.size);
+                        caja.style.display = 'block';
+                    }
+
+                    input.addEventListener('change', function () {
+                        var f = input.files && input.files[0];
+                        comprimida = null;
+                        if (!f) { caja.style.display = 'none'; return; }
+                        var lector = new FileReader();
+                        lector.onload = function (e) {
+                            var im = new Image();
+                            im.onload = function () {
+                                try {
+                                    var escala = Math.min(1, LADO_MAX / Math.max(im.width, im.height));
+                                    var c = document.createElement('canvas');
+                                    c.width = Math.round(im.width * escala);
+                                    c.height = Math.round(im.height * escala);
+                                    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+                                    c.toBlob(function (blob) {
+                                        // Si comprimir no achicó nada, no vale la pena.
+                                        if (blob && blob.size < f.size) {
+                                            comprimida = blob;
+                                            mostrar(blob);
+                                        } else {
+                                            mostrar(f);
+                                        }
+                                    }, 'image/jpeg', CALIDAD);
+                                } catch (err) {
+                                    mostrar(f);
+                                }
+                            };
+                            im.onerror = function () { mostrar(f); };
+                            im.src = e.target.result;
+                        };
+                        lector.readAsDataURL(f);
+                    });
+
+                    quitar.addEventListener('click', function () {
+                        input.value = '';
+                        comprimida = null;
+                        caja.style.display = 'none';
+                    });
+
+                    form.addEventListener('submit', function () {
+                        if (!comprimida || !window.DataTransfer) { return; }
+                        try {
+                            var dt = new DataTransfer();
+                            dt.items.add(new File([comprimida], 'foto.jpg', { type: 'image/jpeg' }));
+                            input.files = dt.files;
+                        } catch (err) { /* se sube el original */ }
+                    });
+                }());
+                ]]>
+            </script>
         </t>
     </template>
 
@@ -516,9 +615,12 @@
                 <h1>Quedó cargado</h1>
                 <p class="sub" style="margin-top:8px">
                     <b><t t-esc="trabajo.descripcion"/></b><br/>
-                    <t t-esc="'%g' % trabajo.cantidad_trabajo"/> <t t-esc="trabajo.medida_trabajo"/>.
-                    Ya cuenta para tus jornales. El coordinador lo revisa.
+                    <t t-esc="trabajo.trabajo_texto"/><t t-if="trabajo.foto_id"> · 📷 con foto</t>.
+                    Ahora lo revisa el coordinador: cuando lo resuelve, suma a tus jornales.
                 </p>
+                <div t-if="aviso_foto" class="card" style="border-left:6px solid #e69a1f;text-align:left">
+                    <div style="font-size:14px">⚠️ El trabajo quedó cargado, pero la foto no se pudo guardar: <t t-esc="aviso_foto"/></div>
+                </div>
                 <a class="botonazo" href="/app/aporte">Ver mi aporte</a>
                 <a class="atras" href="/app/cargar">Cargar otra cosa</a>
             </div>
@@ -529,49 +631,98 @@
         <t t-call="coop_portal.layout">
             <a class="atras" href="/app">← Volver</a>
             <h1>✏️ Trabajo fuera de la foja</h1>
-            <div class="sub">Lo que los socios hicieron y no estaba previsto. Decidí qué hacer con cada uno.</div>
+            <div class="sub">Cada socio cargó algo que no encontró en la foja. Vos decidís qué pasa con ese trabajo.</div>
 
             <div class="card" t-foreach="trabajos" t-as="t">
-                <div style="font-weight:800;font-size:16px"><t t-esc="t.member_id.name"/></div>
+                <!-- quién y qué -->
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                    <div style="font-weight:800;font-size:16px"><t t-esc="t.member_id.name"/></div>
+                    <span class="chip espera" style="white-space:nowrap"><t t-esc="t.trabajo_texto"/></span>
+                </div>
                 <div style="font-size:15px;margin:4px 0"><b><t t-esc="t.descripcion"/></b></div>
-                <div style="font-size:13px;color:var(--gris);margin-bottom:10px">
-                    <t t-esc="t.obra_id.name"/> · <t t-esc="t.fecha"/> ·
-                    <t t-esc="'%g' % t.cantidad_trabajo"/> <t t-esc="medida_labels.get(t.medida_trabajo, t.medida_trabajo)"/>
+                <div style="font-size:13px;color:var(--gris)">
+                    <t t-esc="t.obra_id.name"/> · <t t-esc="t.fecha"/>
                 </div>
 
-                <form action="/app/otros/accion" method="post" style="margin-bottom:8px">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
-                    <input type="hidden" name="accion" value="mapear"/>
-                    <div style="font-size:13px;font-weight:700;margin-bottom:4px">Pasarlo a un ítem de la foja</div>
-                    <select name="foja_item_id" style="width:100%;box-sizing:border-box;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px;margin-bottom:6px">
-                        <option value="">Elegí el ítem…</option>
-                        <t t-foreach="items" t-as="i">
-                            <option t-if="i.obra_id.id == t.obra_id.id" t-att-value="i.id"><t t-esc="i.item"/> · <t t-esc="i.name"/></option>
-                        </t>
-                    </select>
-                    <div style="display:flex;gap:8px;align-items:center">
-                        <input type="number" name="cantidad" step="any" min="0.01"
-                               placeholder="Cantidad producida"
-                               style="flex:1;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
-                        <button class="botonazo" style="min-height:44px;font-size:15px;margin:0;width:auto;padding:0 16px" type="submit">✓ Certificar</button>
-                    </div>
-                    <div style="font-size:12px;color:var(--gris);margin-top:4px">La cantidad la ponés vos: el socio no la cargó porque no había ítem contra el cual medirla.</div>
-                </form>
+                <a t-if="t.foto_id" t-attf-href="/app/otros/foto/{{t.id}}" target="_blank"
+                   style="display:block;margin-top:10px">
+                    <img t-attf-src="/app/otros/foto/{{t.id}}" alt="Foto que sacó el socio"
+                         style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;display:block"/>
+                    <div style="font-size:12px;color:var(--gris);margin-top:3px">📷 Foto del socio — tocá para verla entera</div>
+                </a>
+                <div t-else="" style="font-size:12px;color:var(--gris);margin-top:8px">
+                    📷 Sin foto. Solo tenés su descripción para decidir.
+                </div>
 
-                <form action="/app/otros/accion" method="post" style="margin-bottom:8px">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
-                    <input type="hidden" name="accion" value="registrar"/>
-                    <button class="botonazo sec" style="min-height:44px;font-size:15px;margin:0" type="submit">Dejarlo registrado sin certificar</button>
-                </form>
+                <!-- la pregunta -->
+                <div style="margin:14px 0 10px;padding:10px 12px;background:#f6f8fa;border-radius:10px;font-size:14px">
+                    <t t-esc="t.member_id.name.split(' ')[0]"/> no encontró un ítem de la foja que le calce.
+                    Vos conocés la foja: <b>¿esto entra en alguno?</b>
+                </div>
 
-                <form action="/app/otros/accion" method="post">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
-                    <input type="hidden" name="accion" value="rechazar"/>
-                    <button class="botonazo sec" style="min-height:40px;font-size:14px;margin:0" type="submit">✗ Rechazar</button>
-                </form>
+                <div t-if="error_id == t.id" style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:#fdecea;color:#8a2018;font-size:14px;font-weight:600">
+                    ⚠️ <t t-esc="error_msg"/>
+                </div>
+
+                <!-- salida 1 -->
+                <div style="border:2px solid #e2e8ee;border-radius:12px;padding:10px;margin-bottom:8px">
+                    <div style="font-weight:700;font-size:14px">Sí, entra en un ítem</div>
+                    <div style="font-size:12px;color:var(--gris);margin-bottom:8px">Suma al % de avance de la obra y se puede facturar.</div>
+                    <form action="/app/otros/accion" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
+                        <input type="hidden" name="accion" value="mapear"/>
+                        <select name="foja_item_id" style="width:100%;box-sizing:border-box;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px;margin-bottom:6px">
+                            <option value="">Elegí el ítem…</option>
+                            <t t-foreach="items" t-as="i">
+                                <option t-if="i.obra_id.id == t.obra_id.id" t-att-value="i.id"
+                                        t-att-selected="'selected' if (error_id == t.id and valores.get('accion') == 'mapear' and str(valores.get('foja_item_id') or '') == str(i.id)) else None"><t t-esc="i.item"/> · <t t-esc="i.name"/> (<t t-esc="uom_labels.get(i.uom, i.uom)"/>)</option>
+                            </t>
+                        </select>
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                            <input type="number" name="cantidad" step="any" min="0.01"
+                                   placeholder="Cantidad producida"
+                                   t-att-value="valores.get('cantidad') if (error_id == t.id and valores.get('accion') == 'mapear') else None"
+                                   style="flex:1;min-width:0;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                            <button class="botonazo" style="min-height:44px;font-size:15px;margin:0;width:auto;padding:0 16px" type="submit">✓ Certificar</button>
+                        </div>
+                        <input type="text" name="nota" maxlength="200" placeholder="Nota para el socio (opcional)"
+                               t-att-value="valores.get('nota') if (error_id == t.id and valores.get('accion') == 'mapear') else None"
+                               style="width:100%;box-sizing:border-box;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:14px"/>
+                        <div style="font-size:12px;color:var(--gris);margin-top:4px">La cantidad la ponés vos: el socio no la cargó porque no había ítem contra el cual medirla.</div>
+                    </form>
+                </div>
+
+                <!-- salida 2 -->
+                <div style="border:2px solid #e2e8ee;border-radius:12px;padding:10px;margin-bottom:8px">
+                    <div style="font-weight:700;font-size:14px">No entra en ninguno, pero lo trabajó</div>
+                    <div style="font-size:12px;color:var(--gris);margin-bottom:8px">Suma a los jornales del socio. No mueve el % de la obra ni se certifica.</div>
+                    <form action="/app/otros/accion" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
+                        <input type="hidden" name="accion" value="registrar"/>
+                        <input type="text" name="nota" maxlength="200" placeholder="Nota para el socio (opcional)"
+                               t-att-value="valores.get('nota') if (error_id == t.id and valores.get('accion') == 'registrar') else None"
+                               style="width:100%;box-sizing:border-box;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:14px;margin-bottom:6px"/>
+                        <button class="botonazo sec" style="min-height:44px;font-size:15px;margin:0" type="submit">Dejarlo registrado sin certificar</button>
+                    </form>
+                </div>
+
+                <!-- salida 3 -->
+                <div style="border:2px solid #f3d6d2;border-radius:12px;padding:10px">
+                    <div style="font-weight:700;font-size:14px">Esto no corresponde</div>
+                    <div style="font-size:12px;color:var(--gris);margin-bottom:8px">No suma nada. El socio ve el motivo en su pantalla, así que hay que escribirlo.</div>
+                    <form action="/app/otros/accion" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="trabajo_id" t-att-value="t.id"/>
+                        <input type="hidden" name="accion" value="rechazar"/>
+                        <input type="text" name="nota" maxlength="200" required="required"
+                               placeholder="Motivo del rechazo (obligatorio)"
+                               t-att-value="valores.get('nota') if (error_id == t.id and valores.get('accion') == 'rechazar') else None"
+                               style="width:100%;box-sizing:border-box;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:14px;margin-bottom:6px"/>
+                        <button class="botonazo sec" style="min-height:40px;font-size:14px;margin:0" type="submit">✗ Rechazar</button>
+                    </form>
+                </div>
             </div>
 
             <div class="card" t-if="not trabajos" style="text-align:center">
@@ -584,7 +735,9 @@
                 <div style="font-size:13px;color:var(--gris)">
                     ¿Falta un ítem en la foja? Se crea desde el backoffice (Medición → Foja de
                     Medición), porque necesita cantidad y precio: esos números cambian la
-                    incidencia de todos los ítems de la obra.
+                    incidencia de todos los ítems de la obra. Mientras tanto, si el trabajo es
+                    real pero no tiene ítem, la salida correcta es <b>dejarlo registrado sin
+                    certificar</b>.
                 </div>
             </div>
         </t>

@@ -143,9 +143,11 @@ class CoopPortal(http.Controller):
                  + Otro.jornales_de(member, 'hora'))
         tareas = (sum(a.cantidad_trabajo for a in val if a.medida_trabajo == 'tarea')
                   + Otro.jornales_de(member, 'tarea'))
+        # Los rechazados van INCLUIDOS: si no, el socio no se entera de que le
+        # rechazaron el trabajo ni lee el motivo, y el rechazo es justamente lo
+        # que tiene que poder discutir.
         otros = Otro.sudo().search([
             ('member_id', '=', member.id),
-            ('state', 'in', ['pendiente', 'registrado', 'mapeado']),
         ], order='fecha desc', limit=8)
         # producción por ítem (validada) con su productividad
         porit = {}
@@ -207,12 +209,13 @@ class CoopPortal(http.Controller):
             return self._render('coop_portal.sin_obra', {'member': member})
         return self._render('coop_portal.cargar_otro', {
             'member': member, 'obra': obra, 'medidas': MEDIDAS_TRABAJO,
+            'error': None,
         })
 
     @http.route('/app/cargar/otro/confirmar', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
     def cargar_otro_confirmar(self, obra_id, descripcion, medida_trabajo,
-                              cantidad_trabajo, **kw):
+                              cantidad_trabajo, foto=None, **kw):
         member = self._member()
         obra, _obras = self._obra_o_primera(member, obra_id)
         texto = (descripcion or '').strip()
@@ -229,8 +232,12 @@ class CoopPortal(http.Controller):
             'medida_trabajo': medida_trabajo,
             'cantidad_trabajo': trabajo,
         })
+        # La foto es opcional: si falla, el trabajo YA quedó cargado y no se
+        # pierde. Se avisa en la pantalla de confirmación en vez de tirar todo.
+        aviso_foto = trabajo_otro.sudo().guardar_foto(foto)
         return self._render('coop_portal.cargar_otro_listo', {
             'member': member, 'trabajo': trabajo_otro.sudo(), 'obra': obra,
+            'aviso_foto': aviso_foto,
         })
 
     @http.route('/app/cargar/cantidad', type='http', auth='user', website=False)

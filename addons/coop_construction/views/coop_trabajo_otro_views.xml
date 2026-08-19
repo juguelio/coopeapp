@@ -14,7 +14,9 @@
                 <field name="descripcion"/>
                 <field name="medida_trabajo"/>
                 <field name="cantidad_trabajo"/>
+                <field name="foto_id" optional="show" widget="many2one" string="Foto"/>
                 <field name="state"/>
+                <field name="nota_coordinador" optional="show"/>
                 <field name="avance_id" optional="hide"/>
                 <field name="resuelto_por" optional="hide"/>
             </list>
@@ -41,6 +43,9 @@
                             <field name="cantidad_trabajo"/>
                             <field name="state"/>
                         </group>
+                    </group>
+                    <group string="Evidencia del socio">
+                        <field name="foto_id" readonly="1"/>
                     </group>
                     <group string="Resolución del coordinador">
                         <field name="avance_id" readonly="1"/>

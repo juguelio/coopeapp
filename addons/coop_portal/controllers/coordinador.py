@@ -1,6 +1,7 @@
 from urllib.parse import quote
 
 from odoo import http
+from odoo.exceptions import UserError
 from odoo.http import request
 
 # Valor centinela del wizard de pedidos: el socio pide algo que no está en el
@@ -111,48 +112,100 @@ class CoopPortalCoordinador(http.Controller):
         return request.redirect('/app/validar')
 
     # ── bandeja de trabajo sin ítem de foja ("otro") ─────────────────
+    def _otros_render(self, member, obras, error_id=None, error_msg=None,
+                      valores=None):
+        """Dibuja la bandeja. `error_id` + `error_msg` marcan la tarjeta que
+        falló, y `valores` devuelve lo que el coordinador ya había tipeado para
+        que no tenga que escribirlo de nuevo."""
+        trabajos = request.env['coop.trabajo.otro'].sudo().search([
+            ('obra_id', 'in', obras.ids), ('state', '=', 'pendiente'),
+        ], order='fecha desc')
+        items = request.env['coop.foja.item'].sudo().search(
+            [('obra_id', 'in', obras.ids)], order='obra_id, item')
+        return request.render('coop_portal.coord_otros', {
+            'member': member, 'trabajos': trabajos, 'items': items,
+            'nav_rol': 'coordinador', 'nav_activo': 'avances',
+            'error_id': error_id, 'error_msg': error_msg,
+            'valores': valores or {},
+            'uom_labels': dict(request.env['coop.foja.item']
+                               ._fields['uom'].selection),
+        })
+
     @http.route('/app/otros', type='http', auth='user', website=False)
     def otros(self, **kw):
         member = self._member()
         obras = self._obras_coordina(member)
         if not obras:
             return request.redirect('/app')
-        trabajos = request.env['coop.trabajo.otro'].sudo().search([
-            ('obra_id', 'in', obras.ids), ('state', '=', 'pendiente'),
-        ], order='fecha desc')
-        # ítems de foja de las mismas obras, para poder mapear
-        items = request.env['coop.foja.item'].sudo().search(
-            [('obra_id', 'in', obras.ids)], order='obra_id, item')
-        return request.render('coop_portal.coord_otros', {
-            'member': member, 'trabajos': trabajos, 'items': items,
-            'nav_rol': 'coordinador', 'nav_activo': 'avances',
-            'medida_labels': dict(request.env['coop.trabajo.otro']
-                                  ._fields['medida_trabajo'].selection),
-        })
+        return self._otros_render(member, obras)
 
     @http.route('/app/otros/accion', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
     def otros_accion(self, trabajo_id, accion, foja_item_id=None,
                      cantidad=None, nota=None, **kw):
         member = self._member()
+        obras = self._obras_coordina(member)
         trabajo = request.env['coop.trabajo.otro'].sudo().browse(
-            int(trabajo_id)).exists()
+            int(trabajo_id or 0)).exists()
         if not trabajo or not self._coordina_obra(member, trabajo.obra_id):
             return request.redirect('/app/otros')
+
+        # Lo tipeado vuelve a la pantalla si algo falla: el coordinador no
+        # tiene que reescribir la cantidad ni el motivo.
+        tipeado = {'foja_item_id': foja_item_id, 'cantidad': cantidad,
+                   'nota': nota, 'accion': accion}
+
+        def error(msg):
+            return self._otros_render(member, obras, error_id=trabajo.id,
+                                      error_msg=msg, valores=tipeado)
+
         if accion == 'registrar':
             trabajo.action_registrar(resuelto_por=member, nota=nota)
         elif accion == 'rechazar':
+            if not (nota or '').strip():
+                return error('Escribí el motivo del rechazo: el socio lo ve '
+                             'en su pantalla y necesita saber por qué.')
             trabajo.action_rechazar(resuelto_por=member, nota=nota)
         elif accion == 'mapear':
             item = request.env['coop.foja.item'].sudo().browse(
                 int(foja_item_id or 0)).exists()
+            if not item:
+                return error('Elegí a qué ítem de la foja entra este trabajo.')
             try:
                 cant = float(str(cantidad).replace(',', '.'))
             except (TypeError, ValueError):
                 cant = 0.0
-            if item and cant > 0:
-                trabajo.action_mapear(item, cant, resuelto_por=member)
+            if cant <= 0:
+                return error('Poné la cantidad producida, en %s. Es lo que '
+                             'va a sumar al avance de la obra.'
+                             % dict(request.env['coop.foja.item']
+                                    ._fields['uom'].selection).get(
+                                        item.uom, item.uom))
+            try:
+                trabajo.action_mapear(item, cant, resuelto_por=member,
+                                      nota=nota)
+            except UserError as e:
+                return error(e.args[0] if e.args else 'No se pudo certificar.')
         return request.redirect('/app/otros')
+
+    @http.route('/app/otros/foto/<int:trabajo_id>', type='http', auth='user',
+                website=False)
+    def otros_foto(self, trabajo_id, **kw):
+        """Sirve la foto del socio. Los socios no tienen ACL sobre
+        ir.attachment, así que la autorización se verifica acá (dueño o
+        capataz de la obra) y el binario sale con sudo."""
+        member = self._member()
+        trabajo = request.env['coop.trabajo.otro'].sudo().browse(
+            trabajo_id).exists()
+        if not trabajo or not trabajo.foto_id \
+                or not trabajo.puede_ver_foto(member):
+            return request.not_found()
+        adjunto = trabajo.foto_id.sudo()
+        return request.make_response(adjunto.raw, [
+            ('Content-Type', adjunto.mimetype or 'image/jpeg'),
+            ('Content-Length', str(len(adjunto.raw))),
+            ('Cache-Control', 'private, max-age=3600'),
+        ])
 
     # ── bandeja de pedidos ───────────────────────────────────────────
     @http.route('/app/pedidos', type='http', auth='user', website=False)

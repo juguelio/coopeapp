@@ -3,6 +3,21 @@ from odoo.exceptions import UserError
 
 from .coop_foja import MEDIDA_TRABAJO
 
+# Cómo se lee la unidad de trabajo en la app. La etiqueta del selection es
+# descriptiva para el backoffice ("Hora trabajada") y queda mal en una tarjeta:
+# "7 Hora trabajada". Acá van singular y plural para escribirlo como se habla.
+MEDIDA_CORTA = {
+    'jornal': ('jornal', 'jornales'),
+    'hora': ('hora', 'horas'),
+    'tarea': ('tarea', 'tareas'),
+}
+
+
+def texto_trabajo(cantidad, medida) -> str:
+    """'7 horas', '1 jornal'. Cae en la clave cruda si aparece una medida nueva."""
+    singular, plural = MEDIDA_CORTA.get(medida, (medida, medida))
+    return '%g %s' % (cantidad, singular if abs(cantidad) == 1 else plural)
+
 
 class CoopTrabajoOtro(models.Model):
     """Trabajo que el socio hizo y no entra en ningún ítem de la foja.
@@ -56,12 +71,26 @@ class CoopTrabajoOtro(models.Model):
         help='El avance de foja que creó el coordinador al mapear esto')
     resuelto_por = fields.Many2one(
         'coop.member', string='Resuelto por', readonly=True)
-    nota_coordinador = fields.Char(string='Nota del coordinador')
+    nota_coordinador = fields.Char(
+        string='Nota del coordinador',
+        help='Obligatoria al rechazar: el socio tiene que saber por qué')
+    foto_id = fields.Many2one(
+        'ir.attachment', string='Foto', readonly=True, ondelete='set null',
+        help='La saca el socio en la obra. Es la única evidencia de lo que '
+             'hizo, porque no hay ítem de foja contra el cual medirlo.')
+    trabajo_texto = fields.Char(
+        string='Trabajo', compute='_compute_trabajo_texto',
+        help='Cómo se lee la cantidad en la app: "7 horas", "1 jornal"')
 
     _sql_constraints = [
         ('trabajo_positivo', 'CHECK(cantidad_trabajo > 0)',
          'El trabajo insumido debe ser positivo.'),
     ]
+
+    @api.depends('cantidad_trabajo', 'medida_trabajo')
+    def _compute_trabajo_texto(self) -> None:
+        for r in self:
+            r.trabajo_texto = texto_trabajo(r.cantidad_trabajo, r.medida_trabajo)
 
     def action_registrar(self, resuelto_por=None, nota=None) -> None:
         """Queda como trabajo registrado: cuenta para los jornales del socio,
@@ -69,17 +98,69 @@ class CoopTrabajoOtro(models.Model):
         self.write({
             'state': 'registrado',
             'resuelto_por': resuelto_por.id if resuelto_por else False,
-            'nota_coordinador': nota or False,
+            'nota_coordinador': (nota or '').strip() or False,
         })
 
+    def guardar_foto(self, archivo, limite_bytes=6 * 1024 * 1024):
+        """Guarda la foto del socio como ir.attachment ligado a este registro.
+
+        Devuelve un mensaje de error, o None si salió bien. El límite es la
+        última barrera: el navegador ya redimensiona antes de subir, pero un
+        cliente viejo o con JS apagado postea el original de la cámara.
+        """
+        self.ensure_one()
+        if not archivo or not getattr(archivo, 'filename', ''):
+            return None
+        datos = archivo.read()
+        if not datos:
+            return None
+        if len(datos) > limite_bytes:
+            return ('La foto pesa %.1f MB y el máximo son %d MB. '
+                    'Sacala de nuevo con menos calidad.'
+                    % (len(datos) / 1024 / 1024, limite_bytes // 1024 // 1024))
+        tipo = (archivo.content_type or '').lower()
+        if not tipo.startswith('image/'):
+            return 'El archivo tiene que ser una imagen.'
+        adjunto = self.env['ir.attachment'].sudo().create({
+            'name': archivo.filename,
+            'raw': datos,
+            'mimetype': tipo,
+            'res_model': self._name,
+            'res_id': self.id,
+        })
+        self.sudo().write({'foto_id': adjunto.id})
+        return None
+
+    def puede_ver_foto(self, member) -> bool:
+        """Ve la foto el socio que la sacó y el capataz de esa obra. Se resuelve
+        acá porque los socios no tienen ACL sobre ir.attachment y la ruta sirve
+        el binario con sudo."""
+        self.ensure_one()
+        if not member:
+            return False
+        if self.member_id.id == member.id:
+            return True
+        capataz = self.obra_id.capataz_id
+        return bool(capataz) and capataz.id == member.id
+
     def action_rechazar(self, resuelto_por=None, nota=None) -> None:
+        """Rechazar EXIGE motivo. Sin esto el socio ve "rechazado" y nada más,
+        y no tiene forma de saber qué hacer distinto la próxima vez. Va en el
+        modelo y no solo en el controlador para que valga también desde el
+        backoffice."""
+        motivo = (nota or '').strip()
+        if not motivo:
+            raise UserError(
+                'Para rechazar hay que escribir el motivo: el socio tiene '
+                'que saber por qué.')
         self.write({
             'state': 'rechazado',
             'resuelto_por': resuelto_por.id if resuelto_por else False,
-            'nota_coordinador': nota or False,
+            'nota_coordinador': motivo,
         })
 
-    def action_mapear(self, foja_item, cantidad, resuelto_por=None) -> None:
+    def action_mapear(self, foja_item, cantidad, resuelto_por=None,
+                      nota=None) -> None:
         """Convierte el trabajo en un avance de foja certificable.
 
         La cantidad producida la pone el coordinador: el socio nunca la cargó,
@@ -102,10 +183,13 @@ class CoopTrabajoOtro(models.Model):
             'state': 'validado',
             'observaciones': self.descripcion,
         })
-        self.write({
+        vals = {
             'state': 'mapeado', 'avance_id': avance.id,
             'resuelto_por': resuelto_por.id if resuelto_por else False,
-        })
+        }
+        if (nota or '').strip():
+            vals['nota_coordinador'] = nota.strip()
+        self.write(vals)
 
     @api.model
     def jornales_de(self, member, medida) -> float:
