@@ -2,21 +2,7 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 from .coop_foja import MEDIDA_TRABAJO
-
-# Cómo se lee la unidad de trabajo en la app. La etiqueta del selection es
-# descriptiva para el backoffice ("Hora trabajada") y queda mal en una tarjeta:
-# "7 Hora trabajada". Acá van singular y plural para escribirlo como se habla.
-MEDIDA_CORTA = {
-    'jornal': ('jornal', 'jornales'),
-    'hora': ('hora', 'horas'),
-    'tarea': ('tarea', 'tareas'),
-}
-
-
-def texto_trabajo(cantidad, medida) -> str:
-    """'7 horas', '1 jornal'. Cae en la clave cruda si aparece una medida nueva."""
-    singular, plural = MEDIDA_CORTA.get(medida, (medida, medida))
-    return '%g %s' % (cantidad, singular if abs(cantidad) == 1 else plural)
+from .unidades import texto_trabajo  # noqa: F401 — reexport, ver unidades.py
 
 
 class CoopTrabajoOtro(models.Model):

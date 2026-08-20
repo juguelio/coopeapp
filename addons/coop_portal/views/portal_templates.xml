@@ -365,8 +365,18 @@
                 <h3>TU PLATA</h3>
                 <div class="fila" style="border:0;padding:0 0 3px"><div>Ya cobrado</div><b>$ <t t-esc="'{:,.0f}'.format(cobrado).replace(',', '.')"/></b></div>
                 <div class="barra"><div t-attf-style="width:{{cobrado_pct}}%;background:var(--verde)"/></div>
-                <div class="fila" style="border:0;padding:12px 0 3px"><div>En camino <span style="font-size:12px;color:var(--gris)">(esperando validación)</span></div><b>$ <t t-esc="'{:,.0f}'.format(en_camino).replace(',', '.')"/></b></div>
-                <div class="barra"><div t-attf-style="width:{{camino_pct}}%;background:#e69a1f"/></div>
+                <div class="fila" style="border:0;padding:12px 0 3px">
+                    <div>Validado, esperando liquidación
+                        <span style="font-size:12px;color:var(--gris)">(el coordinador ya lo aprobó)</span>
+                    </div><b>$ <t t-esc="'{:,.0f}'.format(esperando_liquidacion).replace(',', '.')"/></b>
+                </div>
+                <div class="barra"><div t-attf-style="width:{{liq_pct}}%;background:#2d7ff9"/></div>
+                <div class="fila" style="border:0;padding:12px 0 3px">
+                    <div>Esperando validación
+                        <span style="font-size:12px;color:var(--gris)">(lo cargaste, falta que lo aprueben)</span>
+                    </div><b>$ <t t-esc="'{:,.0f}'.format(esperando_validacion).replace(',', '.')"/></b>
+                </div>
+                <div class="barra"><div t-attf-style="width:{{val_pct}}%;background:#e69a1f"/></div>
                 <a class="fila" href="/app/plata" style="text-decoration:none;color:inherit;border:0;padding-top:12px">
                     <div>💵 Ver mis liquidaciones</div><span class="chip ok">→</span>
                 </a>
@@ -521,9 +531,9 @@
                 </div>
                 <div class="card" style="margin-bottom:12px">
                     <div style="font-size:13px;color:var(--gris)">
-                        Esto <b>suma a tus jornales y a tu aporte</b>. No mueve el porcentaje de
-                        avance de la obra, porque no hay una cantidad medible contra la foja.
-                        Si corresponde, el coordinador lo pasa a un ítem de la foja.
+                        Cuando el coordinador lo resuelva, <b>va a sumar a tus jornales</b>.
+                        No mueve el porcentaje de avance de la obra, porque no hay una cantidad
+                        medible contra la foja: eso solo se mueve si él lo pasa a un ítem.
                     </div>
                 </div>
                 <button class="botonazo" type="submit">CARGAR ✓</button>
@@ -1774,7 +1784,7 @@
 
             <div class="card" style="border-left:6px solid var(--verde)">
                 <h3>LO QUE NO SE PUEDE TOCAR</h3>
-                <div style="font-size:14px">Cada operación queda registrada con autor y hora, y nadie la puede editar ni borrar — ni el consejo.</div>
+                <div style="font-size:14px">Cada operación queda registrada con autor y fecha, y nadie la puede editar ni borrar — ni el consejo.</div>
                 <a class="botonazo sec" style="min-height:46px;font-size:15px;margin-top:10px" href="/app/auditoria">🔎 Abrir pista de auditoría</a>
             </div>
 
@@ -2465,7 +2475,7 @@
                 <details class="faq"><summary>¿Cómo doy de alta un socio?</summary>
                     <div class="resp">En el escritorio: <b>Cooperativa → Socios → Nuevo</b>. Al guardar, <b>el acceso a la app se crea solo</b> (entra con su teléfono y PIN = últimos 4 del DNI). Después tocá Aprobar.</div></details>
                 <details class="faq"><summary>¿Cómo le paso datos al contador?</summary>
-                    <div class="resp">En <b>Reportes</b> filtrás por tipo y <b>exportás a Excel</b>. Ese archivo es el que le pasás al contador.</div></details>
+                    <div class="resp">En <b>Reportes</b> filtrás por tipo y período y ves los totales. La <b>planilla se baja del escritorio</b>: Construcción → Economía → <b>Reportes (operaciones)</b>, y ahí exportás la lista. Desde la app todavía no se exporta.</div></details>
             </t>
 
             <!-- ===== SÍNDICO ===== -->

@@ -168,19 +168,30 @@ class CoopPortal(http.Controller):
             d['prod'] = round(d['cant'] / d['jor'], 1) if d['jor'] else 0.0
             d['cant'] = round(d['cant'], 1)
         items = sorted(porit.values(), key=lambda d: -d['cant'])
-        # plata: cobrado (liquidaciones pagadas) vs en camino (producción
-        # cargada esperando validación, valuada al precio del ítem)
+        # Plata en TRES estados. Antes eran dos y la producción validada
+        # quedaba invisible: al validarla salía de "en camino" y no aparecía en
+        # ningún lado hasta que se liquidaba. El socio con 10 m² certificados
+        # leía "En camino $ 0". Y lo que el coordinador certifica desde
+        # /app/otros nace directamente en 'validado', así que nunca pasaba por
+        # el único estado que se mostraba.
         cobrado = sum(request.env['coop.payroll'].sudo().search(
             [('member_id', '=', member.id), ('state', '=', 'paid')]).mapped('net_amount'))
-        en_camino = sum(a.cantidad * a.foja_item_id.precio_unitario for a in borr)
-        tot = cobrado + en_camino
+        esperando_validacion = sum(
+            a.cantidad * a.foja_item_id.precio_unitario for a in borr)
+        esperando_liquidacion = sum(
+            a.cantidad * a.foja_item_id.precio_unitario for a in val)
+        tot = cobrado + esperando_validacion + esperando_liquidacion
+        pct = lambda x: round(x / tot * 100, 0) if tot else 0
         return self._render('coop_portal.mi_aporte', {
             'member': member, 'items': items[:8],
             'jornales': jornales, 'horas': horas, 'tareas': tareas,
-            'aporte': round(aporte, 1), 'cobrado': cobrado, 'en_camino': en_camino,
-            'n_borrador': len(borr), 'otros': otros,
-            'cobrado_pct': round(cobrado / tot * 100, 0) if tot else 0,
-            'camino_pct': round(en_camino / tot * 100, 0) if tot else 0,
+            'aporte': round(aporte, 1), 'cobrado': cobrado,
+            'esperando_validacion': esperando_validacion,
+            'esperando_liquidacion': esperando_liquidacion,
+            'n_borrador': len(borr), 'n_validado': len(val), 'otros': otros,
+            'cobrado_pct': pct(cobrado),
+            'val_pct': pct(esperando_validacion),
+            'liq_pct': pct(esperando_liquidacion),
         })
 
     # ── cargar avance (wizard 3 pasos) ───────────────────────────────

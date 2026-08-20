@@ -17,7 +17,15 @@ class CoopMember(models.Model):
     dni = fields.Char(string='DNI', required=True, tracking=True)
     cuil = fields.Char(string='CUIL', tracking=True)
     date_birth = fields.Date(string='Fecha de nacimiento')
-    phone = fields.Char(string='Teléfono / WhatsApp')
+    # El login por teléfono lee `partner_id.phone`, así que el contacto es la
+    # fuente de verdad. Antes esto era un Char suelto y quedaban dos versiones
+    # del mismo dato: 5 de 6 socios tenían la ficha en blanco mientras entraban
+    # a la app sin problema, y cualquier export salía vacío. Related con
+    # store+readonly=False: se sigue editando desde la ficha del socio y lo que
+    # se escribe baja al contacto.
+    phone = fields.Char(
+        string='Teléfono / WhatsApp', related='partner_id.phone',
+        store=True, readonly=False)
     email = fields.Char(string='Email')
 
     state = fields.Selection([
@@ -180,8 +188,8 @@ class CoopMember(models.Model):
         partner = self.partner_id
         if not partner or not self.dni or partner.user_ids:
             return False
-        if self.phone and not (partner.phone or partner.mobile):
-            partner.phone = self.phone
+        # Antes acá se copiaba self.phone al contacto. Ya no hace falta:
+        # `phone` es related a `partner_id.phone`, así que son el mismo dato.
         grupo = self._coop_group()
         interno = self.env.ref('base.group_user', raise_if_not_found=False)
         if not grupo or not interno:

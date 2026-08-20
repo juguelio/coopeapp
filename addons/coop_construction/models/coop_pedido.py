@@ -1,5 +1,7 @@
 from odoo import models, fields, api
 
+from .unidades import texto_compra
+
 UOM_COMPRA = [
     ('bolsa', 'Bolsa'),
     ('m3', 'm³'),
@@ -79,8 +81,9 @@ class CoopPedidoMaterial(models.Model):
     def _compute_name(self) -> None:
         for r in self:
             mat = r.material_id.name or r.descripcion_libre or 'Material'
-            unidad = dict(self._fields['uom'].selection).get(r.uom, r.uom)
-            r.name = '%s — %g %s' % (mat, r.cantidad, unidad)
+            # La etiqueta del selection es de backoffice y queda cruda pegada a
+            # un número ("6 Unidad"). Mismo helper que usa el trabajo del socio.
+            r.name = '%s — %s' % (mat, texto_compra(r.cantidad, r.uom))
 
     @api.onchange('material_id')
     def _onchange_material(self) -> None:

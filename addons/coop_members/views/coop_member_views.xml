@@ -103,6 +103,11 @@
                 <field name="role"/>
                 <field name="date_admission"/>
                 <field name="social_capital" optional="show"/>
+                <!-- Un socio activo sin usuario cuenta para el quórum y no puede
+                     entrar a la app, y nada lo señalaba: pasó con Diego y María.
+                     Con el padrón real son decenas, así que va en la lista. -->
+                <field name="has_app_access" string="Entra a la app" widget="boolean_toggle" readonly="1"/>
+                <field name="app_login" string="Usuario" optional="hide"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'active'"
                        decoration-warning="state == 'suspended'"
@@ -123,6 +128,11 @@
                         domain="[('state', '=', 'active')]"/>
                 <filter name="prospects" string="Postulantes"
                         domain="[('state', '=', 'prospect')]"/>
+                <separator/>
+                <!-- has_app_access es computado sin store, así que el filtro va
+                     contra el usuario del contacto, que es el dato real. -->
+                <filter name="sin_acceso_app" string="Sin acceso a la app"
+                        domain="[('state', '=', 'active'), ('partner_id.user_ids', '=', False)]"/>
                 <separator/>
                 <group expand="0" string="Agrupar por">
                     <filter name="group_state" string="Estado"
