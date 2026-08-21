@@ -1710,16 +1710,39 @@
                     <t t-if="asamblea.numero_acta">Acta N° <t t-esc="asamblea.numero_acta"/> · </t>
                     El acta legal está lista para pasar al libro.
                 </div>
+                <div style="font-size:13px;color:var(--tinta);white-space:pre-wrap;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:10px;max-height:300px;overflow-y:auto;margin-bottom:10px"><t t-esc="asamblea.acta_texto"/></div>
                 <t t-if="ya_firme">
                     <div class="fila" style="border:0;padding:4px 0">
                         <div>Tu firma</div><span class="chip ok">✓ Firmaste</span>
                     </div>
                 </t>
-                <form t-elif="mi_rol_firma" action="/app/asamblea/firmar" method="post">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <button class="botonazo" style="margin:0" type="submit">✍️ Firmar el acta como <t t-esc="mi_rol_firma"/></button>
-                </form>
+                <a t-elif="mi_rol_firma" class="botonazo" style="margin:0" href="/app/asamblea/firmar">✍️ Firmar el acta como <t t-esc="mi_rol_firma"/></a>
             </div>
+        </t>
+    </template>
+
+    <!-- ============ ASAMBLEA: FIRMAR ACTA (revisar antes de firmar) ============ -->
+    <template id="asamblea_firmar" name="App: firmar acta">
+        <t t-call="coop_portal.layout">
+            <a class="atras" href="/app/asamblea">← Volver</a>
+            <h1>Firmar el acta</h1>
+            <div class="sub">Leé el acta completa antes de firmar</div>
+
+            <div class="card">
+                <h3>LO QUE VAS A FIRMAR</h3>
+                <div style="font-size:13px;color:var(--tinta);white-space:pre-wrap;max-height:360px;overflow-y:auto"><t t-esc="asamblea.acta_texto"/></div>
+            </div>
+
+            <div class="card" style="background:#f0f7f3">
+                <h3>QUÉ PASA AL FIRMAR</h3>
+                <div style="font-size:14px;color:var(--tinta)">Queda tu firma como <b><t t-esc="rol"/></b> con fecha, hora y un código único (hash) del acta. Si después alguien cambia el texto, la firma se invalida sola y se nota. El acta legal se pasa al libro rubricado.</div>
+            </div>
+
+            <form action="/app/asamblea/firmar/confirmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <button class="botonazo" type="submit">✍️ FIRMAR AHORA</button>
+            </form>
+            <a class="botonazo sec" href="/app/asamblea">Todavía no — tengo dudas</a>
         </t>
     </template>
 

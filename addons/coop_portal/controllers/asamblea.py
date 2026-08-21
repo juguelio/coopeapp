@@ -72,6 +72,28 @@ class CoopPortalAsamblea(http.Controller):
         return False
 
     @http.route('/app/asamblea/firmar', type='http', auth='user',
+                website=False, methods=['GET'])
+    def asamblea_firmar_review(self, **kw):
+        """Pantalla previa: el firmante lee el acta antes de firmar.
+
+        Antes el botón hacía POST directo — se firmaba un documento que el
+        síndico/presidente/secretario nunca había visto (lo notó Juan el
+        2026-08-17). Ahora el texto completo se lee acá y recién después se
+        confirma con el POST a /confirmar, el mismo patrón que los
+        certificados."""
+        member = self._member()
+        asamblea = self._asamblea_actual()
+        if not member or not asamblea or not asamblea.acta_texto:
+            return request.redirect('/app/asamblea')
+        rol = self._rol_firma(asamblea, member)
+        if not rol:
+            return request.redirect('/app/asamblea')
+        return request.render('coop_portal.asamblea_firmar', {
+            'member': member, 'asamblea': asamblea, 'rol': rol,
+            'nav_rol': self._nav_rol(member), 'nav_activo': 'asamblea',
+        })
+
+    @http.route('/app/asamblea/firmar/confirmar', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
     def asamblea_firmar(self, **kw):
         member = self._member()
