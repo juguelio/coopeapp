@@ -1,9 +1,12 @@
+import io
 import json
 import urllib.parse
 from datetime import timedelta
 
+import xlsxwriter
+
 from odoo import fields, http
-from odoo.http import request
+from odoo.http import content_disposition, request
 
 # Estados nativos de project.task que usa la hoja de ruta. Cerrar una tarea a
 # mano la saca del camino crítico (ver coop_construction/project_project.py).
@@ -564,3 +567,52 @@ class CoopPortalAdmin(http.Controller):
             'member': member, 'ops': ops[:40], 'rango': rango, 'tipo': tipo,
             'n_ops': len(ops), 'total_gasto': total_gasto, 'total_m2': total_m2,
         })
+
+    @http.route('/app/admin/reportes/exportar', type='http', auth='user',
+                website=False)
+    def reportes_exportar(self, rango='mes', tipo=None, **kw):
+        """Exporta la vista unificada a .xlsx para el contador/auditoría.
+
+        Cierra la promesa del FAQ (/app/ayuda) de exportar desde la app. Sin
+        destinatario cableado: el botón es la acción y el compartir lo resuelve
+        el menú nativo del teléfono al descargar. El nombre del archivo lleva
+        el período (y el tipo si hay filtro)."""
+        member = self._member()
+        if not self._es_admin(member):
+            return request.redirect('/app')
+        hoy = fields.Date.context_today(request.env['coop.member'].sudo())
+        desde = {
+            'hoy': hoy, 'semana': hoy - timedelta(days=7),
+            'mes': hoy - timedelta(days=30),
+        }.get(rango, hoy - timedelta(days=30))
+        dominio = [('fecha', '>=', desde)]
+        if tipo in ('avance', 'pedido', 'gasto', 'incidente'):
+            dominio.append(('tipo', '=', tipo))
+        registros = request.env['coop.operacion'].sudo().search(
+            dominio, order='fecha desc')
+        tipo_label = {'avance': 'Avance', 'pedido': 'Pedido de material',
+                      'gasto': 'Gasto', 'incidente': 'Incidente'}
+        buf = io.BytesIO()
+        wb = xlsxwriter.Workbook(buf, {'in_memory': True})
+        ws = wb.add_worksheet('Operaciones')
+        for c, h in enumerate(['Fecha', 'Tipo', 'Obra', 'Socio', 'Detalle',
+                               'Monto ($)', 'Cantidad', 'Unidad']):
+            ws.write(0, c, h)
+        for r, o in enumerate(registros, start=1):
+            ws.write(r, 0, o.fecha.strftime('%d/%m/%Y') if o.fecha else '')
+            ws.write(r, 1, tipo_label.get(o.tipo, o.tipo or ''))
+            ws.write(r, 2, o.obra_id.name or '')
+            ws.write(r, 3, o.member_id.name or '')
+            ws.write(r, 4, o.detalle or '')
+            ws.write(r, 5, o.monto or 0.0)
+            ws.write(r, 6, o.cantidad or 0.0)
+            ws.write(r, 7, o.uom or '')
+        wb.close()
+        buf.seek(0)
+        nombre = 'operaciones_%s%s_%s.xlsx' % (
+            rango, ('_%s' % tipo) if tipo else '', hoy)
+        return request.make_response(buf.getvalue(), headers=[
+            ('Content-Type', 'application/vnd.openxmlformats-officedocument'
+             '.spreadsheetml.sheet'),
+            ('Content-Disposition', content_disposition(nombre)),
+        ])

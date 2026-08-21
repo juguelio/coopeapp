@@ -2422,6 +2422,9 @@
                 </div>
             </div>
 
+            <a t-attf-class="botonazo" style="margin-top:12px"
+               t-attf-href="/app/admin/reportes/exportar?rango={{rango}}{{'&amp;tipo=%s' % tipo if tipo else ''}}">⬇️ Exportar planilla (.xlsx)</a>
+
             <div class="card">
                 <div class="fila" t-foreach="ops" t-as="o">
                     <div><t t-esc="o['icono']"/> <b><t t-esc="o['quien']"/></b> — <t t-esc="o['detalle']"/>
