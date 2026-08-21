@@ -1,6 +1,6 @@
 {
     'name': 'Cooperativa - Branding y UI',
-    'version': '18.0.1.2.0',
+    'version': '18.0.1.3.0',
     'summary': 'Marca coopeapp en el backoffice y el login + limpieza visual',
     'author': 'Coopeapp',
     'category': 'Cooperative',
