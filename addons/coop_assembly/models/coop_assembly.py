@@ -206,6 +206,7 @@ class CoopAssembly(models.Model):
             anio = fh.year if fh else '—'
             hora = fh.strftime('%H:%M') if fh else '—'
             # cuerpo por punto
+            quorum_ok = a.quorum_reached
             cuerpos = []
             for p in a.point_ids.sorted('sequence'):
                 txt = '%d) %s.' % (p.sequence, p.name)
@@ -213,20 +214,35 @@ class CoopAssembly(models.Model):
                     txt += ' Resolución: %s' % p.resolucion
                 if p.vote_id:
                     v = p.vote_id
+                    if v.approved and not quorum_ok:
+                        # sin quórum, "aprobada" no puede afirmarse: la
+                        # resolución no queda firme.
+                        resultado = 'no firme por falta de quórum'
+                    else:
+                        resultado = 'aprobada' if v.approved else 'rechazada'
                     txt += (' Votación: %d a favor, %d en contra, %d '
                             'abstenciones (%s).') % (
-                        v.votes_yes, v.votes_no, v.votes_abstain,
-                        'aprobada' if v.approved else 'rechazada')
+                        v.votes_yes, v.votes_no, v.votes_abstain, resultado)
                 cuerpos.append(txt)
             orden = ' '.join(cuerpos) or 'No se trataron puntos.'
+            quorum_txt = (
+                'con quórum suficiente conforme la ley 20.337 y el estatuto '
+                '(mínimo requerido: %d%%)' % a.quorum_required
+                if quorum_ok else
+                'sin quórum suficiente conforme la ley 20.337 y el estatuto '
+                '(mínimo requerido: %d%%)' % a.quorum_required
+            )
+            cierre_quorum = (
+                '' if quorum_ok else
+                ' Por falta de quórum, las resoluciones votadas no quedan firmes.'
+            )
             acta = (
                 'ACTA N° %s. En %s, a los %s días del mes de %s de %s, siendo '
                 'las %s hs, en la sede de la %s, sita en %s, se reúne %s. '
                 'Presidente: %s. Secretario: %s. Presentes: %d socios de %d '
-                '(%.0f%%), con quórum suficiente conforme la ley 20.337 y el '
-                'estatuto. ORDEN DEL DÍA: %s Sin más temas que tratar, siendo '
-                'las %s hs se da por finalizada la reunión, firmando al pie los '
-                'asistentes designados.'
+                '(%.0f%%), %s. ORDEN DEL DÍA: %s%s Sin más temas que tratar, '
+                'siendo las %s hs se da por finalizada la reunión, firmando al '
+                'pie los asistentes designados.'
             ) % (
                 a.numero_acta or '—', company.city or 'San Martín de los Andes',
                 dia, mes, anio, hora, company.name,
@@ -234,7 +250,7 @@ class CoopAssembly(models.Model):
                 a._persona_con_dni(a.president_id),
                 a._persona_con_dni(a.secretary_id),
                 a.attendee_count, a.total_active_members, a.quorum_percentage,
-                orden, hora,
+                quorum_txt, orden, cierre_quorum, hora,
             )
             a.acta_texto = acta
             a.message_post(body=_('Acta %s generada.') % (a.numero_acta or ''))

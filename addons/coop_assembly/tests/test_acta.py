@@ -34,3 +34,22 @@ class TestActaFirma(TransactionCase):
         self.assertFalse(
             firma.firma_valida,
             'la firma debe invalidarse cuando el acta cambia')
+
+    def test_acta_sin_quorum_dice_la_verdad(self):
+        """El acta no puede afirmar quórum cuando no lo hay (hallazgo 2026-08-20)."""
+        members = self.env['coop.member'].create([
+            {'name': 'M1', 'dni': '25111000', 'role': 'worker', 'state': 'active'},
+            {'name': 'M2', 'dni': '25111001', 'role': 'worker', 'state': 'active'},
+            {'name': 'M3', 'dni': '25111002', 'role': 'worker', 'state': 'active'},
+            {'name': 'M4', 'dni': '25111003', 'role': 'worker', 'state': 'active'},
+        ])
+        asamblea = self.env['coop.assembly'].create({
+            'name': 'Asamblea sin quórum', 'assembly_type': 'ordinary',
+            'date': '2026-03-15 18:00:00',
+            'president_id': members[0].id, 'secretary_id': members[1].id,
+            'attendee_ids': [(6, 0, [members[0].id])]})
+        self.assertFalse(asamblea.quorum_reached, '1 de 4 = 25% < 50%')
+        asamblea.action_generate_minutes()
+        self.assertIn('sin quórum suficiente', asamblea.acta_texto)
+        self.assertNotIn('con quórum suficiente', asamblea.acta_texto)
+        self.assertIn('no quedan firmes', asamblea.acta_texto)
