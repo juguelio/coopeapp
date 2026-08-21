@@ -78,6 +78,67 @@ class CoopAssembly(models.Model):
 
     notes = fields.Text(string='Notas internas')
 
+    @staticmethod
+    def _salientes_de(comandos, actuales):
+        """Qué socios saca este comando x2many, SIN aplicarlo todavía.
+
+        Se resuelve a mano porque el chequeo tiene que correr antes de escribir:
+        si se hiciera después de super().write(), la baja ya estaría aplicada y
+        solo la desharía el rollback de la transacción. Eso alcanza en un
+        request normal, pero deja de alcanzar apenas alguien atrape la
+        excepción y siga en la misma transacción.
+        """
+        quedan = set(actuales.ids)
+        for cmd in comandos or []:
+            if isinstance(cmd, (list, tuple)) and cmd:
+                op = cmd[0]
+                if op == 6:
+                    quedan = set(cmd[2] or [])
+                elif op == 5:
+                    quedan = set()
+                elif op in (2, 3):
+                    quedan.discard(cmd[1])
+                elif op == 4:
+                    quedan.add(cmd[1])
+        return actuales.filtered(lambda m: m.id not in quedan)
+
+    def write(self, vals):
+        """Nadie sale de `attendee_ids` después de haber votado.
+
+        El voto es secreto: si se borra el ballot al sacar al socio, se destruye
+        información que después nadie puede auditar. Y si se deja el ballot y se
+        saca al socio, la votación queda con más votos que presentes, y ese par
+        de números va al acta que se pasa al libro (reproducido el 2026-08-20:
+        5 votos contra 2 presentes, con el acta afirmando quórum suficiente).
+
+        Así que el que ya votó se queda. Si la asistencia estaba mal de verdad,
+        la salida es anular la votación, que es un acto explícito y deja rastro.
+
+        Va en el modelo y no en el controlador para que valga también desde el
+        backoffice, igual que `_check_socio_presente` en coop_ballot.py, que es
+        la contraparte de esta guarda en el otro extremo.
+        """
+        if 'attendee_ids' in vals:
+            for a in self:
+                salientes = self._salientes_de(vals['attendee_ids'],
+                                               a.attendee_ids)
+                if not salientes:
+                    continue
+                votaron = self.env['coop.ballot'].sudo().search([
+                    ('vote_id.assembly_id', '=', a.id),
+                    ('member_id', 'in', salientes.ids),
+                ])
+                if votaron:
+                    nombres = ', '.join(
+                        sorted(set(votaron.mapped('member_id.name'))))
+                    raise ValidationError(_(
+                        'No se puede sacar de la lista de presentes a quien ya '
+                        'votó: %s. El voto es secreto y no se puede '
+                        'reconstruir, y la votación quedaría con más votos que '
+                        'presentes. Si la asistencia se cargó mal, anulá la '
+                        'votación.') % nombres)
+        return super().write(vals)
+
     @api.depends('attendee_ids')
     def _compute_quorum(self):
         for assembly in self:
