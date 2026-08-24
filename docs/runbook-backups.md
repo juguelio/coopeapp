@@ -152,3 +152,34 @@ Con esto los backups dejan de ser el bloqueante para cargar datos reales.
   nueva en Backblaze para bajar los backups — no es un bloqueo (los datos están
   en B2 y se accede desde la consola web), pero conviene tener el par guardado
   también en el vault.
+
+---
+
+## Correr los tests sin tocar producción (2026-08-24)
+
+`docker compose` **no existe en la Mac**: el compose vive en el VPS
+(`~/odoo-coop`). Y correr los tests con `-u ... -d coop_piloto` **es correrlos
+contra producción** — el `-u` la actualiza de verdad.
+
+```bash
+./scripts/test-vps.sh                      # los tres módulos
+./scripts/test-vps.sh coop_assembly        # uno solo
+```
+
+El script sube los addons a `~/odoo-coop/addons-test/` (un directorio aparte,
+no pisa los de producción), lee el `addons_path` real del contenedor en vez de
+inventarlo, crea una base descartable `coop_test_ci`, instala ahí con
+`--test-enable --without-demo=all`, y borra la base al terminar.
+`coop_piloto` no se toca en ningún paso.
+
+Si no puede leer el `addons_path` **para** en vez de seguir: unos tests que
+"pasan" porque Odoo no encontró los módulos son peores que unos tests en rojo.
+
+### Los tests del parser de cómputos corren sin Odoo
+
+`foja_parser.py` no importa Odoo a propósito, así que sus tests corren en
+cualquier lado con Python y `openpyxl`:
+
+```bash
+python3 addons/coop_construction/tests/test_foja_parser.py
+```
