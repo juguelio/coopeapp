@@ -180,8 +180,15 @@ class CoopPortal(http.Controller):
             a.cantidad * a.foja_item_id.precio_unitario for a in borr)
         esperando_liquidacion = sum(
             a.cantidad * a.foja_item_id.precio_unitario for a in val)
-        tot = cobrado + esperando_validacion + esperando_liquidacion
-        pct = lambda x: round(x / tot * 100, 0) if tot else 0
+        # `cobrado` es NETO (sale de coop.payroll). Los otros dos son valor
+        # BRUTO de contrato: cantidad x precio_unitario de la foja, sin
+        # descontar materiales, administracion, impuestos ni logistica. NO son
+        # comparables. Sumarlos en un solo total y dibujar las tres barras
+        # sobre esa suma fue el bug: un socio leyo $4.252.285 como plata suya.
+        # Van en dos tarjetas, con dos totales distintos, hasta que P4 defina
+        # el neto de verdad.
+        produccion = esperando_validacion + esperando_liquidacion
+        pct = lambda x, t: round(x / t * 100, 0) if t else 0
         return self._render('coop_portal.mi_aporte', {
             'member': member, 'items': items[:8],
             'jornales': jornales, 'horas': horas, 'tareas': tareas,
@@ -189,9 +196,9 @@ class CoopPortal(http.Controller):
             'esperando_validacion': esperando_validacion,
             'esperando_liquidacion': esperando_liquidacion,
             'n_borrador': len(borr), 'n_validado': len(val), 'otros': otros,
-            'cobrado_pct': pct(cobrado),
-            'val_pct': pct(esperando_validacion),
-            'liq_pct': pct(esperando_liquidacion),
+            'produccion': produccion,
+            'val_pct': pct(esperando_validacion, produccion),
+            'liq_pct': pct(esperando_liquidacion, produccion),
         })
 
     # ── cargar avance (wizard 3 pasos) ───────────────────────────────

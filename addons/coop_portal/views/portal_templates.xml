@@ -361,11 +361,28 @@
                 <div style="font-size:12px;color:var(--gris);margin-top:4px">Lo mismo que ve el consejo.</div>
             </div>
 
-            <div class="card">
+            <div class="card" style="border-left:6px solid var(--verde)">
                 <h3>TU PLATA</h3>
-                <div class="fila" style="border:0;padding:0 0 3px"><div>Ya cobrado</div><b>$ <t t-esc="'{:,.0f}'.format(cobrado).replace(',', '.')"/></b></div>
-                <div class="barra"><div t-attf-style="width:{{cobrado_pct}}%;background:var(--verde)"/></div>
-                <div class="fila" style="border:0;padding:12px 0 3px">
+                <div class="fila" style="border:0;padding:0 0 3px">
+                    <div>Ya cobrado</div>
+                    <b style="font-size:22px">$ <t t-esc="'{:,.0f}'.format(cobrado).replace(',', '.')"/></b>
+                </div>
+                <div style="font-size:12px;color:var(--gris);margin-top:4px">Lo que ya se liquidó y es tuyo.</div>
+                <a class="fila" href="/app/plata" style="text-decoration:none;color:inherit;border:0;padding-top:12px">
+                    <div>💵 Ver mis liquidaciones</div><span class="chip ok">→</span>
+                </a>
+            </div>
+
+            <div class="card" style="border-left:6px solid #e69a1f">
+                <h3>VALOR DE TU PRODUCCIÓN CERTIFICADA</h3>
+                <div style="font-size:24px;font-weight:800;margin:2px 0 6px">$ <t t-esc="'{:,.0f}'.format(produccion).replace(',', '.')"/></div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5;margin-bottom:10px">
+                    Es el valor del trabajo que mediste, a precio de la foja de la obra.
+                    <b>No es lo que vas a cobrar:</b> todavía no tiene descontados los costos
+                    de la obra — materiales, administración, impuestos y logística.
+                    Tu parte se define al liquidar.
+                </div>
+                <div class="fila" style="border:0;padding:0 0 3px">
                     <div>Validado, esperando liquidación
                         <span style="font-size:12px;color:var(--gris)">(el coordinador ya lo aprobó)</span>
                     </div><b>$ <t t-esc="'{:,.0f}'.format(esperando_liquidacion).replace(',', '.')"/></b>
@@ -377,9 +394,6 @@
                     </div><b>$ <t t-esc="'{:,.0f}'.format(esperando_validacion).replace(',', '.')"/></b>
                 </div>
                 <div class="barra"><div t-attf-style="width:{{val_pct}}%;background:#e69a1f"/></div>
-                <a class="fila" href="/app/plata" style="text-decoration:none;color:inherit;border:0;padding-top:12px">
-                    <div>💵 Ver mis liquidaciones</div><span class="chip ok">→</span>
-                </a>
             </div>
 
             <div class="card" t-if="items">
