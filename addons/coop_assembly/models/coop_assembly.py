@@ -184,11 +184,43 @@ class CoopAssembly(models.Model):
         return '%s%s' % (member.name, ' DNI %s' % member.dni
                          if member.dni else '')
 
+    def _check_votaciones_cerradas(self) -> None:
+        """El acta no puede congelar una votación que todavía se está
+        decidiendo.
+
+        Antes de esta guarda, generar el acta con una votación abierta —o
+        pendiente, que nunca se abrió— escribía el conteo del momento como si
+        fuera el resultado definitivo. Así nació el acta N° 2: dice "0 a favor,
+        1 en contra (rechazada)" sobre un punto donde el socio ve su voto a
+        favor. El socio y el libro se contradicen, y el que firma no tiene
+        forma de notarlo.
+
+        `pending` cuenta igual que `open`: una moción que nunca se abrió a
+        votación entra al acta como 0-0-0 y se lee "rechazada". Nadie la
+        rechazó; nadie la votó.
+        """
+        self.ensure_one()
+        abiertas = self.vote_ids.filtered(lambda v: v.state != 'closed')
+        if not abiertas:
+            return
+        detalle = '\n'.join(
+            ' · %s (%s)' % (v.name, dict(
+                v._fields['state'].selection).get(v.state, v.state))
+            for v in abiertas.sorted('sequence'))
+        raise ValidationError(_(
+            'No se puede generar el acta: hay %(n)d votación(es) sin cerrar.\n'
+            '%(detalle)s\n\n'
+            'Cerralas primero. El acta deja escrito el resultado de cada '
+            'votación, y una votación abierta todavía no tiene resultado: '
+            'quedaría un número distinto del que ven los socios en la app.'
+        ) % {'n': len(abiertas), 'detalle': detalle})
+
     def action_generate_minutes(self):
         """Genera el acta con el formato legal del libro (ley 20.337) a partir
         de los puntos del orden del día, presentes, autoridades y votaciones.
         Asigna el N° de acta por libro (asamblea / consejo) si no tiene."""
         for a in self:
+            a._check_votaciones_cerradas()
             if not a.numero_acta:
                 code = ('coop.assembly.acta.board'
                         if a.assembly_type == 'board'
