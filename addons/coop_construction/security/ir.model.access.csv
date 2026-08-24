@@ -84,3 +84,5 @@ access_coop_trabajo_otro_member,coop.trabajo.otro member,model_coop_trabajo_otro
 access_coop_trabajo_otro_manager,coop.trabajo.otro manager,model_coop_trabajo_otro,coop_members.group_coop_manager,1,1,1,1
 access_coop_trabajo_otro_coordinador,coop.trabajo.otro coord,model_coop_trabajo_otro,coop_members.group_coop_coordinador,1,1,1,0
 access_coop_trabajo_otro_syndic,coop.trabajo.otro sindico,model_coop_trabajo_otro,coop_members.group_coop_syndic,1,0,0,0
+access_coop_foja_import_manager,coop.foja.import manager,model_coop_foja_import,coop_members.group_coop_manager,1,1,1,1
+access_coop_foja_import_linea_manager,coop.foja.import.linea manager,model_coop_foja_import_linea,coop_members.group_coop_manager,1,1,1,1

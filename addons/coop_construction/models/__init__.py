@@ -15,3 +15,4 @@ from . import coop_incidente
 from . import coop_operacion
 from . import coop_work_entry
 from . import coop_nota
+from . import coop_foja_import
