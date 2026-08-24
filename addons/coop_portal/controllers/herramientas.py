@@ -35,18 +35,66 @@ class CoopPortalHerramientas(http.Controller):
         if not obras:
             return request.redirect('/app')
         Equipo = request.env['maintenance.equipment'].sudo()
-        asignadas = request.env['coop.asignacion.herramienta'].sudo().search([
+        Asig = request.env['coop.asignacion.herramienta'].sudo()
+        asignadas = Asig.search([
             ('obra_id', 'in', obras.ids), ('state', '=', 'en_obra')])
+        # Los préstamos externos NO se filtran por obra: la herramienta puede
+        # haber salido sin obra asociada, y justamente esas son las que se
+        # pierden. Se listan las que prestó este coordinador o que salieron a
+        # raíz de una obra suya. Más viejo primero: lo que más urge reclamar.
+        prestadas = Asig.search([
+            ('state', '=', 'prestada'),
+            '|', ('obra_id', 'in', obras.ids), ('member_id', '=', member.id),
+        ], order='fecha_retiro asc')
         disponibles = Equipo.search([('estado_coop', '=', 'disponible')])
         incidentes = request.env['coop.incidente'].sudo().search([
             ('obra_id', 'in', obras.ids), ('state', '!=', 'resuelto')],
             order='create_date desc')
         return request.render('coop_portal.herramientas', {
             'member': member, 'obras': obras, 'asignadas': asignadas,
+            'prestadas': prestadas,
             'disponibles': disponibles, 'incidentes': incidentes,
             'tipo_labels': dict(request.env['coop.incidente']
                                 ._fields['tipo'].selection),
         })
+
+    @http.route('/app/herramientas/prestar', type='http', auth='user',
+                website=False, methods=['POST'], csrf=True)
+    def herramientas_prestar(self, equipment_id, prestado_a, prestado_tel=None,
+                             prestado_doc=None, fecha_devolucion_prevista=None,
+                             obra_id=None, **kw):
+        """Prestar una herramienta a alguien de afuera de la cooperativa.
+
+        Existe porque antes no se podía: la asignación exigía una obra propia y
+        un socio activo, así que el préstamo al equipo de arquitectos no tenía
+        dónde anotarse. La herramienta no se pierde por desprolijidad: se
+        pierde porque prestarla bien llevaba más trabajo que prestarla mal.
+        """
+        member = self._member()
+        obras = self._obras_coordina(member)
+        equipo = request.env['maintenance.equipment'].sudo().browse(
+            int(equipment_id)).exists()
+        # sin member/equipo, o sin obras que coordine, no compara .id
+        # (mismo patrón anti-bypass False == False del resto del módulo)
+        if not member or not equipo or not obras:
+            return request.redirect('/app')
+        if not (prestado_a or '').strip():
+            return request.redirect('/app/herramientas')
+        if equipo.estado_coop != 'disponible':
+            return request.redirect('/app/herramientas')
+        # la obra es opcional, pero si viene tiene que ser una que coordina
+        obra = obras.filtered(lambda o: o.id == int(obra_id)) if obra_id else False
+        request.env['coop.asignacion.herramienta'].sudo().create({
+            'equipment_id': equipo.id,
+            'tipo': 'externo',
+            'obra_id': obra.id if obra else False,
+            'member_id': member.id,
+            'prestado_a': prestado_a.strip(),
+            'prestado_tel': (prestado_tel or '').strip() or False,
+            'prestado_doc': (prestado_doc or '').strip() or False,
+            'fecha_devolucion_prevista': fecha_devolucion_prevista or False,
+        })
+        return request.redirect('/app/herramientas')
 
     @http.route('/app/herramientas/llevar', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
@@ -75,7 +123,14 @@ class CoopPortalHerramientas(http.Controller):
             int(asignacion_id)).exists()
         if not member or not asig:
             return request.redirect('/app')
-        if asig.obra_id.capataz_id and asig.obra_id.capataz_id.id == member.id:
+        # Un préstamo externo puede no tener obra: entonces lo devuelve quien
+        # lo prestó. Con obra, manda el capataz, como siempre.
+        capataz = asig.obra_id.capataz_id
+        autorizado = bool(
+            (capataz and capataz.id == member.id)
+            or (asig.tipo == 'externo' and asig.member_id
+                and asig.member_id.id == member.id))
+        if autorizado:
             asig.action_devolver()
         return request.redirect('/app/herramientas')
 

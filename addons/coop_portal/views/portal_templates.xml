@@ -1418,6 +1418,65 @@
                 </form>
             </div>
 
+            <div class="card" t-if="prestadas" style="border-left:6px solid #e69a1f">
+                <div style="font-weight:800;margin-bottom:2px">📤 Prestadas afuera</div>
+                <div style="font-size:12px;color:var(--gris);margin-bottom:8px">Lo que está en manos de gente que no es de la cooperativa. Más viejo primero.</div>
+                <form t-foreach="prestadas" t-as="pr" action="/app/herramientas/devolver" method="post"
+                      style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #eef2f5">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="asignacion_id" t-att-value="pr.id"/>
+                    <div style="font-size:14px">
+                        <b><t t-esc="pr.equipment_id.name"/></b>
+                        <div style="color:var(--gris)">
+                            La tiene <b style="color:var(--tinta)"><t t-esc="pr.prestado_a"/></b>
+                            hace <b style="color:var(--tinta)"><t t-esc="pr.dias_afuera"/></b>
+                            <t t-if="pr.dias_afuera == 1">día</t><t t-else="">días</t>
+                        </div>
+                        <div t-if="pr.prestado_tel">
+                            <a t-attf-href="tel:{{pr.prestado_tel}}" style="color:#2d7ff9;text-decoration:none">📞 <t t-esc="pr.prestado_tel"/></a>
+                        </div>
+                        <div t-if="pr.obra_id" style="font-size:12px;color:var(--gris)">por <t t-esc="pr.obra_id.name"/></div>
+                        <div t-if="pr.vencida" style="font-size:12px;color:var(--rojo);font-weight:700">
+                            Tenía que volver el <t t-esc="pr.fecha_devolucion_prevista"/>
+                        </div>
+                        <div t-if="pr.fecha_devolucion_prevista and not pr.vencida" style="font-size:12px;color:var(--gris)">
+                            Vuelve el <t t-esc="pr.fecha_devolucion_prevista"/>
+                        </div>
+                        <div t-if="not pr.fecha_devolucion_prevista" style="font-size:12px;color:var(--gris)">Sin fecha de devolución</div>
+                    </div>
+                    <button class="botonazo sec" style="min-height:40px;margin:0;width:auto;padding:0 14px" type="submit">↩ Volvió</button>
+                </form>
+            </div>
+
+            <div class="card" t-if="disponibles">
+                <div style="font-weight:800;margin-bottom:8px">📤 Prestar afuera</div>
+                <div style="font-size:12px;color:var(--gris);margin-bottom:8px">A alguien que no es de la cooperativa — el arquitecto, otro gremio, un vecino.</div>
+                <form action="/app/herramientas/prestar" method="post" style="display:flex;flex-direction:column;gap:8px">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <select name="equipment_id" required="required"
+                            style="padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option value="">Elegí herramienta disponible…</option>
+                        <option t-foreach="disponibles" t-as="e" t-att-value="e.id"><t t-esc="e.name"/></option>
+                    </select>
+                    <input type="text" name="prestado_a" required="required" placeholder="¿Quién se la lleva? (nombre o estudio)"
+                           style="padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    <input type="tel" name="prestado_tel" placeholder="Teléfono"
+                           style="padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    <input type="text" name="prestado_doc" placeholder="DNI o CUIT (opcional)"
+                           style="padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    <label style="font-size:13px;color:var(--gris)">¿Cuándo la devuelve?
+                        <input type="date" name="fecha_devolucion_prevista"
+                               style="width:100%;margin-top:4px;padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px"/>
+                    </label>
+                    <select name="obra_id"
+                            style="padding:10px;border:2px solid #d7dee5;border-radius:10px;font-size:15px">
+                        <option value="">— sin obra —</option>
+                        <option t-foreach="obras" t-as="o" t-att-value="o.id"><t t-esc="o.name"/></option>
+                    </select>
+                    <button class="botonazo sec" style="margin:0" type="submit">📤 Prestar</button>
+                </form>
+            </div>
+
             <div class="card" t-if="disponibles">
                 <div style="font-weight:800;margin-bottom:8px">➕ Llevar herramienta</div>
                 <form action="/app/herramientas/llevar" method="post" style="display:flex;flex-direction:column;gap:8px">

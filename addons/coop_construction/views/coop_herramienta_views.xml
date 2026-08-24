@@ -8,12 +8,14 @@
             <list string="Herramientas"
                   decoration-danger="estado_coop in ('rota','perdida') or service_vencido"
                   decoration-success="estado_coop == 'disponible'"
+                  decoration-warning="estado_coop == 'prestada_externo'"
                   decoration-info="estado_coop == 'en_obra'">
                 <field name="name"/>
                 <field name="category_id"/>
                 <field name="estado_coop" widget="badge"
                        decoration-success="estado_coop == 'disponible'"
                        decoration-info="estado_coop == 'en_obra'"
+                       decoration-warning="estado_coop == 'prestada_externo'"
                        decoration-danger="estado_coop in ('rota','perdida')"/>
                 <field name="obra_id" optional="show"/>
                 <field name="proxima_revision" optional="show"/>
@@ -53,12 +55,16 @@
                         <page string="Historial de asignaciones">
                             <field name="asignacion_ids" readonly="1">
                                 <list>
+                                    <field name="tipo"/>
                                     <field name="obra_id"/>
+                                    <field name="prestado_a"/>
                                     <field name="member_id"/>
                                     <field name="fecha_retiro"/>
+                                    <field name="fecha_devolucion_prevista"/>
                                     <field name="fecha_devolucion"/>
                                     <field name="state" widget="badge"
-                                           decoration-info="state == 'en_obra'"/>
+                                           decoration-info="state == 'en_obra'"
+                                           decoration-warning="state == 'prestada'"/>
                                 </list>
                             </field>
                         </page>
@@ -83,16 +89,51 @@
         <field name="model">coop.asignacion.herramienta</field>
         <field name="arch" type="xml">
             <list string="Asignaciones" editable="bottom"
-                  decoration-info="state == 'en_obra'">
+                  decoration-info="state == 'en_obra'"
+                  decoration-warning="state == 'prestada' and not vencida"
+                  decoration-danger="vencida">
                 <field name="equipment_id"/>
+                <field name="tipo"/>
                 <field name="obra_id"/>
+                <field name="prestado_a"/>
+                <field name="prestado_tel" optional="show"/>
+                <field name="prestado_doc" optional="hide"/>
                 <field name="member_id"/>
                 <field name="fecha_retiro"/>
+                <field name="fecha_devolucion_prevista"/>
+                <field name="dias_afuera"/>
+                <field name="vencida" optional="hide"/>
                 <field name="fecha_devolucion" readonly="1"/>
-                <field name="state" widget="badge" decoration-info="state == 'en_obra'"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'en_obra'"
+                       decoration-warning="state == 'prestada'"/>
                 <button name="action_devolver" string="Devolver" type="object"
-                        icon="fa-undo" invisible="state != 'en_obra'"/>
+                        icon="fa-undo" invisible="state == 'devuelta'"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_coop_asignacion_search" model="ir.ui.view">
+        <field name="name">coop.asignacion.herramienta.search</field>
+        <field name="model">coop.asignacion.herramienta</field>
+        <field name="arch" type="xml">
+            <search string="Asignaciones">
+                <field name="equipment_id"/>
+                <field name="prestado_a"/>
+                <field name="obra_id"/>
+                <filter name="afuera" string="Está afuera"
+                        domain="[('state','in',['en_obra','prestada'])]"/>
+                <filter name="prestadas" string="Prestadas a terceros"
+                        domain="[('state','=','prestada')]"/>
+                <filter name="vencidas" string="Vencidas"
+                        domain="[('vencida','=',True)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="g_tipo" string="Tipo de salida"
+                            context="{'group_by': 'tipo'}"/>
+                    <filter name="g_obra" string="Obra"
+                            context="{'group_by': 'obra_id'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -100,6 +141,8 @@
         <field name="name">Asignaciones de Herramientas</field>
         <field name="res_model">coop.asignacion.herramienta</field>
         <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_coop_asignacion_search"/>
+        <field name="context">{'search_default_afuera': 1}</field>
     </record>
 
     <!-- ============ Menús ============ -->

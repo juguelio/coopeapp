@@ -1,5 +1,5 @@
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 @tagged('post_install', '-at_install')
@@ -115,3 +115,63 @@ class TestFlujosCoop(TransactionCase):
         self.assertTrue(inc.gasto_id, 'debe imputar la merma como gasto')
         self.assertEqual(inc.gasto_id.rubro, 'materiales')
         self.assertEqual(inc.gasto_id.importe, 30000.0)
+
+    # ── P5a: préstamo de herramientas fuera de la cooperativa ────────
+    def _herramienta(self, nombre='Amoladora Test'):
+        return self.env['maintenance.equipment'].create({
+            'name': nombre, 'estado_coop': 'disponible'})
+
+    def test_p5a_prestamo_externo_sin_obra(self):
+        """El caso que antes no se podía anotar: prestarle una herramienta al
+        equipo de arquitectos, sin obra propia y sin socio que la reciba."""
+        eq = self._herramienta()
+        asig = self.env['coop.asignacion.herramienta'].create({
+            'equipment_id': eq.id, 'tipo': 'externo',
+            'prestado_a': 'Estudio Arquitectos', 'prestado_tel': '2944000111',
+            'fecha_retiro': '2026-07-01',
+            'fecha_devolucion_prevista': '2026-07-10',
+        })
+        self.assertEqual(asig.state, 'prestada',
+                         'el state sigue al tipo aunque no se declare')
+        self.assertEqual(eq.estado_coop, 'prestada_externo',
+                         'la herramienta NO puede quedar disponible')
+        self.assertFalse(asig.obra_id, 'la obra es opcional en un préstamo')
+        self.assertTrue(asig.dias_afuera > 0)
+        self.assertTrue(asig.vencida, 'venció el 10/07/2026')
+        self.assertIn(asig, self.env['coop.asignacion.herramienta'].search(
+            [('vencida', '=', True)]), 'tiene que ser buscable por vencida')
+
+        asig.action_devolver()
+        self.assertEqual(asig.state, 'devuelta')
+        self.assertTrue(asig.fecha_devolucion)
+        self.assertFalse(asig.vencida, 'devuelta ya no está vencida')
+        self.assertEqual(eq.estado_coop, 'disponible')
+
+    def test_p5a_prestamo_sin_responsable_no_se_puede(self):
+        """Sacarle el required a obra_id abrió la puerta a una salida sin
+        destino. La cierra el constraint, no el formulario."""
+        eq = self._herramienta('Hidrolavadora Test')
+        with self.assertRaises(ValidationError):
+            self.env['coop.asignacion.herramienta'].create({
+                'equipment_id': eq.id, 'tipo': 'externo', 'prestado_a': '  '})
+
+    def test_p5a_salida_a_obra_sigue_necesitando_obra(self):
+        eq = self._herramienta('Mixer Test')
+        with self.assertRaises(ValidationError):
+            self.env['coop.asignacion.herramienta'].create({
+                'equipment_id': eq.id, 'tipo': 'obra',
+                'member_id': self.member.id})
+
+    def test_p5a_asignacion_a_obra_no_cambio(self):
+        """El camino de siempre tiene que seguir funcionando igual."""
+        eq = self._herramienta('Martillo Test')
+        asig = self.env['coop.asignacion.herramienta'].create({
+            'equipment_id': eq.id, 'obra_id': self.obra.id,
+            'member_id': self.member.id})
+        self.assertEqual(asig.tipo, 'obra')
+        self.assertEqual(asig.state, 'en_obra')
+        self.assertEqual(eq.estado_coop, 'en_obra')
+        self.assertEqual(eq.obra_id, self.obra)
+        asig.action_devolver()
+        self.assertEqual(eq.estado_coop, 'disponible')
+        self.assertFalse(eq.obra_id)
