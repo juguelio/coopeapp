@@ -1,5 +1,7 @@
+import hashlib
+
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 
 class MaintenanceEquipment(models.Model):
@@ -98,6 +100,34 @@ class CoopAsignacionHerramienta(models.Model):
         ('prestada', 'Prestada afuera'),
         ('devuelta', 'Devuelta'),
     ], string='Estado', default='en_obra', required=True)
+    # ── Constancia de entrega firmada (P5a fase 2) ───────────────────
+    # Mismo mecanismo que `coop.certificado` y que el acta: se firma el HASH
+    # del contenido, así que si después alguien cambia a quién se la prestó o
+    # la fecha de devolución, la firma deja de ser válida y se nota.
+    #
+    # Por qué hace falta: una herramienta prestada afuera se reclama con un
+    # papel. Sin constancia, la discusión es la memoria de uno contra la del
+    # otro. Y una constancia que se puede editar después no es constancia.
+    constancia_texto = fields.Text(
+        string='Constancia de entrega', compute='_compute_constancia',
+        help='El texto que se le muestra y se le entrega a quien la retira.')
+    firmado = fields.Boolean(string='Constancia firmada', readonly=True,
+                             copy=False)
+    firmado_por_id = fields.Many2one(
+        'coop.member', string='Firmada por', readonly=True, copy=False,
+        help='Quién entregó la herramienta y firma que salió así.')
+    fecha_firma = fields.Datetime(string='Fecha de firma', readonly=True,
+                                  copy=False)
+    hash_firma = fields.Char(string='Hash de la firma', readonly=True,
+                             copy=False)
+    hash_actual = fields.Char(
+        string='Hash actual', compute='_compute_hash_actual',
+        help='Hash del contenido ahora; si difiere del firmado, algo cambió '
+             'después de la firma.')
+    firma_valida = fields.Boolean(
+        string='Firma válida', compute='_compute_hash_actual',
+        help='La firma vale mientras no se toque lo que se firmó.')
+
     dias_afuera = fields.Integer(
         string='Días afuera', compute='_compute_dias_afuera')
     vencida = fields.Boolean(
@@ -168,6 +198,105 @@ class CoopAsignacionHerramienta(models.Model):
                 # herramienta no está en esa obra, salió a raíz de ella.
                 a.equipment_id.write({'estado_coop': 'prestada_externo'})
         return asignaciones
+
+    def _contenido_para_hash(self) -> str:
+        """Lo que se firma. Es exactamente lo que hay que poder discutir
+        después: qué salió, de quién, para quién, cuándo y hasta cuándo."""
+        self.ensure_one()
+        return '|'.join([
+            str(self.equipment_id.id),
+            self.equipment_id.name or '',
+            self.tipo or '',
+            str(self.obra_id.id or ''),
+            str(self.member_id.id or ''),
+            (self.prestado_a or '').strip(),
+            (self.prestado_doc or '').strip(),
+            str(self.fecha_retiro or ''),
+            str(self.fecha_devolucion_prevista or ''),
+        ])
+
+    @api.depends('equipment_id', 'tipo', 'obra_id', 'member_id', 'prestado_a',
+                 'prestado_doc', 'fecha_retiro', 'fecha_devolucion_prevista',
+                 'hash_firma')
+    def _compute_hash_actual(self) -> None:
+        for a in self:
+            actual = hashlib.sha256(
+                a._contenido_para_hash().encode('utf-8')).hexdigest()
+            a.hash_actual = actual
+            a.firma_valida = bool(a.firmado) and a.hash_firma == actual
+
+    @api.depends('equipment_id', 'tipo', 'obra_id', 'member_id', 'prestado_a',
+                 'prestado_tel', 'prestado_doc', 'fecha_retiro',
+                 'fecha_devolucion_prevista', 'firmado', 'firmado_por_id',
+                 'fecha_firma')
+    def _compute_constancia(self) -> None:
+        for a in self:
+            quien = (a.prestado_a or '').strip() or (a.member_id.name or '—')
+            L = ['CONSTANCIA DE ENTREGA DE HERRAMIENTA', '']
+            L.append('Herramienta: %s' % (a.equipment_id.name or '—'))
+            if a.equipment_id.codigo_etiqueta:
+                L.append('Etiqueta: %s' % a.equipment_id.codigo_etiqueta)
+            if a.equipment_id.valor_reposicion:
+                L.append('Valor de reposición: $ %s'
+                         % '{:,.2f}'.format(a.equipment_id.valor_reposicion))
+            L.append('')
+            if a.tipo == 'externo':
+                L.append('Se entrega a: %s' % quien)
+                if a.prestado_doc:
+                    L.append('DNI / CUIT: %s' % a.prestado_doc)
+                if a.prestado_tel:
+                    L.append('Teléfono: %s' % a.prestado_tel)
+                if a.obra_id:
+                    L.append('A raíz de la obra: %s' % a.obra_id.name)
+                if a.member_id:
+                    L.append('Entregada por: %s' % a.member_id.name)
+            else:
+                L.append('Sale a la obra: %s' % (a.obra_id.name or '—'))
+                L.append('La retira: %s' % (a.member_id.name or '—'))
+            L.append('')
+            L.append('Fecha de retiro: %s' % (a.fecha_retiro or '—'))
+            L.append('Devolución prevista: %s'
+                     % (a.fecha_devolucion_prevista or 'sin fecha acordada'))
+            L.append('')
+            if a.firmado:
+                L.append('Firmada por %s el %s.'
+                         % (a.firmado_por_id.name or '—',
+                            a.fecha_firma or '—'))
+                if not a.firma_valida:
+                    L.append('⚠ ATENCIÓN: el contenido cambió DESPUÉS de la '
+                             'firma. Esta constancia ya no vale.')
+            else:
+                L.append('Sin firmar.')
+            a.constancia_texto = '\n'.join(L)
+
+    def action_firmar_constancia(self, member=None):
+        """Firma la constancia: quién, cuándo, y el hash de lo entregado.
+
+        No se puede firmar una devolución ni una salida sin fecha de retiro:
+        firmar un documento incompleto es el patrón del acta que se firmaba a
+        ciegas.
+        """
+        for a in self:
+            if a.state == 'devuelta':
+                raise UserError(_(
+                    'No se firma la constancia de algo que ya volvió.'))
+            if not a.fecha_retiro:
+                raise UserError(_(
+                    'Sin fecha de retiro no hay nada que constatar.'))
+            firmante = member or self.env['coop.member'].search(
+                [('partner_id.user_ids', 'in', [self.env.uid])], limit=1)
+            if not firmante:
+                raise UserError(_(
+                    'La constancia la firma un socio: hace falta saber quién '
+                    'entregó la herramienta.'))
+            a.write({
+                'firmado': True,
+                'firmado_por_id': firmante.id,
+                'fecha_firma': fields.Datetime.now(),
+                'hash_firma': hashlib.sha256(
+                    a._contenido_para_hash().encode('utf-8')).hexdigest(),
+            })
+        return True
 
     def action_devolver(self) -> None:
         for a in self:
