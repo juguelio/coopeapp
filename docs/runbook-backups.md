@@ -175,6 +175,21 @@ inventarlo, crea una base descartable `coop_test_ci`, instala ahí con
 Si no puede leer el `addons_path` **para** en vez de seguir: unos tests que
 "pasan" porque Odoo no encontró los módulos son peores que unos tests en rojo.
 
+### ⚠️ Postgres es compartido con producción
+
+`odoo-coop-db` es el mismo contenedor que sirve `coop_piloto`. La base de test
+es otra y los datos de producción no se tocan, **pero el motor sí se carga**.
+
+El 24/08, la primera versión de este script corría `-i modulos --test-enable`
+en un solo paso — que no corre nuestros tests sino los de *todos* los módulos
+instalados: 1044 de `base` más los de `web`, que levantan un servidor HTTP de
+verdad. **Postgres se cayó a recovery mode.** Se recuperó solo y la app volvió,
+pero hubo un rato en que producción estuvo en riesgo.
+
+Por eso el script ahora usa `--test-tags` para correr únicamente los tests de
+nuestros módulos. **No es una optimización: es no voltear la app.** Y aun así,
+conviene correrlo cuando los socios no lo estén usando.
+
 ### Los tests del parser de cómputos corren sin Odoo
 
 `foja_parser.py` no importa Odoo a propósito, así que sus tests corren en
