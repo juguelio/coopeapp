@@ -78,20 +78,25 @@ echo
 ADDONS_TEST=""
 if [ "$LOCAL" -eq 1 ]; then
   echo "→ Modo --local: subiendo el working tree a ~/odoo-coop/addons-test/..."
+  # tar por el túnel ssh en vez de scp. Motivos, en orden de importancia:
+  #
+  #  1. `scp -r` en OpenSSH 9 usa SFTP por debajo, y si el sshd del server no
+  #     tiene habilitado el subsistema sftp muere con "Connection closed" a
+  #     secas — sin decir por qué. Pasó el 25/08 con el VPS perfectamente sano
+  #     (disco 29%, 2.6 GB libres), así que no era ni disco ni memoria.
+  #  2. Una sola conexión para todo en vez de una por módulo.
+  #  3. `--mode` arregla los permisos en el momento de escribir: el repo
+  #     montado en la Mac tiene los archivos en 600 y Odoo corre como `odoo`.
   ssh "${SSH_OPTS[@]}" "$VPS" "mkdir -p ~/odoo-coop/addons-test && rm -rf ~/odoo-coop/addons-test/*"
-  # se suben TODOS los addons del repo: los módulos dependen entre sí
-  for d in "$REPO"/addons/*/; do
-    find "$d" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
-    scp "${SSH_OPTS[@]}" -rq "$d" "$VPS:~/odoo-coop/addons-test/" || {
-      echo "✗ Falló el scp. Casi siempre es disco lleno en el VPS, no red."
-      echo "  Revisá: ssh $VPS 'df -h /; du -sh ~/odoo-coop/*'"
-      exit 1
-    }
-  done
-  # El repo en la Mac tiene los archivos en 600 (el puente de Cowork los monta
-  # así) y scp conserva ese modo. Odoo corre como el usuario `odoo` dentro del
-  # contenedor: sin esto no puede ni leer los __manifest__.py.
-  ssh "${SSH_OPTS[@]}" "$VPS" "chmod -R u+rwX,go+rX ~/odoo-coop/addons-test"
+  find "$REPO/addons" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+  if ! tar -C "$REPO/addons" --mode='u+rwX,go+rX' \
+        --exclude='__pycache__' --exclude='*.pyc' -czf - . \
+      | ssh "${SSH_OPTS[@]}" "$VPS" "tar -C ~/odoo-coop/addons-test -xzf -"; then
+    echo "✗ Falló la subida del working tree."
+    echo "  Probá el modo normal (sin --local), que no copia nada:"
+    echo "    ./scripts/test-vps.sh"
+    exit 1
+  fi
   ADDONS_TEST="/mnt/addons-test,"
 else
   echo "→ Usando el código YA deployado en ~/odoo-coop/addons (sin copiar nada)."
