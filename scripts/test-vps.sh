@@ -22,6 +22,11 @@ if [ "$DB_TEST" = "coop_piloto" ]; then
   echo "✗ La base de test no puede ser producción."; exit 1
 fi
 
+echo "⚠  Postgres es COMPARTIDO con producción (mismo contenedor odoo-coop-db)."
+echo "   Los datos de coop_piloto no se tocan, pero el motor se carga."
+echo "   Mejor no correr esto mientras los socios están usando la app."
+echo
+
 CTL="/tmp/coopeapp-ssh-%r@%h:%p"
 SSH_OPTS=(-o "ControlMaster=auto" -o "ControlPath=$CTL" -o "ControlPersist=120")
 trap 'ssh "${SSH_OPTS[@]}" -O exit "$VPS" 2>/dev/null || true' EXIT
@@ -67,7 +72,20 @@ ssh "${SSH_OPTS[@]}" "$VPS" "
   docker exec odoo-coop-db createdb -U odoo -O odoo $DB_TEST
 "
 
-echo "→ Instalando $MODULOS con tests activados..."
+# Dos fases, y la separación es el punto:
+#
+# Fase 1 instala los módulos SIN tests. Fase 2 corre SOLO nuestros tests, con
+# --test-tags. La primera versión de este script hacía `-i ... --test-enable`
+# en un solo paso, y eso corre la suite entera de Odoo: 1044 tests de `base`
+# más los de `web`, que levantan un servidor HTTP de verdad. Resultado: 6
+# fallas y 2 errores del core de Odoo que no tienen nada que ver con nosotros,
+# y Postgres caído en recovery mode arrastrando todo.
+#
+# Postgres es COMPARTIDO con producción (mismo contenedor odoo-coop-db). Los
+# datos de coop_piloto no se tocan, pero cargar el motor a fondo sí la afecta.
+# Correr solo nuestros tests no es una optimización: es no voltear la app.
+
+echo "→ Fase 1: instalando $MODULOS (sin tests)..."
 set +e
 ssh "${SSH_OPTS[@]}" "$VPS" "
   cd ~/odoo-coop
@@ -75,8 +93,28 @@ ssh "${SSH_OPTS[@]}" "$VPS" "
     -v \$HOME/odoo-coop/addons-test:/mnt/addons-test \
     odoo odoo -d $DB_TEST \
       --addons-path=/mnt/addons-test,$ADDONS_PATH \
-      -i $MODULOS --test-enable --without-demo=all --workers 0 --stop-after-init \
-      --log-level=test 2>&1
+      -i $MODULOS --without-demo=all --workers 0 --stop-after-init 2>&1
+" | tail -5
+RC_INSTALL=${PIPESTATUS[0]}
+set -e
+if [ "$RC_INSTALL" -ne 0 ]; then
+  echo "✗ No se pudieron instalar los módulos (código $RC_INSTALL)."
+  ssh "${SSH_OPTS[@]}" "$VPS" "docker exec odoo-coop-db dropdb -U odoo --if-exists $DB_TEST" || true
+  exit "$RC_INSTALL"
+fi
+
+# --test-tags /modulo restringe a los tests DEFINIDOS en ese módulo.
+TAGS="$(echo "$MODULOS" | tr ',' '\n' | sed 's|^|/|' | paste -sd, -)"
+echo "→ Fase 2: corriendo SOLO nuestros tests ($TAGS)..."
+set +e
+ssh "${SSH_OPTS[@]}" "$VPS" "
+  cd ~/odoo-coop
+  docker compose run --rm \
+    -v \$HOME/odoo-coop/addons-test:/mnt/addons-test \
+    odoo odoo -d $DB_TEST \
+      --addons-path=/mnt/addons-test,$ADDONS_PATH \
+      -u $MODULOS --test-enable --test-tags '$TAGS' \
+      --workers 0 --stop-after-init --log-level=test 2>&1
 " | tee /tmp/coopeapp-test.log
 RC=${PIPESTATUS[0]}
 set -e
@@ -85,27 +123,37 @@ echo "→ Borrando la base de test..."
 ssh "${SSH_OPTS[@]}" "$VPS" "docker exec odoo-coop-db dropdb -U odoo --if-exists $DB_TEST" || true
 
 echo
-if grep -qE '^[0-9-]+ .* (ERROR|FAIL)' /tmp/coopeapp-test.log; then
-  echo "✗ HAY ERRORES. Puede ser un test en rojo o que Odoo ni siquiera haya"
-  echo "  podido cargar los módulos. Log completo: /tmp/coopeapp-test.log"
-  grep -E '(ERROR|FAIL|Traceback)' /tmp/coopeapp-test.log | head -40
+
+# La linea autoritativa de Odoo es el resumen por modulo:
+#   Module coop_construction: 0 failures, 0 errors of 19 tests
+# Grepear ERROR/FAIL suelto trae ruido del log que no son tests.
+RESUMEN="$(grep -oE 'Module [a-z_]+: [0-9]+ failures?, [0-9]+ errors? of [0-9]+ tests' /tmp/coopeapp-test.log || true)"
+
+if [ -z "$RESUMEN" ]; then
+  echo "✗ NO CORRIO NINGUN TEST."
+  echo "  Odoo no imprimio ningun resumen por modulo. Un log sin tests es peor"
+  echo "  que uno en rojo: parece que todo anda."
+  echo "  Log: /tmp/coopeapp-test.log"
+  grep -E '(CRITICAL|Traceback|PermissionError|OperationalError)' /tmp/coopeapp-test.log | head -20
   exit 1
 fi
+
+echo "Resumen por modulo:"
+echo "$RESUMEN" | sed 's/^/  /'
+echo
+
+if echo "$RESUMEN" | grep -qvE ': 0 failures?, 0 errors?'; then
+  echo "✗ HAY TESTS EN ROJO:"
+  echo "$RESUMEN" | grep -vE ': 0 failures?, 0 errors?' | sed 's/^/  /'
+  echo
+  echo "Detalle (log completo en /tmp/coopeapp-test.log):"
+  grep -E '^[0-9-]+ .*(FAIL|ERROR): ' /tmp/coopeapp-test.log | head -30
+  exit 1
+fi
+
 if [ "$RC" -ne 0 ]; then
-  echo "✗ Odoo salió con código $RC. Log: /tmp/coopeapp-test.log"; exit "$RC"
+  echo "✗ Los tests pasaron pero Odoo salio con codigo $RC. Revisa el log."
+  exit "$RC"
 fi
 
-# Un log verde en el que no corrió ningún test es peor que uno en rojo: parece
-# que todo anda. Exigimos evidencia de que Odoo ejecutó tests de verdad.
-if ! grep -qE 'odoo\.tests\.(stats|result)' /tmp/coopeapp-test.log; then
-  echo "✗ Odoo terminó bien pero NO corrió ningún test."
-  echo "  Revisá que los módulos se hayan instalado y que las clases de test"
-  echo "  estén importadas en tests/__init__.py. Log: /tmp/coopeapp-test.log"
-  exit 1
-fi
-
-echo
-echo "Tests que corrieron:"
-grep -E 'odoo\.tests\.(stats|result)' /tmp/coopeapp-test.log | sed 's/^/  /'
-echo
-echo "✓ Todos los tests pasaron. Producción no se tocó."
+echo "✓ Todos los tests pasaron. Produccion no se toco."
