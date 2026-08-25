@@ -76,4 +76,20 @@
               parent="menu_coop_config"
               action="action_coop_unidad_produccion"
               sequence="10"/>
+
+    <!-- Venían de coop_pedido_views.xml, que carga antes que este archivo.
+         Sus acciones (action_coop_pedido, action_coop_material) sí se definen
+         allá, así que colgarlos acá es el orden correcto: primero la acción,
+         después el padre, después el menú. -->
+    <menuitem id="menu_coop_pedidos"
+              name="Pedidos de Materiales"
+              parent="menu_coop_economia"
+              action="action_coop_pedido"
+              sequence="25"/>
+
+    <menuitem id="menu_coop_material_cat"
+              name="Catálogo de Materiales"
+              parent="menu_coop_config"
+              action="action_coop_material"
+              sequence="20"/>
 </odoo>

@@ -110,14 +110,9 @@
         <field name="context">{'search_default_pendientes': 1}</field>
     </record>
 
-    <menuitem id="menu_coop_pedidos"
-              name="Pedidos de Materiales"
-              parent="menu_coop_economia"
-              action="action_coop_pedido"
-              sequence="25"/>
-    <menuitem id="menu_coop_material_cat"
-              name="Catálogo de Materiales"
-              parent="menu_coop_config"
-              action="action_coop_material"
-              sequence="20"/>
+    <!-- Los menuitems de este módulo viven en coop_construction_menus.xml.
+         Estaban acá y colgaban de menu_coop_economia / menu_coop_config, que
+         se definen en ese archivo, que carga DESPUÉS: en una instalación desde
+         cero el módulo no se podía instalar. En producción nunca se notó
+         porque la base viene de hace meses y desde entonces solo se hizo -u. -->
 </odoo>

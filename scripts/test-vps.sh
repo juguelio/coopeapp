@@ -31,6 +31,13 @@ CTL="/tmp/coopeapp-ssh-%r@%h:%p"
 SSH_OPTS=(-o "ControlMaster=auto" -o "ControlPath=$CTL" -o "ControlPersist=120")
 trap 'ssh "${SSH_OPTS[@]}" -O exit "$VPS" 2>/dev/null || true' EXIT
 
+# Barato y local: si hay un xmlid referenciado antes de definirse, la
+# instalación desde cero falla igual. Mejor enterarse acá que después de
+# subir todo y crear una base.
+echo "→ Chequeando el orden de los xmlid (sin red)..."
+python3 "$REPO/scripts/check-xml-order.py" || exit 1
+echo
+
 echo "→ Subiendo addons a ~/odoo-coop/addons-test/ (NO pisa los de producción)..."
 ssh "${SSH_OPTS[@]}" "$VPS" "mkdir -p ~/odoo-coop/addons-test && rm -rf ~/odoo-coop/addons-test/*"
 IFS=',' read -ra LISTA <<< "$MODULOS"
@@ -94,11 +101,18 @@ ssh "${SSH_OPTS[@]}" "$VPS" "
     odoo odoo -d $DB_TEST \
       --addons-path=/mnt/addons-test,$ADDONS_PATH \
       -i $MODULOS --without-demo=all --workers 0 --stop-after-init 2>&1
-" | tail -5
-RC_INSTALL=${PIPESTATUS[0]}
+" > /tmp/coopeapp-install.log 2>&1
+RC_INSTALL=$?
 set -e
 if [ "$RC_INSTALL" -ne 0 ]; then
   echo "✗ No se pudieron instalar los módulos (código $RC_INSTALL)."
+  echo "  Log completo: /tmp/coopeapp-install.log"
+  echo
+  # La primera versión hacía `| tail -5` y escondía justamente la causa:
+  # se veía el <menuitem> del contexto pero no el ParseError que lo explicaba.
+  grep -B 2 -A 12 -E '(ParseError|ValueError|CRITICAL|External ID not found)' \
+    /tmp/coopeapp-install.log | head -40 \
+    || tail -30 /tmp/coopeapp-install.log
   ssh "${SSH_OPTS[@]}" "$VPS" "docker exec odoo-coop-db dropdb -U odoo --if-exists $DB_TEST" || true
   exit "$RC_INSTALL"
 fi
