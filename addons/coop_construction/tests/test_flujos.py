@@ -7,12 +7,25 @@ class TestFlujosCoop(TransactionCase):
     """Tests de los flujos críticos de coopeapp (M1–M6)."""
 
     @classmethod
+    def _socio(cls, name, dni, **extra):
+        """Crea un socio con su contacto.
+
+        `coop.member.partner_id` es required=True desde el commit inicial y
+        `create()` no lo autocompleta: un socio sin contacto no puede existir
+        (el login por teléfono lee `partner_id.phone`). Estos tests lo omitían
+        y por eso nunca pudieron pasar — se escribieron sin correrse.
+        """
+        partner = cls.env['res.partner'].create({'name': name})
+        vals = {'name': name, 'dni': dni, 'partner_id': partner.id}
+        vals.update(extra)
+        return cls.env['coop.member'].with_context(
+            skip_portal_user=True).create(vals)
+
+    @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.member = cls.env['coop.member'].create({
-            'name': 'Test Socio', 'dni': '30111222',
-            'cuil': '20-30111222-3', 'role': 'worker',
-        })
+        cls.member = cls._socio('Test Socio', '30111222',
+                                cuil='20-30111222-3', role='worker')
         cls.obra = cls.env['project.project'].create({
             'name': 'Obra Test', 'is_coop_obra': True,
             'capataz_id': cls.member.id,

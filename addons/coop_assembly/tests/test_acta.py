@@ -6,13 +6,25 @@ from odoo.tests import TransactionCase, tagged
 class TestActaFirma(TransactionCase):
     """M5: el acta legal se genera y la firma se invalida si el acta cambia."""
 
+    def _socio(self, name, dni, **extra):
+        """Crea un socio con su contacto.
+
+        `coop.member.partner_id` es required=True y `create()` no lo
+        autocompleta. Estos tests lo omitían, así que nunca pudieron pasar.
+        `skip_portal_user` evita dar de alta el usuario de la app, que no hace
+        falta acá y hace los tests más lentos.
+        """
+        partner = self.env['res.partner'].create({'name': name})
+        vals = {'name': name, 'dni': dni, 'partner_id': partner.id}
+        vals.update(extra)
+        return self.env['coop.member'].with_context(
+            skip_portal_user=True).create(vals)
+
     def test_acta_genera_y_firma_se_invalida(self):
-        pres = self.env['coop.member'].create({
-            'name': 'Presi', 'dni': '25111000', 'cuil': '20-25111000-1',
-            'role': 'board'})
-        secre = self.env['coop.member'].create({
-            'name': 'Secre', 'dni': '25111001', 'cuil': '27-25111001-2',
-            'role': 'board'})
+        pres = self._socio('Presi', '25111000', cuil='20-25111000-1',
+                           role='board')
+        secre = self._socio('Secre', '25111001', cuil='27-25111001-2',
+                            role='board')
         asamblea = self.env['coop.assembly'].create({
             'name': 'Asamblea Test', 'assembly_type': 'ordinary',
             'date': '2026-03-15 18:00:00',
@@ -38,12 +50,10 @@ class TestActaFirma(TransactionCase):
 
     def test_acta_sin_quorum_dice_la_verdad(self):
         """El acta no puede afirmar quórum cuando no lo hay (hallazgo 2026-08-20)."""
-        members = self.env['coop.member'].create([
-            {'name': 'M1', 'dni': '25111000', 'role': 'worker', 'state': 'active'},
-            {'name': 'M2', 'dni': '25111001', 'role': 'worker', 'state': 'active'},
-            {'name': 'M3', 'dni': '25111002', 'role': 'worker', 'state': 'active'},
-            {'name': 'M4', 'dni': '25111003', 'role': 'worker', 'state': 'active'},
-        ])
+        members = self.env['coop.member'].browse()
+        for i in range(4):
+            members |= self._socio('M%d' % (i + 1), '2511100%d' % i,
+                                   role='worker', state='active')
         asamblea = self.env['coop.assembly'].create({
             'name': 'Asamblea sin quórum', 'assembly_type': 'ordinary',
             'date': '2026-03-15 18:00:00',
@@ -61,10 +71,10 @@ class TestActaFirma(TransactionCase):
         Así nació el acta N° 2 de producción: dice "0 a favor, 1 en contra
         (rechazada)" sobre un punto donde el socio ve su voto a favor.
         """
-        members = self.env['coop.member'].create([
-            {'name': 'V1', 'dni': '25222000', 'role': 'board', 'state': 'active'},
-            {'name': 'V2', 'dni': '25222001', 'role': 'board', 'state': 'active'},
-        ])
+        members = self.env['coop.member'].browse()
+        for i in range(2):
+            members |= self._socio('V%d' % (i + 1), '2522200%d' % i,
+                                   role='board', state='active')
         asamblea = self.env['coop.assembly'].create({
             'name': 'Asamblea con votación en curso',
             'assembly_type': 'ordinary', 'date': '2026-03-15 18:00:00',
@@ -91,8 +101,7 @@ class TestActaFirma(TransactionCase):
     def test_acta_no_se_genera_con_votacion_pendiente(self):
         """Una moción que nunca se abrió entra al acta como 0-0-0 y se lee
         'rechazada'. Nadie la rechazó: nadie la votó."""
-        m = self.env['coop.member'].create({
-            'name': 'V3', 'dni': '25222002', 'role': 'board', 'state': 'active'})
+        m = self._socio('V3', '25222002', role='board', state='active')
         asamblea = self.env['coop.assembly'].create({
             'name': 'Asamblea con moción sin abrir',
             'assembly_type': 'ordinary', 'date': '2026-03-15 18:00:00',

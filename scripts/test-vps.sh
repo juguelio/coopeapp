@@ -199,30 +199,51 @@ ssh "${SSH_OPTS[@]}" "$VPS" "docker exec odoo-coop-db dropdb -U odoo --if-exists
 
 echo
 
-# La linea autoritativa de Odoo es el resumen por modulo:
-#   Module coop_construction: 0 failures, 0 errors of 19 tests
-# Grepear ERROR/FAIL suelto trae ruido del log que no son tests.
-RESUMEN="$(grep -oE 'Module [a-z_]+: [0-9]+ failures?, [0-9]+ errors? of [0-9]+ tests' /tmp/coopeapp-test.log || true)"
+# Odoo reporta el resultado de DOS maneras según cuándo corrieron los tests:
+#
+#   at_install   → "Module coop_construction: 0 failures, 0 errors of 19 tests"
+#   post_install → "odoo.tests.result: 1 failed, 5 error(s) of 11 tests"
+#
+# La primera version de esto solo miraba la primera forma. El 25/08 corrieron
+# 11 tests con 6 en rojo y el script dijo "NO CORRIO NINGUN TEST", que era
+# falso y ademas escondia el resultado real. Hay que mirar las dos.
 
-if [ -z "$RESUMEN" ]; then
+RES_MODULO="$(grep -oE 'Module [a-z_]+: [0-9]+ failures?, [0-9]+ errors? of [0-9]+ tests' /tmp/coopeapp-test.log || true)"
+RES_SUITE="$(grep -oE '[0-9]+ failed, [0-9]+ error\(s\) of [0-9]+ tests' /tmp/coopeapp-test.log || true)"
+STATS="$(grep -oE 'odoo\.tests\.stats: [a-z_]+: [0-9]+ tests[^ ]*' /tmp/coopeapp-test.log | sed 's/odoo\.tests\.stats: //' || true)"
+
+if [ -z "$RES_MODULO" ] && [ -z "$RES_SUITE" ] && [ -z "$STATS" ]; then
   echo "✗ NO CORRIO NINGUN TEST."
-  echo "  Odoo no imprimio ningun resumen por modulo. Un log sin tests es peor"
-  echo "  que uno en rojo: parece que todo anda."
-  echo "  Log: /tmp/coopeapp-test.log"
-  grep -E '(CRITICAL|Traceback|PermissionError|OperationalError)' /tmp/coopeapp-test.log | head -20
+  echo "  Odoo no imprimio ningun resumen. Un log sin tests es peor que uno en"
+  echo "  rojo: parece que todo anda. Log: /tmp/coopeapp-test.log"
+  grep -E '(CRITICAL|PermissionError|OperationalError)' /tmp/coopeapp-test.log | head -10
   exit 1
 fi
 
-echo "Resumen por modulo:"
-echo "$RESUMEN" | sed 's/^/  /'
-echo
-
-if echo "$RESUMEN" | grep -qvE ': 0 failures?, 0 errors?'; then
-  echo "✗ HAY TESTS EN ROJO:"
-  echo "$RESUMEN" | grep -vE ': 0 failures?, 0 errors?' | sed 's/^/  /'
+if [ -n "$STATS" ]; then
+  echo "Tests que corrieron:"
+  echo "$STATS" | sed 's/^/  /'
   echo
-  echo "Detalle (log completo en /tmp/coopeapp-test.log):"
-  grep -E '^[0-9-]+ .*(FAIL|ERROR): ' /tmp/coopeapp-test.log | head -30
+fi
+
+EN_ROJO=0
+if [ -n "$RES_MODULO" ] && echo "$RES_MODULO" | grep -qvE ': 0 failures?, 0 errors?'; then
+  EN_ROJO=1
+  echo "$RES_MODULO" | grep -vE ': 0 failures?, 0 errors?' | sed 's/^/  /'
+fi
+if [ -n "$RES_SUITE" ] && echo "$RES_SUITE" | grep -qvE '^0 failed, 0 error'; then
+  EN_ROJO=1
+  echo "$RES_SUITE" | grep -vE '^0 failed, 0 error' | sed 's/^/  /'
+fi
+
+if [ "$EN_ROJO" -eq 1 ]; then
+  echo
+  echo "✗ HAY TESTS EN ROJO. Los que fallaron:"
+  grep -E '^[0-9-]+ .*(FAIL|ERROR): ' /tmp/coopeapp-test.log \
+    | sed -E 's/^.*(FAIL|ERROR): /  \1: /' | sort -u | head -30
+  echo
+  echo "Primer traceback (el resto en /tmp/coopeapp-test.log):"
+  grep -A 18 -m 1 'Traceback (most recent call last)' /tmp/coopeapp-test.log | sed 's/^/  /'
   exit 1
 fi
 

@@ -1,6 +1,6 @@
 {
     'name': 'Cooperativa - Asambleas y Votaciones',
-    'version': '18.0.1.6.0',
+    'version': '18.0.1.7.0',
     'summary': 'Asambleas, votaciones (voto secreto), orden del día por puntos, asistencia self-service y acta legal',
     'author': 'Plataforma Cooperativa',
     'category': 'Cooperative',
