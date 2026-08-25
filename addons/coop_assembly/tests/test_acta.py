@@ -17,6 +17,11 @@ class TestActaFirma(TransactionCase):
         partner = self.env['res.partner'].create({'name': name})
         vals = {'name': name, 'dni': dni, 'partner_id': partner.id}
         vals.update(extra)
+        # `_check_admission_date` exige fecha de ingreso si el socio está
+        # activo, y estos tests crean socios activos para armar el quórum.
+        # La regla del modelo es correcta: un socio activo sin fecha de
+        # ingreso no existe en el libro de socios.
+        vals.setdefault('date_admission', '2026-01-01')
         return self.env['coop.member'].with_context(
             skip_portal_user=True).create(vals)
 

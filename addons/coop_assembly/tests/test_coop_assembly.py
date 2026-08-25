@@ -90,5 +90,19 @@ class TestCoopAssembly(TransactionCase):
             'state': 'closed',
         })
         self.assembly.action_generate_minutes()
-        self.assertTrue(self.assembly.minutes)
-        self.assertIn('Asamblea Ordinaria Abril 2026', self.assembly.minutes)
+        # El acta generada vive en `acta_texto`, que es lo que firma el hash,
+        # lo que muestra la app y lo que imprime el PDF. El campo `minutes`
+        # existe, dice "Acta" y NO lo llena nadie — ver la nota del 2026-08-25.
+        acta = self.assembly.acta_texto
+        self.assertTrue(acta)
+        # El acta NO lleva el `name` del registro: el texto legal se arma del
+        # tipo de asamblea y de la fecha. Antes esto asertaba el nombre, que el
+        # generador nunca escribió — otro test que no se había corrido.
+        # Se asertan las dos cosas que sí se derivan del registro.
+        self.assertIn('Asamblea Ordinaria de socios', acta,
+                      'el acta tiene que nombrar el órgano según assembly_type')
+        self.assertIn('abril de 2026', acta,
+                      'el acta tiene que llevar la fecha de la asamblea')
+        self.assertTrue(self.assembly.numero_acta,
+                        'el acta se numera al generarse')
+        self.assertIn('ACTA N° %s' % self.assembly.numero_acta, acta)

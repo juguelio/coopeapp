@@ -85,13 +85,16 @@ if [ "$LOCAL" -eq 1 ]; then
   #     secas — sin decir por qué. Pasó el 25/08 con el VPS perfectamente sano
   #     (disco 29%, 2.6 GB libres), así que no era ni disco ni memoria.
   #  2. Una sola conexión para todo en vez de una por módulo.
-  #  3. `--mode` arregla los permisos en el momento de escribir: el repo
-  #     montado en la Mac tiene los archivos en 600 y Odoo corre como `odoo`.
+  #  3. Los permisos se arreglan del lado del VPS con un chmod después de
+  #     extraer: el repo montado en la Mac tiene los archivos en 600 y Odoo
+  #     corre como `odoo`. Antes esto usaba `tar --mode=`, que es sintaxis de
+  #     GNU tar: la Mac trae bsdtar y moría con "Option --mode is not
+  #     supported", así que el modo --local nunca había funcionado desde acá.
   ssh "${SSH_OPTS[@]}" "$VPS" "mkdir -p ~/odoo-coop/addons-test && rm -rf ~/odoo-coop/addons-test/*"
   find "$REPO/addons" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
-  if ! tar -C "$REPO/addons" --mode='u+rwX,go+rX' \
+  if ! tar -C "$REPO/addons" \
         --exclude='__pycache__' --exclude='*.pyc' -czf - . \
-      | ssh "${SSH_OPTS[@]}" "$VPS" "tar -C ~/odoo-coop/addons-test -xzf -"; then
+      | ssh "${SSH_OPTS[@]}" "$VPS" "tar -C ~/odoo-coop/addons-test -xzf - && chmod -R a+rX ~/odoo-coop/addons-test"; then
     echo "✗ Falló la subida del working tree."
     echo "  Probá el modo normal (sin --local), que no copia nada:"
     echo "    ./scripts/test-vps.sh"
@@ -154,6 +157,45 @@ MOUNT=""
 if [ "$LOCAL" -eq 1 ]; then
   MOUNT="-v $HOME_VPS/odoo-coop/addons-test:/mnt/addons-test"
 fi
+
+# Fase 0: los tests que NO necesitan Odoo ni base.
+#
+# `test_foja_parser.py` usa `unittest.TestCase` plano y sin `@tagged` a
+# propósito: el parser no importa Odoo y los tests se pueden correr sueltos.
+# El costo es que `--test-tags` NO los levanta, así que sus 15 tests nunca
+# habían corrido en ninguna de las corridas "completas" — el mismo patrón de
+# tests escritos sin ejecutarse. Corren acá, dentro del contenedor, porque
+# necesitan `openpyxl`, que Odoo trae y la Mac no.
+RUTA_TESTS="/mnt/extra-addons/coop_construction/tests"
+if [ "$LOCAL" -eq 1 ]; then RUTA_TESTS="/mnt/addons-test/coop_construction/tests"; fi
+echo "→ Fase 0: tests sin base (parser de cómputos)..."
+set +e
+ssh "${SSH_OPTS[@]}" "$VPS" "
+  cd ~/odoo-coop
+  docker compose run --rm $MOUNT \
+    odoo python3 -m unittest discover -s $RUTA_TESTS -p 'test_foja_parser.py' -v 2>&1
+" > /tmp/coopeapp-parser.log 2>&1
+RC_PARSER=$?
+set -e
+PARSER_RES="$(grep -oE '^(OK|FAILED)([^ ]*| \(.*\))' /tmp/coopeapp-parser.log | tail -1)"
+PARSER_N="$(grep -oE '^Ran [0-9]+ tests?' /tmp/coopeapp-parser.log | tail -1)"
+if [ "$RC_PARSER" -ne 0 ] || [ -z "$PARSER_RES" ]; then
+  echo "✗ Los tests del parser fallaron (código $RC_PARSER)."
+  echo "  Log: /tmp/coopeapp-parser.log"
+  grep -E '^(FAIL|ERROR):' /tmp/coopeapp-parser.log | sed 's/^/  /' | head -20
+  grep -A 12 -m 1 'Traceback (most recent call last)' /tmp/coopeapp-parser.log | sed 's/^/  /'
+  exit 1
+fi
+echo "  ${PARSER_N:-?} · $PARSER_RES"
+# Cuenta las LINEAS de test salteado, no toda linea con la palabra: el
+# resumen "OK (skipped=2)" tambien la trae y hacia contar uno de mas.
+SKIPS="$(grep -cE "\\.\\.\\. skipped '" /tmp/coopeapp-parser.log || true)"
+if [ "${SKIPS:-0}" -gt 0 ]; then
+  echo "  ⚠  $SKIPS salteados (no son verdes, son tests que no corrieron):"
+  grep -oE "^test_[^ ]+ \(.*\) \.\.\. skipped '.*'" /tmp/coopeapp-parser.log \
+    | sed -E "s/^(test_[^ ]+).*skipped '(.*)'/    \1 — \2/" | head -10
+fi
+echo
 
 echo "→ Fase 1: instalando $MODULOS (sin tests)..."
 set +e

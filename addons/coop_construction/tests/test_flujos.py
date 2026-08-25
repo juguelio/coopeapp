@@ -86,7 +86,7 @@ class TestFlujosCoop(TransactionCase):
         ot = self.env['coop.orden.trabajo'].create({
             'cliente_id': cliente.id, 'descripcion': 'Trabajo test'})
         self.env['coop.ot.etapa'].create({
-            'orden_id': ot.id, 'sequence': 10, 'name': 'Etapa A'})
+            'orden_id': ot.id, 'secuencia': 10, 'name': 'Etapa A'})
         pres = self.env['coop.presupuesto'].create({
             'orden_id': ot.id, 'tipo_factura': 'B'})
         self.env['coop.presupuesto.linea'].create({
