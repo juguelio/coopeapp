@@ -115,6 +115,32 @@ else
 fi
 echo
 
+# Techo de memoria para el contenedor de test.
+#
+# El 24/08 correr la suite entera volteó Postgres a recovery mode. Postgres es
+# el MISMO que sirve producción y no tiene límite: cuando la memoria se acaba,
+# el OOM killer elige víctima y eligió la base.
+#
+# El límite va en el contenedor de TEST, no en los de producción: ponerle techo
+# a Postgres sería pedirle al kernel que lo mate, que es exactamente lo que se
+# quiere evitar. Si el test se pasa de memoria, se muere el test.
+#
+# 1 GB: producción usa ~350 MB con 2 workers y acá se corre con --workers 0.
+# Deja ~1.7 GB libres para el resto.
+MEM_TEST="${MEM_TEST:-1g}"
+echo "→ Preparando el techo de memoria del contenedor de test ($MEM_TEST)..."
+ssh "${SSH_OPTS[@]}" "$VPS" "cat > ~/odoo-coop/docker-compose.test.yml <<'YAML'
+# Generado por scripts/test-vps.sh. Solo se usa en las corridas de test:
+# limita el contenedor efímero para que no pueda voltear al Postgres de
+# producción, que corre al lado y sin techo.
+services:
+  odoo:
+    mem_limit: $MEM_TEST
+    memswap_limit: $MEM_TEST
+YAML"
+COMPOSE=(-f docker-compose.yml -f docker-compose.test.yml)
+echo
+
 echo "→ Averiguando el addons_path real del contenedor..."
 # No lo inventamos: se lee del odoo.conf que está corriendo. Si no se puede
 # leer, el script para — es mejor no correr que correr con una ruta inventada
@@ -172,7 +198,7 @@ echo "→ Fase 0: tests sin base (parser de cómputos)..."
 set +e
 ssh "${SSH_OPTS[@]}" "$VPS" "
   cd ~/odoo-coop
-  docker compose run --rm $MOUNT \
+  docker compose ${COMPOSE[@]} run --rm $MOUNT \
     odoo python3 -m unittest discover -s $RUTA_TESTS -p 'test_foja_parser.py' -v 2>&1
 " > /tmp/coopeapp-parser.log 2>&1
 RC_PARSER=$?
@@ -201,7 +227,7 @@ echo "→ Fase 1: instalando $MODULOS (sin tests)..."
 set +e
 ssh "${SSH_OPTS[@]}" "$VPS" "
   cd ~/odoo-coop
-  docker compose run --rm $MOUNT \
+  docker compose ${COMPOSE[@]} run --rm $MOUNT \
     odoo odoo -d $DB_TEST \
       --addons-path=$ADDONS_TEST$ADDONS_PATH \
       -i $MODULOS --without-demo=all --workers 0 --stop-after-init 2>&1
@@ -227,7 +253,7 @@ echo "→ Fase 2: corriendo SOLO nuestros tests ($TAGS)..."
 set +e
 ssh "${SSH_OPTS[@]}" "$VPS" "
   cd ~/odoo-coop
-  docker compose run --rm $MOUNT \
+  docker compose ${COMPOSE[@]} run --rm $MOUNT \
     odoo odoo -d $DB_TEST \
       --addons-path=$ADDONS_TEST$ADDONS_PATH \
       -u $MODULOS --test-enable --test-tags '$TAGS' \
