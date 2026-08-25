@@ -36,6 +36,13 @@ for d in "$REPO"/addons/*/; do
   scp "${SSH_OPTS[@]}" -rq "$d" "$VPS:~/odoo-coop/addons-test/"
 done
 
+# El repo en la Mac tiene los archivos en 600 (el puente de Cowork los monta
+# así) y scp conserva ese modo. Odoo corre como el usuario `odoo` dentro del
+# contenedor: sin esto, no puede ni leer los __manifest__.py y falla con
+# PermissionError antes de correr un solo test.
+echo "→ Abriendo permisos de lectura en addons-test..."
+ssh "${SSH_OPTS[@]}" "$VPS" "chmod -R u+rwX,go+rX ~/odoo-coop/addons-test"
+
 echo "→ Averiguando el addons_path real del contenedor..."
 # No lo inventamos: se lee del odoo.conf que está corriendo. Si no se puede
 # leer, el script para — es mejor no correr que correr con una ruta inventada
@@ -68,7 +75,7 @@ ssh "${SSH_OPTS[@]}" "$VPS" "
     -v \$HOME/odoo-coop/addons-test:/mnt/addons-test \
     odoo odoo -d $DB_TEST \
       --addons-path=/mnt/addons-test,$ADDONS_PATH \
-      -i $MODULOS --test-enable --without-demo=all --stop-after-init \
+      -i $MODULOS --test-enable --without-demo=all --workers 0 --stop-after-init \
       --log-level=test 2>&1
 " | tee /tmp/coopeapp-test.log
 RC=${PIPESTATUS[0]}
@@ -79,11 +86,26 @@ ssh "${SSH_OPTS[@]}" "$VPS" "docker exec odoo-coop-db dropdb -U odoo --if-exists
 
 echo
 if grep -qE '^[0-9-]+ .* (ERROR|FAIL)' /tmp/coopeapp-test.log; then
-  echo "✗ HAY TESTS EN ROJO. Log completo: /tmp/coopeapp-test.log"
+  echo "✗ HAY ERRORES. Puede ser un test en rojo o que Odoo ni siquiera haya"
+  echo "  podido cargar los módulos. Log completo: /tmp/coopeapp-test.log"
   grep -E '(ERROR|FAIL|Traceback)' /tmp/coopeapp-test.log | head -40
   exit 1
 fi
 if [ "$RC" -ne 0 ]; then
   echo "✗ Odoo salió con código $RC. Log: /tmp/coopeapp-test.log"; exit "$RC"
 fi
+
+# Un log verde en el que no corrió ningún test es peor que uno en rojo: parece
+# que todo anda. Exigimos evidencia de que Odoo ejecutó tests de verdad.
+if ! grep -qE 'odoo\.tests\.(stats|result)' /tmp/coopeapp-test.log; then
+  echo "✗ Odoo terminó bien pero NO corrió ningún test."
+  echo "  Revisá que los módulos se hayan instalado y que las clases de test"
+  echo "  estén importadas en tests/__init__.py. Log: /tmp/coopeapp-test.log"
+  exit 1
+fi
+
+echo
+echo "Tests que corrieron:"
+grep -E 'odoo\.tests\.(stats|result)' /tmp/coopeapp-test.log | sed 's/^/  /'
+echo
 echo "✓ Todos los tests pasaron. Producción no se tocó."

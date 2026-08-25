@@ -25,6 +25,11 @@ for m in "${LISTA[@]}"; do
   scp "${SSH_OPTS[@]}" -rq "$REPO/addons/$m" "$VPS:~/odoo-coop/addons/"
 done
 
+# Los archivos del repo pueden venir en 600 (así los monta el puente de Cowork
+# en la Mac) y scp conserva el modo. Odoo corre como el usuario `odoo` dentro
+# del contenedor: sin esto no puede leer ni los __manifest__.py.
+ssh "${SSH_OPTS[@]}" "$VPS" "chmod -R u+rwX,go+rX ~/odoo-coop/addons"
+
 echo "→ Limpiando caché y actualizando ($MODULOS)..."
 ssh "${SSH_OPTS[@]}" "$VPS" "
   set -e
