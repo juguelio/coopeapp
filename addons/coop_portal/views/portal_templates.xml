@@ -1388,6 +1388,54 @@
     </template>
 
     <!-- ============ HERRAMIENTAS: COORDINADOR ============ -->
+    <template id="herramientas_constancia" name="App: constancia de entrega de herramienta">
+        <t t-call="coop_portal.layout">
+            <a class="atras" href="/app/herramientas">← Volver</a>
+            <h1>📄 Constancia de entrega</h1>
+            <div class="sub">Leela antes de firmar. Es el papel con el que se reclama la herramienta.</div>
+
+            <div t-if="error" class="card" style="border-left:6px solid var(--rojo)">
+                <div style="font-size:14px;color:#8a2018;font-weight:600">⚠️ <t t-esc="error"/></div>
+            </div>
+
+            <div t-if="a.firmado and not a.firma_valida" class="card" style="border-left:6px solid var(--rojo)">
+                <div style="font-weight:800;color:#8a2018">Esta constancia ya no vale</div>
+                <div style="font-size:14px;color:#8a2018;margin-top:4px">
+                    Alguien cambió los datos después de que se firmó. Volvé a firmarla
+                    si lo que dice ahora es lo correcto.
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="font-size:13px;white-space:pre-wrap;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:12px;max-height:420px;overflow-y:auto"><t t-esc="a.constancia_texto"/></div>
+            </div>
+
+            <div t-if="a.firmado and a.firma_valida" class="card" style="border-left:6px solid var(--verde)">
+                <div class="fila" style="border:0;padding:0">
+                    <div>✓ Firmada por <b><t t-esc="a.firmado_por_id.name"/></b></div>
+                    <span class="chip ok">vale</span>
+                </div>
+                <div style="font-size:12px;color:var(--gris);margin-top:6px">
+                    Huella del documento: <t t-esc="a.hash_firma[:16]"/>…<br/>
+                    Si alguien cambia lo que dice arriba, esta huella deja de coincidir y la constancia se marca como alterada.
+                </div>
+            </div>
+
+            <form t-if="not a.firmado or not a.firma_valida" action="/app/herramientas/constancia/firmar" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="asignacion_id" t-att-value="a.id"/>
+                <div class="card" style="margin-bottom:10px">
+                    <div style="font-size:13px;color:var(--gris)">
+                        Al firmar quedás registrado como quien entregó esta herramienta,
+                        con la fecha y una huella de lo que dice el documento.
+                        Si después alguien cambia algo, se nota.
+                    </div>
+                </div>
+                <button class="botonazo" type="submit">✍️ Firmar la constancia</button>
+            </form>
+        </t>
+    </template>
+
     <template id="herramientas" name="App: herramientas del coordinador">
         <t t-call="coop_portal.layout">
             <t t-set="nav_activo" t-value="'inicio'"/>
@@ -1443,6 +1491,13 @@
                             Vuelve el <t t-esc="pr.fecha_devolucion_prevista"/>
                         </div>
                         <div t-if="not pr.fecha_devolucion_prevista" style="font-size:12px;color:var(--gris)">Sin fecha de devolución</div>
+                        <div style="margin-top:4px">
+                            <a t-attf-href="/app/herramientas/constancia/{{pr.id}}" style="font-size:12px;color:#2d7ff9;text-decoration:none">
+                                <t t-if="pr.firmado and pr.firma_valida">📄 Constancia firmada</t>
+                                <t t-elif="pr.firmado and not pr.firma_valida">⚠️ Constancia alterada</t>
+                                <t t-else="">📄 Firmar constancia</t>
+                            </a>
+                        </div>
                     </div>
                     <button class="botonazo sec" style="min-height:40px;margin:0;width:auto;padding:0 14px" type="submit">↩ Volvió</button>
                 </form>

@@ -1,4 +1,5 @@
 from odoo import http
+from odoo.exceptions import UserError
 from odoo.http import request
 
 
@@ -114,6 +115,54 @@ class CoopPortalHerramientas(http.Controller):
                 'equipment_id': equipo.id, 'obra_id': obra.id,
                 'member_id': member.id})
         return request.redirect('/app/herramientas')
+
+    @http.route('/app/herramientas/constancia/<int:asignacion_id>',
+                type='http', auth='user', website=False)
+    def herramientas_constancia(self, asignacion_id, **kw):
+        """La constancia de entrega, para leerla ANTES de firmarla.
+
+        Mismo patrón que el acta y que los certificados: primero se lee el
+        documento, después se firma. Un botón que firma de una es firmar a
+        ciegas.
+        """
+        member = self._member()
+        obras = self._obras_coordina(member)
+        a = request.env['coop.asignacion.herramienta'].sudo().browse(
+            asignacion_id).exists()
+        if not member or not a or not self._puede_ver_asignacion(member, obras, a):
+            return request.redirect('/app/herramientas')
+        return request.render('coop_portal.herramientas_constancia', {
+            'member': member, 'a': a,
+            'nav_rol': 'coordinador', 'nav_activo': 'inicio',
+        })
+
+    @http.route('/app/herramientas/constancia/firmar', type='http',
+                auth='user', website=False, methods=['POST'], csrf=True)
+    def herramientas_constancia_firmar(self, asignacion_id, **kw):
+        member = self._member()
+        obras = self._obras_coordina(member)
+        a = request.env['coop.asignacion.herramienta'].sudo().browse(
+            int(asignacion_id or 0)).exists()
+        if not member or not a or not self._puede_ver_asignacion(member, obras, a):
+            return request.redirect('/app/herramientas')
+        try:
+            a.action_firmar_constancia(member=member)
+        except UserError as e:
+            return request.render('coop_portal.herramientas_constancia', {
+                'member': member, 'a': a, 'error': e.args[0] if e.args else '',
+                'nav_rol': 'coordinador', 'nav_activo': 'inicio',
+            })
+        return request.redirect('/app/herramientas/constancia/%d' % a.id)
+
+    def _puede_ver_asignacion(self, member, obras, a):
+        """La ve el coordinador de la obra de la que salió, o quien la
+        entregó. Un préstamo externo puede no tener obra: por eso las dos
+        condiciones, no una."""
+        if not member or not a:
+            return False
+        if a.obra_id and a.obra_id.id in obras.ids:
+            return True
+        return bool(a.member_id) and a.member_id.id == member.id
 
     @http.route('/app/herramientas/devolver', type='http', auth='user',
                 website=False, methods=['POST'], csrf=True)
