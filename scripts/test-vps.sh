@@ -6,13 +6,26 @@
 # correr los tests contra `coop_piloto` sería correrlos contra producción: el
 # `-u` la actualiza de verdad.
 #
-# Este script sube el código a un directorio aparte, crea una base descartable,
-# instala los módulos ahí con los tests activados, y borra la base al terminar.
-# `coop_piloto` no se toca en ningún paso.
+# Crea una base descartable, instala los módulos ahí con los tests activados y
+# borra la base al terminar. `coop_piloto` no se toca en ningún paso.
 #
-# Uso: ./scripts/test-vps.sh [modulo1,modulo2]
+# DOS MODOS:
+#
+#   ./scripts/test-vps.sh                    ← el normal
+#       Usa el código que YA está deployado en ~/odoo-coop/addons. Como el
+#       flujo es push → auto-deploy → test, eso es exactamente lo que se
+#       quiere probar. No copia nada: sin scp, sin disco duplicado, sin
+#       permisos que arreglar.
+#
+#   ./scripts/test-vps.sh --local [modulos]  ← para probar sin pushear
+#       Sube el working tree a ~/odoo-coop/addons-test/. Más lento y ocupa
+#       disco, pero permite probar antes de commitear.
+#
+# Uso: ./scripts/test-vps.sh [--local] [modulo1,modulo2]
 set -euo pipefail
 
+LOCAL=0
+if [ "${1:-}" = "--local" ]; then LOCAL=1; shift; fi
 MODULOS="${1:-coop_construction,coop_assembly,coop_portal}"
 VPS="coopeapp-vps"
 DB_TEST="coop_test_ci"
@@ -38,22 +51,61 @@ echo "→ Chequeando el orden de los xmlid (sin red)..."
 python3 "$REPO/scripts/check-xml-order.py" || exit 1
 echo
 
-echo "→ Subiendo addons a ~/odoo-coop/addons-test/ (NO pisa los de producción)..."
-ssh "${SSH_OPTS[@]}" "$VPS" "mkdir -p ~/odoo-coop/addons-test && rm -rf ~/odoo-coop/addons-test/*"
-IFS=',' read -ra LISTA <<< "$MODULOS"
-# se suben TODOS los addons del repo: los módulos dependen entre sí
-for d in "$REPO"/addons/*/; do
-  m="$(basename "$d")"
-  find "$d" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
-  scp "${SSH_OPTS[@]}" -rq "$d" "$VPS:~/odoo-coop/addons-test/"
-done
+# Antes de nada: que el VPS esté sano. Un scp que muere con "Connection
+# closed" casi siempre es disco lleno o memoria, no red — y el mensaje no lo
+# dice.
+echo "→ Chequeando salud del VPS..."
+SALUD="$(ssh "${SSH_OPTS[@]}" "$VPS" "
+  echo DISCO=\$(df --output=pcent / | tail -1 | tr -dc '0-9')
+  echo LIBRE_MB=\$(free -m | awk '/^Mem:/{print \$7}')
+")"
+DISCO="$(echo "$SALUD" | sed -n 's/^DISCO=//p')"
+LIBRE_MB="$(echo "$SALUD" | sed -n 's/^LIBRE_MB=//p')"
+echo "  disco usado: ${DISCO}%   ·   memoria disponible: ${LIBRE_MB} MB"
+if [ -n "$DISCO" ] && [ "$DISCO" -ge 92 ]; then
+  echo "✗ El disco del VPS está al ${DISCO}%. Liberá espacio antes de seguir."
+  echo "  Candidatos: ~/odoo-coop/addons-test, dumps viejos en ~/odoo-coop/backups,"
+  echo "  imágenes de docker sin usar (docker system df)."
+  exit 1
+fi
+if [ -n "$LIBRE_MB" ] && [ "$LIBRE_MB" -lt 400 ]; then
+  echo "⚠  Solo ${LIBRE_MB} MB de memoria disponible. Los tests pueden voltear"
+  echo "   Postgres, que es el MISMO que sirve producción. Mejor esperá."
+  exit 1
+fi
+echo
 
-# El repo en la Mac tiene los archivos en 600 (el puente de Cowork los monta
-# así) y scp conserva ese modo. Odoo corre como el usuario `odoo` dentro del
-# contenedor: sin esto, no puede ni leer los __manifest__.py y falla con
-# PermissionError antes de correr un solo test.
-echo "→ Abriendo permisos de lectura en addons-test..."
-ssh "${SSH_OPTS[@]}" "$VPS" "chmod -R u+rwX,go+rX ~/odoo-coop/addons-test"
+ADDONS_TEST=""
+if [ "$LOCAL" -eq 1 ]; then
+  echo "→ Modo --local: subiendo el working tree a ~/odoo-coop/addons-test/..."
+  ssh "${SSH_OPTS[@]}" "$VPS" "mkdir -p ~/odoo-coop/addons-test && rm -rf ~/odoo-coop/addons-test/*"
+  # se suben TODOS los addons del repo: los módulos dependen entre sí
+  for d in "$REPO"/addons/*/; do
+    find "$d" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+    scp "${SSH_OPTS[@]}" -rq "$d" "$VPS:~/odoo-coop/addons-test/" || {
+      echo "✗ Falló el scp. Casi siempre es disco lleno en el VPS, no red."
+      echo "  Revisá: ssh $VPS 'df -h /; du -sh ~/odoo-coop/*'"
+      exit 1
+    }
+  done
+  # El repo en la Mac tiene los archivos en 600 (el puente de Cowork los monta
+  # así) y scp conserva ese modo. Odoo corre como el usuario `odoo` dentro del
+  # contenedor: sin esto no puede ni leer los __manifest__.py.
+  ssh "${SSH_OPTS[@]}" "$VPS" "chmod -R u+rwX,go+rX ~/odoo-coop/addons-test"
+  ADDONS_TEST="/mnt/addons-test,"
+else
+  echo "→ Usando el código YA deployado en ~/odoo-coop/addons (sin copiar nada)."
+  echo "  (si querés probar cambios sin pushear, usá --local)"
+  # addons-test solo lo usa el modo --local. Si quedó de una corrida anterior,
+  # está ocupando disco al pedo en un VPS que ya viene justo.
+  ssh "${SSH_OPTS[@]}" "$VPS" "
+    if [ -d ~/odoo-coop/addons-test ]; then
+      echo '  (liberando ~/odoo-coop/addons-test de una corrida anterior:' \
+           \$(du -sh ~/odoo-coop/addons-test 2>/dev/null | cut -f1)')'
+      rm -rf ~/odoo-coop/addons-test
+    fi"
+fi
+echo
 
 echo "→ Averiguando el addons_path real del contenedor..."
 # No lo inventamos: se lee del odoo.conf que está corriendo. Si no se puede
@@ -72,6 +124,7 @@ if [ -z "$ADDONS_PATH" ]; then
   exit 1
 fi
 echo "  addons_path = $ADDONS_PATH"
+HOME_VPS="$(ssh "${SSH_OPTS[@]}" "$VPS" 'echo $HOME')"
 
 echo "→ Creando base descartable '$DB_TEST'..."
 ssh "${SSH_OPTS[@]}" "$VPS" "
@@ -92,14 +145,18 @@ ssh "${SSH_OPTS[@]}" "$VPS" "
 # datos de coop_piloto no se tocan, pero cargar el motor a fondo sí la afecta.
 # Correr solo nuestros tests no es una optimización: es no voltear la app.
 
+MOUNT=""
+if [ "$LOCAL" -eq 1 ]; then
+  MOUNT="-v $HOME_VPS/odoo-coop/addons-test:/mnt/addons-test"
+fi
+
 echo "→ Fase 1: instalando $MODULOS (sin tests)..."
 set +e
 ssh "${SSH_OPTS[@]}" "$VPS" "
   cd ~/odoo-coop
-  docker compose run --rm \
-    -v \$HOME/odoo-coop/addons-test:/mnt/addons-test \
+  docker compose run --rm $MOUNT \
     odoo odoo -d $DB_TEST \
-      --addons-path=/mnt/addons-test,$ADDONS_PATH \
+      --addons-path=$ADDONS_TEST$ADDONS_PATH \
       -i $MODULOS --without-demo=all --workers 0 --stop-after-init 2>&1
 " > /tmp/coopeapp-install.log 2>&1
 RC_INSTALL=$?
@@ -123,10 +180,9 @@ echo "→ Fase 2: corriendo SOLO nuestros tests ($TAGS)..."
 set +e
 ssh "${SSH_OPTS[@]}" "$VPS" "
   cd ~/odoo-coop
-  docker compose run --rm \
-    -v \$HOME/odoo-coop/addons-test:/mnt/addons-test \
+  docker compose run --rm $MOUNT \
     odoo odoo -d $DB_TEST \
-      --addons-path=/mnt/addons-test,$ADDONS_PATH \
+      --addons-path=$ADDONS_TEST$ADDONS_PATH \
       -u $MODULOS --test-enable --test-tags '$TAGS' \
       --workers 0 --stop-after-init --log-level=test 2>&1
 " | tee /tmp/coopeapp-test.log
