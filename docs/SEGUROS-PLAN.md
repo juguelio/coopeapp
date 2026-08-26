@@ -210,9 +210,79 @@ no la paga él, y solo genera angustia. Se le avisa a quien puede pagarla.
 
 ---
 
-## 7. Preguntas abiertas para Germán
+## 7. Preguntas abiertas para Germán — CONTESTADAS 2026-08-25
 
-Ninguna de estas se puede contestar desde acá, y cada una cambia el modelo.
+> [!success] Germán contestó por WhatsApp el 25/08 a las 23:04.
+> Las respuestas están transcriptas abajo, textuales, con lo que implican para
+> el modelo. **Su numeración no coincide con la de este documento**, así que se
+> mapearon por contenido, no por número. Lo que quedó ambiguo está marcado.
+
+### Lo que contestó, y qué define
+
+**1 · Quién carga y mantiene la nómina** — *"Yami de administración manda
+planilla al seguro"*.
+→ Es **interno**. Yamila, de administración central, arma la planilla y la
+manda a la aseguradora. La app **sí** puede darle una pantalla de dos toques, y
+la diferencia entre plantel asignado y nómina de la póliza es accionable acá
+adentro. No es un tercero al que solo se le puede avisar.
+
+**2 · Qué pasa cuando alguien rota y no está en la póliza** — *"la idea es que
+sin seguro NO... A veces como tarda en actualizar hacemos que arranque igual
+hasta que salga el trámite pero nosotros asumimos el riesgo"*.
+→ **La respuesta más importante de todas.** La regla es bloqueante *por
+intención*, pero en la práctica arrancan igual mientras sale el trámite.
+Un bloqueo duro se esquivaría por WhatsApp y la app quedaría afuera del
+circuito real. El diseño correcto es **bloqueo con excepción registrada**: la
+app frena, y si deciden arrancar igual, queda asentado **quién** asumió el
+riesgo y **cuándo**. Eso convierte una decisión que hoy es verbal en un
+registro — que es exactamente el valor que la app tiene para ofrecer acá.
+
+**3 · ¿Nominal con tope?** — *"sin tope, más asegurados, más pagas"*.
+→ Nominal, **sin límite de cabezas**. Agregar a alguien siempre se puede; lo
+que cambia es la plata. No hace falta modelar aprobación por cupo.
+
+**4 · Frecuencia** — *"Mensual o más.. 3 meses"*.
+→ ⚠️ **AMBIGUO, sin resolver.** No queda claro si habla de cada cuánto cambia
+la nómina, o de la duración de las pólizas. Cambia el diseño: si la nómina se
+mueve cada 3 meses, alcanza un aviso; si es mensual y las pólizas también son
+mensuales, el ciclo de "vigente + pago" se sostiene doce veces al año.
+**Preguntar antes de construir el calendario de avisos.**
+
+**5 · Seguros personales del socio** — *"nosotros adm central Yamila"*.
+→ Los **controla la cooperativa**, no cada socio por su cuenta. Entran al
+modelo con el mismo peso que la póliza general y sí generan alertas.
+
+**6 · Quién es "administración"** — *"adm central Yamila"*.
+→ Administración central, Yamila. **Falta un rol en la app**: hoy hay
+coordinador, socio, síndico y manager, y el que paga y mantiene las pólizas no
+es ninguno de esos con precisión. Es una decisión de permisos, no de dominio.
+
+### Y de yapa, la pregunta de P2 (documentos encadenados)
+
+**El contrato con el cliente, ¿adjunto o fuente de los hitos?** — *"las dos
+cosas se guarda para archivo y define monto total, y condiciones, puede ser
+fraccionado en meses ese monto, salen fechas para la ruta crítica, tiempo de
+entrega x ejemplo. Pero los montos de la certificación tienen que ver con el
+trabajo real realizado, el avance"*.
+
+→ **Las dos cosas, pero con un corte limpio:**
+- Del contrato salen **el monto total, las condiciones y las FECHAS** — y esas
+  fechas alimentan la ruta crítica (plazo de entrega).
+- Los **montos de certificación NO salen del contrato**: salen del **avance
+  real medido**.
+
+Esto es una muy buena noticia para P2: **no se convierte en otro proyecto
+entero**. La app ya calcula la certificación desde la foja y el avance, que es
+justo lo que Germán describe. Lo que hay que agregar es que el contrato aporte
+**plazos** al CPM, no montos.
+
+---
+
+## 7b. Lo que sigue sin contestar
+
+1. La ambigüedad del punto 4 (frecuencia de nómina vs duración de póliza).
+2. Nada más de seguros bloquea el modelo.
+
 
 1. **¿Quién carga y mantiene la nómina de la póliza?** Si es una persona en
    administración, la app le tiene que dar una pantalla de dos toques. Si es
