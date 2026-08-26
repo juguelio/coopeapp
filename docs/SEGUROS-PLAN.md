@@ -241,12 +241,24 @@ registro — que es exactamente el valor que la app tiene para ofrecer acá.
 → Nominal, **sin límite de cabezas**. Agregar a alguien siempre se puede; lo
 que cambia es la plata. No hace falta modelar aprobación por cupo.
 
-**4 · Frecuencia** — *"Mensual o más.. 3 meses"*.
-→ ⚠️ **AMBIGUO, sin resolver.** No queda claro si habla de cada cuánto cambia
-la nómina, o de la duración de las pólizas. Cambia el diseño: si la nómina se
-mueve cada 3 meses, alcanza un aviso; si es mensual y las pólizas también son
-mensuales, el ciclo de "vigente + pago" se sostiene doce veces al año.
-**Preguntar antes de construir el calendario de avisos.**
+**4 · Frecuencia** — *"Mensual o más.. 3 meses"*, aclarado el 25/08:
+*"si se suma alguien se pide actualización de listas, no solemos rotar mucho x
+ahora sino es al plazo de la póliza puede ser 3, o 6 meses"*.
+
+→ **RESUELTO, y cambia el diseño de los avisos para mejor.** Son dos cosas
+distintas:
+
+- **La nómina se actualiza por EVENTO, no por calendario.** El disparador es
+  "se sumó alguien" → se pide actualización de listas. No hay un día del mes en
+  que se revisa. Eso encaja con el cruce diario plantel-vs-póliza que ya
+  propone §4: el evento que importa es una asignación, y el cruce lo detecta al
+  día siguiente sin depender de que alguien se acuerde.
+- **El plazo de la póliza es de 3 o 6 meses.** Con esos plazos, avisar a
+  30/15/7 días es holgado y no empapela.
+
+⚠️ **"no solemos rotar mucho *por ahora*"** — el "por ahora" es la parte
+importante. El diseño no puede apoyarse en que la rotación sea baja: el cruce
+diario cuesta lo mismo con 6 socios que con 60, así que se hace igual.
 
 **5 · Seguros personales del socio** — *"nosotros adm central Yamila"*.
 → Los **controla la cooperativa**, no cada socio por su cuenta. Entran al
@@ -280,8 +292,22 @@ justo lo que Germán describe. Lo que hay que agregar es que el contrato aporte
 
 ## 7b. Lo que sigue sin contestar
 
-1. La ambigüedad del punto 4 (frecuencia de nómina vs duración de póliza).
-2. Nada más de seguros bloquea el modelo.
+⚠️ **Una contradicción con lo anotado el 24/08, que conviene despejar** — no
+bloquea el modelo, pero sí el texto de los avisos.
+
+`Pedidos-German-2026-08-24.md §9b` dice **"las pólizas son mensuales"**. El
+25/08 Germán dice que el plazo es de **3 o 6 meses**.
+
+La lectura que reconcilia las dos —y que es lo habitual acá— es que el **plazo**
+de la póliza sea de 3 a 6 meses y la **prima se pague en cuotas mensuales**. Eso
+deja intacto lo importante de §9b, que no era el plazo sino que *una póliza
+vigente e impaga no cubre*: se sigue cayendo sola cada mes si no se paga la
+cuota, aunque el plazo sea semestral.
+
+**Es una lectura, no un dato confirmado.** El modelo la soporta sin cambios
+porque vigencia y pago ya son dos ejes separados; lo que cambia si me equivoco
+es cada cuánto se pide el comprobante de pago. Confirmarlo antes de escribir el
+calendario de avisos de pago.
 
 
 1. **¿Quién carga y mantiene la nómina de la póliza?** Si es una persona en
