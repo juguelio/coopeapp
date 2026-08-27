@@ -135,7 +135,12 @@ fi
 # Esto es lo que decide. "No hay 400 en el log" NO prueba nada: puede ser que
 # no haya tráfico. El handshake tiene que devolver 101 Switching Protocols.
 echo "→ Probando el handshake de WebSocket (tiene que dar 101)..."
+# El header Origin NO es opcional: Odoo rechaza el handshake sin él con
+# "Empty or missing header(s): origin". Sin esta línea el chequeo da 400 con la
+# config PERFECTA y manda a arreglar algo que ya funciona — que es la misma
+# familia de error que un chequeo que da verde sin haber probado nada.
 WS="$(curl -s -o /dev/null -m 15 -w '%{http_code}' \
+  -H "Origin: $URL" \
   -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
   -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==' \
   "$URL/websocket?version=18.0-7")"
