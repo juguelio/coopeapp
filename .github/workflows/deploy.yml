@@ -60,6 +60,15 @@ jobs:
             MODS=$(git diff --name-only "$BEFORE" HEAD -- 'addons/' \
               | sed -nE 's#^addons/([^/]+)/.*#\1#p' | sort -u | paste -sd, -)
           fi
+          # La validación de formato corre para los DOS caminos, no solo para
+          # el input manual. Un directorio bajo addons/ puede llamarse con
+          # metacaracteres, y este valor viaja a un comando remoto.
+          case "$MODS" in
+            *[!A-Za-z0-9_,-]*)
+              echo "::error::Nombre de módulo con caracteres no permitidos:" \
+                   "'$MODS'. Revisá qué directorios hay bajo addons/."
+              exit 1 ;;
+          esac
           echo "modulos=$MODS" >> "$GITHUB_OUTPUT"
           echo "Módulos a deployar: ${MODS:-(ninguno)}"
           # Sin módulos no hay nada que hacer, y este workflow solo se dispara
@@ -87,24 +96,25 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           MODULOS: ${{ steps.mods.outputs.modulos }}
-          DB: coop_piloto
+          # La base ya no se pasa desde acá: la fija deploy-modulos.sh en el
+          # VPS. Un parámetro que el CI puede elegir es un parámetro que un CI
+          # comprometido puede elegir.
         run: |
           set -e
           SSH="ssh -i $HOME/.ssh/id_ci -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          # Destino ABSOLUTO, sin ~: con `command=` forzado el shell remoto no
+          # expande el tilde y rsync crearía un directorio llamado "~".
+          DEST="/home/$VPS_USER/odoo-coop/addons/"
           for m in ${MODULOS//,/ }; do
             [ -d "addons/$m" ] || { echo "✗ addons/$m no existe, salteo"; continue; }
             find "addons/$m" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
             echo "→ Subiendo $m..."
-            rsync -az --delete -e "$SSH" "addons/$m" "$VPS_USER@$VPS_HOST:~/odoo-coop/addons/"
+            rsync -az --delete -e "$SSH" "addons/$m" "$VPS_USER@$VPS_HOST:$DEST"
           done
           echo "→ Actualizando módulos ($MODULOS) y reiniciando Odoo..."
-          $SSH "$VPS_USER@$VPS_HOST" "
-            set -e
-            cd ~/odoo-coop
-            for m in ${MODULOS//,/ }; do
-              find addons/\$m -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
-            done
-            docker compose run --rm odoo odoo -u $MODULOS -d $DB --stop-after-init
-            docker compose restart odoo
-          "
+          # Ya no se manda un bloque de shell: la llave de CI está acotada a
+          # un comando forzado que solo acepta `deploy <lista>` y el rsync a
+          # addons/. Ver docs/seguridad-vps.md. Si esto falla con "Comando no
+          # permitido", el wrapper del VPS está desactualizado.
+          $SSH "$VPS_USER@$VPS_HOST" "deploy $MODULOS"
           echo "✓ Deploy de $MODULOS completo → https://www.coopeapp.com.ar/app"

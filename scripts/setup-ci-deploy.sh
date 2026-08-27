@@ -28,13 +28,25 @@ if [ ! -f "$CI_KEY" ]; then
   ssh-keygen -t ed25519 -N "" -C "coopeapp-ci-deploy" -f "$CI_KEY"
 fi
 
-# 2. instalar la pubkey en el VPS (vía acceso passwordless ya configurado) ─
-echo "→ Instalando la llave de CI en el VPS..."
+# 2. instalar la pubkey en el VPS, ACOTADA ────────────────────────────
+# Ojo: la versión original de este script instalaba la llave pelada, sin
+# `restrict` ni `command=`. Eso le daba una shell completa como odoo-admin, que
+# por estar en el grupo docker es root: la llave que vive en los secrets de
+# GitHub era una llave de root. Ver docs/seguridad-vps.md.
+echo "→ Instalando la llave de CI en el VPS (acotada)..."
 PUB="$(cat "$CI_KEY.pub")"
+FORZADO="/home/$VPS_USER/odoo-coop/ci-forced-command.sh"
+scp -q "$(dirname "$0")/vps/ci-forced-command.sh" \
+       "$(dirname "$0")/vps/deploy-modulos.sh" coopeapp-vps:~/odoo-coop/
 ssh coopeapp-vps "
+  set -e
+  chmod 700 ~/odoo-coop/ci-forced-command.sh ~/odoo-coop/deploy-modulos.sh
   install -d -m 700 ~/.ssh
   touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
-  grep -qxF '$PUB' ~/.ssh/authorized_keys || echo '$PUB' >> ~/.ssh/authorized_keys
+  cp ~/.ssh/authorized_keys ~/.ssh/authorized_keys.bak.\$(date +%Y%m%d%H%M%S)
+  grep -v 'coopeapp-ci-deploy' ~/.ssh/authorized_keys > /tmp/ak || true
+  echo 'restrict,command=\"$FORZADO\" $PUB' >> /tmp/ak
+  install -m 600 /tmp/ak ~/.ssh/authorized_keys && rm -f /tmp/ak
 "
 
 # 3. cargar secrets en GitHub ─────────────────────────────────────────
@@ -48,6 +60,8 @@ echo
 echo "✓ Auto-deploy configurado."
 echo "  Probalo:  git commit --allow-empty -m 'ci: probar deploy' && git push"
 echo "  y mirá la pestaña Actions del repo (o: gh run watch)."
+echo
+echo "  Verificá que quedó acotada:  ./scripts/verificar-llave-ci.sh"
 echo
 echo "  Para revocar el acceso de CI en el futuro: borrá la línea 'coopeapp-ci-deploy'"
 echo "  de ~/.ssh/authorized_keys en el VPS."
