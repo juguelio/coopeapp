@@ -324,6 +324,10 @@
                 <div class="fila" style="border:0;padding:0"><div>📊 Avance de la obra</div><span class="chip ok">ver →</span></div>
             </a>
 
+            <a class="card" href="/app/seguros" style="border-left:6px solid var(--verde);text-decoration:none;color:inherit;display:block">
+                <div class="fila" style="border:0;padding:0"><div>🛡️ Seguros y cobertura</div><span class="chip ok">ver →</span></div>
+            </a>
+
             <div class="card">
                 <h3>TU PRODUCCIÓN (COMO SOCIO)</h3>
                 <a class="fila" href="/app/cargar" style="text-decoration:none;color:inherit">
@@ -893,6 +897,7 @@
 
             <a class="botonazo" href="/app/pedir">🧱 PEDIR MATERIALES</a>
             <a class="botonazo sec" t-attf-href="/app/reportar?obra_id={{obra.id}}">⚠️ REPORTAR ROTURA O PÉRDIDA</a>
+            <a class="botonazo sec" href="/app/seguros">🛡️ SEGUROS Y COBERTURA</a>
 
             <div class="card" t-if="etapa">
                 <h3>ETAPA <t t-esc="etapa.numero"/> — <t t-esc="etapa_state_labels.get(etapa.state, etapa.state)"/></h3>
@@ -2049,6 +2054,50 @@
                 </div>
             </div>
             <div style="font-size:12px;color:var(--gris);text-align:center">Solo lectura. Nada se modifica desde acá.</div>
+        </t>
+    </template>
+
+    <!-- ============ SEGUROS: cruce visible ============ -->
+    <template id="seguros" name="App: seguros y cobertura">
+        <t t-call="coop_portal.layout">
+            <t t-set="nav_activo" t-value="'seguros'"/>
+            <a href="/app/obra" class="atras">← Volver</a>
+            <h1>🛡️ Seguros</h1>
+            <div class="sub">Quién puede trabajar hoy, y a quién le falta cobertura.</div>
+
+            <div class="card" t-if="not faltantes and not excepciones"
+                 style="border-left:5px solid var(--verde)">
+                <div style="font-size:17px;font-weight:700;color:var(--verde)">✓ Todo cubierto</div>
+                <div style="color:var(--gris);font-size:14px;margin-top:4px">
+                    No hay nadie asignado sin cobertura ni requisitos sin cumplir.
+                </div>
+            </div>
+
+            <div class="card" t-if="faltantes" style="border-left:5px solid var(--rojo)">
+                <h3 style="color:var(--rojo)">FALTA COBERTURA</h3>
+                <div class="fila" t-foreach="faltantes" t-as="p">
+                    <div>
+                        <span t-if="p['tipo'] == 'sin_cobertura'">🔴</span>
+                        <span t-elif="p['tipo'] == 'requisito'">📋</span>
+                        <t t-esc="p['texto']"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" t-if="excepciones" style="border-left:5px solid var(--amarillo)">
+                <h3 style="color:#a36b00">ARRANQUES AUTORIZADOS (con excepción, vencen)</h3>
+                <div class="fila" t-foreach="excepciones" t-as="p">
+                    <div>🟡 <t t-esc="p['texto']"/></div>
+                </div>
+                <div style="font-size:12px;color:var(--gris);margin-top:8px">
+                    Alguien se hizo cargo por escrito y hasta una fecha. No es lo mismo
+                    que estar cubierto: la excepción vence sola.
+                </div>
+            </div>
+
+            <div style="font-size:12px;color:var(--gris);text-align:center;margin-top:6px">
+                Solo lectura. Las pólizas las carga administración desde el escritorio.
+            </div>
         </t>
     </template>
 

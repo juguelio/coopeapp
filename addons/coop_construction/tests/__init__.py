@@ -3,3 +3,4 @@ from . import test_foja_parser
 from . import test_foja_import
 from . import test_constancia
 from . import test_seguros
+from . import test_seguros_pantalla

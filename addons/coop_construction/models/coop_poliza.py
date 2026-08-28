@@ -96,12 +96,12 @@ class CoopPoliza(models.Model):
         ('sin_confirmar', 'Sin confirmar'),
         ('vencido', 'Cuota vencida'),
         ('sin_cuotas', 'Sin cuotas cargadas'),
-    ], string='Pago', compute='_compute_cobertura')
+    ], string='Pago', compute='_compute_cobertura', search='_search_estado_pago')
     cubre = fields.Selection([
         ('si', 'Cubre'),
         ('no', 'NO cubre'),
         ('no_se', 'No sabemos'),
-    ], string='¿Cubre hoy?', compute='_compute_cobertura',
+    ], string='¿Cubre hoy?', compute='_compute_cobertura', search='_search_cubre',
         help='"No sabemos" no es un estado intermedio simpático: es lo que la '
              'app tiene que decir cuando le falta información, en vez de '
              'afirmar una cobertura que no puede probar.')
@@ -191,6 +191,25 @@ class CoopPoliza(models.Model):
         vigentes = self.search(dominio)
         positivo = (operator == '=' and value) or (operator == '!=' and not value)
         return [('id', 'in' if positivo else 'not in', vigentes.ids)]
+
+    def _buscar_por_computado(self, campo, operator, value):
+        """Buscador genérico para los campos calculados sin columna
+        (`estado_pago`, `cubre`): se calcula en Python y se devuelve un dominio
+        por id. Mismo patrón que `_search_vigente`. O(n), suficiente a la escala
+        del piloto; y es lo que hace que 'filtrar por pago' realmente funcione
+        en vez de romper contra un campo sin almacenar."""
+        if operator not in ('=', '!=', 'in', 'not in'):
+            raise ValueError(_('Operador no soportado para %s.') % campo)
+        valores = set(value if isinstance(value, (list, tuple)) else [value])
+        coincide = self.search([]).filtered(lambda p: p[campo] in valores)
+        positivo = operator in ('=', 'in')
+        return [('id', 'in' if positivo else 'not in', coincide.ids)]
+
+    def _search_estado_pago(self, operator, value):
+        return self._buscar_por_computado('estado_pago', operator, value)
+
+    def _search_cubre(self, operator, value):
+        return self._buscar_por_computado('cubre', operator, value)
 
     def cubre_a(self, member, fecha=None) -> bool:
         """¿Esta póliza cubría a esta persona en esta fecha?
@@ -379,6 +398,60 @@ class ProjectProjectSeguros(models.Model):
 
     requisito_seguro_ids = fields.One2many(
         'coop.poliza.requisito', 'obra_id', string='Seguros exigidos')
+    excepcion_seguro_ids = fields.One2many(
+        'coop.cobertura.excepcion', 'obra_id',
+        string='Arranques autorizados sin cobertura')
+
+    def socios_sin_cobertura(self, fecha=None):
+        """Los socios del plantel que hoy no están cubiertos ni tienen una
+        excepción vigente. Es el subconjunto 'sin_cobertura' del cruce, aislado
+        para poder avisarlo al asignar gente y para poder testearlo sin parsear
+        frases. Devuelve un recordset de coop.member.
+        """
+        fecha = fecha or fields.Date.context_today(self)
+        Poliza = self.env['coop.poliza'].sudo()
+        Exc = self.env['coop.cobertura.excepcion'].sudo()
+        Member = self.env['coop.member']
+        nominales = Poliza.search([
+            ('sujeto', '=', 'persona'), ('tipo', '=', 'general')])
+        sin = Member
+        for obra in self:
+            obra_real_id = obra.id if isinstance(obra.id, int) else obra._origin.id
+            for socio in obra.socio_obra_ids:
+                cubierto = any(p.cubre_a(socio, fecha) and p.cubre == 'si'
+                               for p in nominales)
+                if cubierto:
+                    continue
+                if obra_real_id:
+                    exc = Exc.search([
+                        ('obra_id', '=', obra_real_id),
+                        ('member_id', '=', socio.id),
+                    ]).filtered('vigente')
+                    if exc:
+                        continue
+                sin |= socio
+        return sin
+
+    @api.onchange('socio_obra_ids')
+    def _onchange_aviso_cobertura(self):
+        """Aviso NO bloqueante al asignar plantel: si alguien queda sin
+        cobertura, lo dice. No frena el guardado —el mecanismo de arranque es la
+        excepción registrada, no un bloqueo—: solo evita que el agujero pase
+        inadvertido, que es exactamente lo que hoy pasa en la planilla."""
+        if not self.is_coop_obra:
+            return
+        sin = self.socios_sin_cobertura()
+        if sin:
+            nombres = ', '.join(sin.mapped('name'))
+            return {'warning': {
+                'title': _('Sin cobertura confirmada'),
+                'message': _(
+                    'Estos asignados no figuran en una póliza vigente y paga: '
+                    '%s.\n\nSe puede guardar igual, pero si arrancan sin '
+                    'cobertura, registrá una excepción (quién asume el riesgo '
+                    'y hasta cuándo) en la pestaña Seguros de la obra.'
+                ) % nombres,
+            }}
 
     def cobertura_faltante(self, fecha=None):
         """EL CRUCE. Es la función de todo este módulo.

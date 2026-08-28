@@ -5,6 +5,7 @@ from . import sindico
 from . import admin
 from . import relevamiento
 from . import herramientas
+from . import seguros
 from . import pwa
 from . import auth
 from . import home

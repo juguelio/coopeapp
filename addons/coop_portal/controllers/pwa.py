@@ -28,7 +28,7 @@ MANIFEST = {
 # Los POST no se cachean — la cola offline vive en la página (localStorage).
 SERVICE_WORKER = """
 const CACHE = 'coopeapp-v1';
-const SHELL = ['/app', '/app/obra', '/app/pedir', '/app/plata', '/app/cargar', '/app/asamblea'];
+const SHELL = ['/app', '/app/obra', '/app/pedir', '/app/plata', '/app/cargar', '/app/asamblea', '/app/seguros'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL).catch(() => {})));
   self.skipWaiting();

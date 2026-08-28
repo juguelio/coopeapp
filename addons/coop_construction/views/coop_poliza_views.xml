@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============ coop.poliza: listado ============ -->
+    <record id="view_coop_poliza_list" model="ir.ui.view">
+        <field name="name">coop.poliza.list</field>
+        <field name="model">coop.poliza</field>
+        <field name="arch" type="xml">
+            <list string="Pólizas"
+                  decoration-danger="cubre == 'no'"
+                  decoration-warning="cubre == 'no_se'"
+                  decoration-success="cubre == 'si'">
+                <field name="numero"/>
+                <field name="tipo"/>
+                <field name="sujeto"/>
+                <field name="aseguradora_id" optional="show"/>
+                <field name="fecha_inicio" optional="hide"/>
+                <field name="fecha_fin"/>
+                <field name="dias_para_vencer"/>
+                <field name="vigente" optional="hide"/>
+                <field name="estado_pago" widget="badge"
+                       decoration-success="estado_pago == 'al_dia'"
+                       decoration-warning="estado_pago in ('sin_confirmar','sin_cuotas')"
+                       decoration-danger="estado_pago == 'vencido'"/>
+                <field name="cubre" widget="badge"
+                       decoration-success="cubre == 'si'"
+                       decoration-warning="cubre == 'no_se'"
+                       decoration-danger="cubre == 'no'"/>
+                <field name="motivo_cobertura" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============ coop.poliza: búsqueda / filtros ============ -->
+    <record id="view_coop_poliza_search" model="ir.ui.view">
+        <field name="name">coop.poliza.search</field>
+        <field name="model">coop.poliza</field>
+        <field name="arch" type="xml">
+            <search string="Pólizas">
+                <field name="numero"/>
+                <field name="aseguradora_id"/>
+                <field name="obra_id"/>
+                <filter name="f_vigente" string="Vigentes"
+                        domain="[('vigente','=',True)]"/>
+                <filter name="f_no_cubre" string="NO cubre"
+                        domain="[('cubre','=','no')]"/>
+                <filter name="f_no_se" string="No sabemos"
+                        domain="[('cubre','=','no_se')]"/>
+                <separator/>
+                <filter name="f_impaga" string="Con cuota vencida"
+                        domain="[('estado_pago','=','vencido')]"/>
+                <filter name="f_sin_confirmar" string="Pago sin confirmar"
+                        domain="[('estado_pago','in',['sin_confirmar','sin_cuotas'])]"/>
+                <separator/>
+                <filter name="f_por_vencer" string="Vencen en 30 días"
+                        domain="[('fecha_fin','&gt;=', context_today().strftime('%Y-%m-%d')),
+                                 ('fecha_fin','&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="g_tipo" string="Tipo"
+                            context="{'group_by': 'tipo'}"/>
+                    <filter name="g_sujeto" string="Qué asegura"
+                            context="{'group_by': 'sujeto'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============ coop.poliza: ficha ============ -->
+    <record id="view_coop_poliza_form" model="ir.ui.view">
+        <field name="name">coop.poliza.form</field>
+        <field name="model">coop.poliza</field>
+        <field name="arch" type="xml">
+            <form string="Póliza">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="numero"/>
+                        <h1><field name="numero" placeholder="N° de póliza"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="tipo"/>
+                            <field name="sujeto"/>
+                            <field name="aseguradora_id"/>
+                            <field name="obra_id"
+                                   invisible="sujeto != 'obra'"
+                                   required="sujeto == 'obra'"/>
+                            <field name="equipment_id"
+                                   invisible="sujeto != 'bien'"
+                                   required="sujeto == 'bien'"/>
+                            <field name="member_id"
+                                   invisible="tipo != 'personal'"/>
+                        </group>
+                        <group>
+                            <field name="fecha_inicio"/>
+                            <field name="fecha_fin"/>
+                            <field name="dias_para_vencer"/>
+                            <field name="vigente"/>
+                            <field name="estado_pago"/>
+                            <field name="cubre" widget="badge"
+                                   decoration-success="cubre == 'si'"
+                                   decoration-warning="cubre == 'no_se'"
+                                   decoration-danger="cubre == 'no'"/>
+                            <field name="motivo_cobertura"/>
+                            <field name="documento" widget="many2one"/>
+                        </group>
+                    </group>
+                    <field name="cobertura" placeholder="Qué cubre y hasta cuánto (texto libre)"/>
+                    <notebook>
+                        <page string="Nómina" name="nomina">
+                            <field name="nomina_ids">
+                                <list editable="bottom">
+                                    <field name="member_id"/>
+                                    <field name="fecha_alta"/>
+                                    <field name="fecha_baja"/>
+                                    <field name="comprobante" widget="many2one"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Cuotas" name="cuotas">
+                            <field name="cuota_ids">
+                                <list editable="bottom"
+                                      decoration-danger="estado == 'vencido'"
+                                      decoration-warning="estado == 'sin_confirmar'"
+                                      decoration-success="estado == 'confirmado'">
+                                    <field name="periodo"/>
+                                    <field name="vencimiento"/>
+                                    <field name="importe"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="fecha_pago"/>
+                                    <field name="comprobante" widget="many2one"/>
+                                    <field name="estado" widget="badge" readonly="1"
+                                           decoration-success="estado == 'confirmado'"
+                                           decoration-warning="estado == 'sin_confirmar'"
+                                           decoration-danger="estado == 'vencido'"/>
+                                </list>
+                            </field>
+                            <div class="text-muted" style="padding:8px">
+                                El estado se calcula: "Confirmado" exige comprobante
+                                <b>y</b> fecha de pago. Una fecha sola no confirma nada.
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============ coop.poliza: acción principal ============ -->
+    <record id="action_coop_poliza" model="ir.actions.act_window">
+        <field name="name">Pólizas</field>
+        <field name="res_model">coop.poliza</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coop_poliza_search"/>
+    </record>
+
+    <!-- ============ Tablero de vencimientos (lista por urgencia) ============ -->
+    <record id="view_coop_poliza_vencimientos_list" model="ir.ui.view">
+        <field name="name">coop.poliza.vencimientos.list</field>
+        <field name="model">coop.poliza</field>
+        <field name="arch" type="xml">
+            <list string="Vencimientos" default_order="fecha_fin asc"
+                  decoration-danger="cubre == 'no'"
+                  decoration-warning="cubre == 'no_se' or (dias_para_vencer &gt;= 0 and dias_para_vencer &lt;= 15)"
+                  decoration-success="cubre == 'si'">
+                <field name="dias_para_vencer"/>
+                <field name="numero"/>
+                <field name="tipo"/>
+                <field name="fecha_fin"/>
+                <field name="estado_pago" widget="badge"
+                       decoration-success="estado_pago == 'al_dia'"
+                       decoration-warning="estado_pago in ('sin_confirmar','sin_cuotas')"
+                       decoration-danger="estado_pago == 'vencido'"/>
+                <field name="cubre" widget="badge"
+                       decoration-success="cubre == 'si'"
+                       decoration-warning="cubre == 'no_se'"
+                       decoration-danger="cubre == 'no'"/>
+                <field name="motivo_cobertura"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_poliza_vencimientos" model="ir.actions.act_window">
+        <field name="name">Vencimientos</field>
+        <field name="res_model">coop.poliza</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_coop_poliza_vencimientos_list"/>
+        <field name="search_view_id" ref="view_coop_poliza_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Todavía no hay pólizas cargadas.</p>
+            <p>Cargá acá las pólizas, el camión, la camioneta, ARCA y las personales.
+               La lista ordena por lo que vence primero.</p>
+        </field>
+    </record>
+
+    <!-- ============ Excepciones de cobertura (arranque asumido) ============ -->
+    <record id="view_coop_excepcion_list" model="ir.ui.view">
+        <field name="name">coop.cobertura.excepcion.list</field>
+        <field name="model">coop.cobertura.excepcion</field>
+        <field name="arch" type="xml">
+            <list string="Excepciones" editable="bottom"
+                  decoration-muted="not vigente">
+                <field name="member_id"/>
+                <field name="obra_id"/>
+                <field name="motivo"/>
+                <field name="autorizado_por_id"/>
+                <field name="fecha"/>
+                <field name="vence_el"/>
+                <field name="vigente"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coop_excepcion" model="ir.actions.act_window">
+        <field name="name">Excepciones</field>
+        <field name="res_model">coop.cobertura.excepcion</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- ============ Menús ============ -->
+    <menuitem id="menu_coop_seguros_root"
+              name="Seguros"
+              parent="menu_coop_construction_root"
+              sequence="48"/>
+    <menuitem id="menu_coop_seguros_polizas"
+              name="Pólizas"
+              parent="menu_coop_seguros_root"
+              action="action_coop_poliza"
+              sequence="10"/>
+    <menuitem id="menu_coop_seguros_vencimientos"
+              name="Vencimientos"
+              parent="menu_coop_seguros_root"
+              action="action_coop_poliza_vencimientos"
+              sequence="20"/>
+    <menuitem id="menu_coop_seguros_excepciones"
+              name="Excepciones"
+              parent="menu_coop_seguros_root"
+              action="action_coop_excepcion"
+              sequence="30"/>
+</odoo>

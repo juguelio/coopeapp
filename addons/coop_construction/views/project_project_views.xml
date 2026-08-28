@@ -38,6 +38,31 @@
                     <group string="Plantel asignado">
                         <field name="socio_obra_ids" widget="many2many_tags" nolabel="1"/>
                     </group>
+                    <group string="Seguros exigidos a esta obra">
+                        <field name="requisito_seguro_ids" nolabel="1">
+                            <list editable="bottom"
+                                  decoration-danger="not satisfecho"
+                                  decoration-success="satisfecho">
+                                <field name="tipo_requerido"/>
+                                <field name="exigido_por"/>
+                                <field name="poliza_id"/>
+                                <field name="fecha_limite"/>
+                                <field name="satisfecho"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Arranques autorizados sin cobertura (excepciones)">
+                        <field name="excepcion_seguro_ids" nolabel="1">
+                            <list editable="bottom" decoration-muted="not vigente">
+                                <field name="member_id"/>
+                                <field name="motivo"/>
+                                <field name="autorizado_por_id"/>
+                                <field name="fecha"/>
+                                <field name="vence_el"/>
+                                <field name="vigente"/>
+                            </list>
+                        </field>
+                    </group>
                     <group string="Proyección por etapas">
                         <field name="etapa_count" string="Etapas cargadas"/>
                     </group>
