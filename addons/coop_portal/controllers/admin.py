@@ -467,8 +467,19 @@ class CoopPortalAdmin(http.Controller):
                 != (t.categoria_tarea or 'otro')).mapped('name'),
         } for t in ts]
         fin_real = max(t.inicio_temprano + t.duracion_dias for t in ts)
+        # Atraso contra el contrato: solo si la obra tiene fechas cargadas y la
+        # ruta crítica ya se calculó. Un número con signo y su fecha, no un
+        # semáforo.
+        atraso_txt, atraso_chip = '', 'ok'
+        if obra.fecha_fin_contractual and obra.fin_obra_estimado:
+            signo = ('+%d' % obra.atraso_dias if obra.atraso_dias >= 0
+                     else '%d' % obra.atraso_dias)
+            atraso_txt = 'estimado %s · %s d vs contrato (%s)' % (
+                obra.fin_obra_estimado, signo, obra.fecha_fin_contractual)
+            atraso_chip = 'espera' if obra.atraso_dias > 0 else 'ok'
         return {
             'obra': obra, 'fin_obra': int(round(fin_real)),
+            'atraso_txt': atraso_txt, 'atraso_chip': atraso_chip,
             'n_criticas': sum(1 for t in ts if t.es_critica),
             'n_terminadas': sum(1 for t in ts if t.esta_terminada),
             'n_tareas': len(ts), 'cuello': cuello,

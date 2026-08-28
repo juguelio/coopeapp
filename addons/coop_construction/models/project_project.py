@@ -1,3 +1,6 @@
+import math
+from datetime import timedelta
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 
@@ -62,6 +65,52 @@ class ProjectProject(models.Model):
     total_certificado = fields.Monetary(
         string='Total certificado', compute='_compute_total_certificado',
         currency_field='currency_id', store=True)
+
+    # ── Contrato: fechas y atraso contra la ruta crítica ─────────────
+    contrato_ids = fields.One2many(
+        'coop.contrato', 'obra_id', string='Contratos')
+    fecha_inicio_contractual = fields.Date(
+        string='Inicio contractual', compute='_compute_fechas_contractuales',
+        store=True,
+        help='Del contrato más reciente. La obra sin contrato no tiene fecha '
+             'y no muestra atraso.')
+    fecha_fin_contractual = fields.Date(
+        string='Fin contractual', compute='_compute_fechas_contractuales',
+        store=True)
+    duracion_cpm_dias = fields.Float(
+        string='Duración por ruta crítica (días)', readonly=True, copy=False,
+        help='Días totales del último cálculo de ruta crítica. Se escribe al '
+             'apretar "Calcular ruta crítica".')
+    fin_obra_estimado = fields.Date(
+        string='Fin estimado (ruta crítica)',
+        compute='_compute_atraso_contrato', store=True,
+        help='Inicio contractual + duración de la ruta crítica.')
+    atraso_dias = fields.Integer(
+        string='Atraso contra contrato (días)',
+        compute='_compute_atraso_contrato', store=True,
+        help='Positivo = la obra termina tarde contra el fin contractual. '
+             'Negativo = adelanto. Requiere contrato y ruta crítica calculada.')
+
+    @api.depends('contrato_ids.fecha_inicio', 'contrato_ids.fecha_fin')
+    def _compute_fechas_contractuales(self) -> None:
+        for obra in self:
+            vigente = obra.contrato_ids[:1]  # _order: fecha_inicio desc, id desc
+            obra.fecha_inicio_contractual = vigente.fecha_inicio or False
+            obra.fecha_fin_contractual = vigente.fecha_fin or False
+
+    @api.depends('duracion_cpm_dias', 'fecha_inicio_contractual',
+                 'fecha_fin_contractual')
+    def _compute_atraso_contrato(self) -> None:
+        for obra in self:
+            if (obra.duracion_cpm_dias and obra.fecha_inicio_contractual
+                    and obra.fecha_fin_contractual):
+                fin_est = obra.fecha_inicio_contractual + timedelta(
+                    days=math.ceil(obra.duracion_cpm_dias))
+                obra.fin_obra_estimado = fin_est
+                obra.atraso_dias = (fin_est - obra.fecha_fin_contractual).days
+            else:
+                obra.fin_obra_estimado = False
+                obra.atraso_dias = 0
 
     @api.depends('obra_work_entry_ids.hours', 'hour_rate')
     def _compute_costo_mano_obra(self) -> None:
@@ -129,6 +178,9 @@ class ProjectProject(models.Model):
                     'revisá las tareas bloqueadas entre sí.')
 
         fin_obra = max(ef for _, ef in early.values())
+        # Se persiste para que el atraso contra el contrato (una resta sobre
+        # esta duración) se recalcule sin volver a correr el CPM entero.
+        self.duracion_cpm_dias = fin_obra
 
         # Backward pass
         late_finish = {}

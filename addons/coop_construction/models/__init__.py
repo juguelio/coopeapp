@@ -1,6 +1,7 @@
 from . import project_project
 from . import project_task
 from . import coop_certificado
+from . import coop_contrato
 from . import coop_etapa
 from . import coop_foja
 from . import coop_trabajo_otro

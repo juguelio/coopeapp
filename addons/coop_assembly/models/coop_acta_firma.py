@@ -31,6 +31,9 @@ class CoopActaFirma(models.Model):
 
     @api.depends('hash_acta', 'assembly_id.acta_hash')
     def _compute_firma_valida(self) -> None:
+        # La regla de validez vive en `coop.firmable` (mixin del acta), no acá:
+        # así este modelo no puede divergir de coop.certificado ni de la
+        # constancia de herramientas.
         for r in self:
-            r.firma_valida = bool(
-                r.hash_acta and r.hash_acta == r.assembly_id.acta_hash)
+            r.firma_valida = bool(r.assembly_id) and r.assembly_id._firma_es_valida(
+                r.hash_acta)

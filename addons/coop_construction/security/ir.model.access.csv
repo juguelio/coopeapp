@@ -2,6 +2,10 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_coop_certificado_member,coop.certificado member,model_coop_certificado,coop_members.group_coop_member,1,0,0,0
 access_coop_certificado_manager,coop.certificado manager,model_coop_certificado,coop_members.group_coop_manager,1,1,1,0
 access_coop_certificado_syndic,coop.certificado syndic,model_coop_certificado,coop_members.group_coop_syndic,1,0,0,0
+access_coop_contrato_member,coop.contrato member,model_coop_contrato,coop_members.group_coop_member,1,0,0,0
+access_coop_contrato_manager,coop.contrato manager,model_coop_contrato,coop_members.group_coop_manager,1,1,1,1
+access_coop_contrato_syndic,coop.contrato syndic,model_coop_contrato,coop_members.group_coop_syndic,1,0,0,0
+access_coop_contrato_coordinador,coop.contrato coord,model_coop_contrato,coop_members.group_coop_coordinador,1,0,0,0
 access_coop_etapa_member,coop.etapa member,model_coop_etapa,coop_members.group_coop_member,1,0,0,0
 access_coop_etapa_manager,coop.etapa manager,model_coop_etapa,coop_members.group_coop_manager,1,1,1,0
 access_coop_etapa_syndic,coop.etapa syndic,model_coop_etapa,coop_members.group_coop_syndic,1,0,0,0

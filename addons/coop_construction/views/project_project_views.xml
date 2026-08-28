@@ -35,6 +35,27 @@
                         <field name="costo_mano_obra"/>
                         <field name="total_certificado"/>
                     </group>
+                    <group string="Contrato y plazos">
+                        <group string="Fechas del contrato">
+                            <field name="fecha_inicio_contractual" readonly="1"/>
+                            <field name="fecha_fin_contractual" readonly="1"/>
+                        </group>
+                        <group string="Contra la ruta crítica">
+                            <field name="duracion_cpm_dias" readonly="1"/>
+                            <field name="fin_obra_estimado" readonly="1"/>
+                            <field name="atraso_dias" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="contrato_ids">
+                        <list>
+                            <field name="name"/>
+                            <field name="comitente_id"/>
+                            <field name="fecha_inicio"/>
+                            <field name="fecha_fin"/>
+                            <field name="monto_total"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
                     <group string="Plantel asignado">
                         <field name="socio_obra_ids" widget="many2many_tags" nolabel="1"/>
                     </group>

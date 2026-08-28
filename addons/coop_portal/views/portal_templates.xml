@@ -2435,6 +2435,7 @@
                 <t t-if="not d.get('empty')">
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
                     <span class="chip">📅 fin: día <t t-esc="d['fin_obra']"/></span>
+                    <span t-if="d.get('atraso_txt')" t-attf-class="chip {{d['atraso_chip']}}">⏱ <t t-esc="d['atraso_txt']"/></span>
                     <span class="chip espera"><t t-esc="d['n_criticas']"/>/<t t-esc="d['n_tareas']"/> críticas</span>
                     <span t-if="d['n_terminadas']" class="chip ok">✓ <t t-esc="d['n_terminadas']"/>/<t t-esc="d['n_tareas']"/> terminadas</span>
                     <span t-if="d['cuello']" class="chip" style="background:#fdebd0;color:#8a5a00">🔻 cuello: <t t-esc="d['cuello']"/></span>

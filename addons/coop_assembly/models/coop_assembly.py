@@ -1,5 +1,3 @@
-import hashlib
-
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -12,7 +10,7 @@ MESES_ES = [
 class CoopAssembly(models.Model):
     _name = 'coop.assembly'
     _description = 'Asamblea Cooperativa'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['coop.firmable', 'mail.thread', 'mail.activity.mixin']
     _order = 'date desc'
 
     name = fields.Char(string='Título', required=True, tracking=True)
@@ -172,11 +170,15 @@ class CoopAssembly(models.Model):
     def action_cancel(self):
         self.write({'state': 'cancelled'})
 
+    def _contenido_para_hash(self):
+        """Lo que se firma del acta es su texto legal."""
+        self.ensure_one()
+        return self.acta_texto or ''
+
     @api.depends('acta_texto')
     def _compute_acta_hash(self):
         for a in self:
-            a.acta_hash = (hashlib.sha256(a.acta_texto.encode('utf-8'))
-                           .hexdigest()) if a.acta_texto else False
+            a.acta_hash = a._hash_de(a.acta_texto) if a.acta_texto else False
 
     def _persona_con_dni(self, member):
         if not member:

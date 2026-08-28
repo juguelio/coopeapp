@@ -65,6 +65,12 @@
               action="action_coop_certificado"
               sequence="30"/>
 
+    <menuitem id="menu_coop_contratos"
+              name="Contratos"
+              parent="menu_coop_economia"
+              action="action_coop_contrato"
+              sequence="5"/>
+
     <!-- Configuración -->
     <menuitem id="menu_coop_config"
               name="Configuración"

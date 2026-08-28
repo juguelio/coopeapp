@@ -1,6 +1,6 @@
 {
     'name': 'Cooperativa - Construcción',
-    'version': '18.0.1.24.0',
+    'version': '18.0.1.25.0',
     'summary': 'Obras, certificados de avance, proyección de pagos por etapa y plantel para cooperativas de construcción',
     'author': 'Coopeapp',
     'depends': ['coop_members', 'coop_payroll', 'project', 'maintenance'],
@@ -11,6 +11,7 @@
         'views/project_project_views.xml',
         'views/project_task_views.xml',
         'views/coop_certificado_views.xml',
+        'views/coop_contrato_views.xml',
         'views/coop_etapa_views.xml',
         'views/coop_foja_views.xml',
         'views/coop_trabajo_otro_views.xml',

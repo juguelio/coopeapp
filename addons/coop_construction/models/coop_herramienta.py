@@ -1,5 +1,3 @@
-import hashlib
-
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 
@@ -59,6 +57,7 @@ class MaintenanceEquipment(models.Model):
 class CoopAsignacionHerramienta(models.Model):
     _name = 'coop.asignacion.herramienta'
     _description = 'Asignación de una herramienta a una obra'
+    _inherit = ['coop.firmable']
     _order = 'fecha_retiro desc, id desc'
 
     equipment_id = fields.Many2one(
@@ -217,13 +216,11 @@ class CoopAsignacionHerramienta(models.Model):
 
     @api.depends('equipment_id', 'tipo', 'obra_id', 'member_id', 'prestado_a',
                  'prestado_doc', 'fecha_retiro', 'fecha_devolucion_prevista',
-                 'hash_firma')
+                 'hash_firma', 'firmado')
     def _compute_hash_actual(self) -> None:
         for a in self:
-            actual = hashlib.sha256(
-                a._contenido_para_hash().encode('utf-8')).hexdigest()
-            a.hash_actual = actual
-            a.firma_valida = bool(a.firmado) and a.hash_firma == actual
+            a.hash_actual = a._hash_de(a._contenido_para_hash())
+            a.firma_valida = bool(a.firmado) and a._firma_es_valida(a.hash_firma)
 
     @api.depends('equipment_id', 'tipo', 'obra_id', 'member_id', 'prestado_a',
                  'prestado_tel', 'prestado_doc', 'fecha_retiro',
@@ -293,8 +290,7 @@ class CoopAsignacionHerramienta(models.Model):
                 'firmado': True,
                 'firmado_por_id': firmante.id,
                 'fecha_firma': fields.Datetime.now(),
-                'hash_firma': hashlib.sha256(
-                    a._contenido_para_hash().encode('utf-8')).hexdigest(),
+                'hash_firma': a._hash_actual(),
             })
         return True
 

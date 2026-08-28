@@ -1,12 +1,10 @@
-import hashlib
-
 from odoo import models, fields, api
 
 
 class CoopCertificado(models.Model):
     _name = 'coop.certificado'
     _description = 'Certificado de Avance de Obra'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['coop.firmable', 'mail.thread', 'mail.activity.mixin']
     _order = 'obra_id, numero'
 
     name = fields.Char(string='Descripción', required=True, tracking=True)
@@ -56,13 +54,12 @@ class CoopCertificado(models.Model):
         ])
 
     @api.depends('obra_id', 'numero', 'porcentaje_avance', 'monto_certificado',
-                 'date', 'hash_firma')
+                 'date', 'hash_firma', 'firmado')
     def _compute_hash_actual(self):
         for cert in self:
-            actual = hashlib.sha256(
-                cert._contenido_para_hash().encode('utf-8')).hexdigest()
-            cert.hash_actual = actual
-            cert.firma_valida = bool(cert.firmado) and cert.hash_firma == actual
+            cert.hash_actual = cert._hash_de(cert._contenido_para_hash())
+            cert.firma_valida = bool(cert.firmado) and cert._firma_es_valida(
+                cert.hash_firma)
 
     def action_firmar(self, member=None):
         """Firma el certificado: registra quién, cuándo y el hash del
@@ -75,8 +72,7 @@ class CoopCertificado(models.Model):
                 'firmado': True,
                 'firmado_por_id': firmante.id if firmante else False,
                 'fecha_firma': fields.Datetime.now(),
-                'hash_firma': hashlib.sha256(
-                    cert._contenido_para_hash().encode('utf-8')).hexdigest(),
+                'hash_firma': cert._hash_actual(),
             })
 
     _sql_constraints = [
