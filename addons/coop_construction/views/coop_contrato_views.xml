@@ -5,6 +5,10 @@
         <field name="model">coop.contrato</field>
         <field name="arch" type="xml">
             <form string="Contrato de obra">
+                <header>
+                    <field name="estado" widget="statusbar"
+                           options="{'clickable': '1'}"/>
+                </header>
                 <sheet>
                     <group>
                         <group string="Contrato">
@@ -14,10 +18,23 @@
                             <field name="monto_total"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
-                        <group string="Plazos">
+                        <group string="Plazos de palabra (alimentan el CPM)">
                             <field name="fecha_inicio"/>
                             <field name="fecha_fin"/>
                         </group>
+                    </group>
+                    <group string="Plazos del papel firmado (reconcilian, no pisan)"
+                           invisible="estado != 'firmado'">
+                        <field name="fecha_inicio_firmado"/>
+                        <field name="fecha_fin_firmado"/>
+                        <field name="fechas_divergen"/>
+                        <div class="alert alert-warning" role="alert"
+                             colspan="2" invisible="not fechas_divergen">
+                            El papel firmado trae fechas distintas a las
+                            acordadas de palabra. El atraso de la obra se sigue
+                            calculando contra las de palabra; revisá la
+                            diferencia.
+                        </div>
                     </group>
                     <group string="Condiciones">
                         <field name="condiciones" nolabel="1"/>
@@ -27,7 +44,8 @@
                         <field name="documento_filename" invisible="1"/>
                         <div class="text-muted" colspan="2">
                             La firma del comitente todavía no está implementada.
-                            Por ahora se adjunta el contrato firmado en papel.
+                            Con el contrato en estado "Firmado" se adjunta el
+                            papel firmado a mano.
                         </div>
                     </group>
                 </sheet>
@@ -47,8 +65,10 @@
                 <field name="name"/>
                 <field name="obra_id"/>
                 <field name="comitente_id"/>
+                <field name="estado"/>
                 <field name="fecha_inicio"/>
                 <field name="fecha_fin"/>
+                <field name="fechas_divergen" optional="hide"/>
                 <field name="monto_total"/>
                 <field name="currency_id" column_invisible="1"/>
             </list>

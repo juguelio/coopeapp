@@ -4,5 +4,6 @@ from . import test_foja_import
 from . import test_constancia
 from . import test_certificado_firma
 from . import test_contrato_plazos
+from . import test_contrato_estado
 from . import test_seguros
 from . import test_seguros_pantalla
