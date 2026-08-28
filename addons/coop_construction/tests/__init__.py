@@ -7,3 +7,4 @@ from . import test_contrato_plazos
 from . import test_contrato_estado
 from . import test_seguros
 from . import test_seguros_pantalla
+from . import test_nivel_riesgo

@@ -1,8 +1,8 @@
 import math
 from datetime import timedelta
 
-from odoo import models, fields, api
-from odoo.exceptions import UserError
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError, ValidationError
 
 
 class ProjectProject(models.Model):
@@ -40,6 +40,14 @@ class ProjectProject(models.Model):
         ('finalizada', 'Finalizada'),
         ('cancelada', 'Cancelada'),
     ], string='Estado de obra', default='planificacion', tracking=True)
+    nivel_riesgo = fields.Selection([
+        ('bajo', 'Bajo'),
+        ('medio', 'Medio'),
+        ('alto', 'Alto'),
+    ], string='Nivel de riesgo', default='medio', tracking=True,
+        help='En obras de alto riesgo no se puede asignar plantel sin cobertura '
+             'vigente y paga o una excepción registrada vigente. En bajo y '
+             'medio solo hay aviso, como hasta ahora.')
     hour_rate = fields.Monetary(
         string='Tarifa horaria (obra)', currency_field='currency_id',
         help='Tarifa por hora negociada con el comitente para esta obra')
@@ -140,6 +148,26 @@ class ProjectProject(models.Model):
         for record in self:
             record.avance_fisico = sum(
                 record.foja_item_ids.mapped('aporte_pct'))
+
+    @api.constrains('socio_obra_ids', 'nivel_riesgo')
+    def _check_cobertura_alto_riesgo(self) -> None:
+        """En obra de alto riesgo, asignar plantel sin cobertura es un bloqueo
+        duro. Germán (28/08): "hay lugares que sin la nomina en mano no te
+        dejan entrar". La escapatoria sigue siendo la excepción registrada
+        (quién asume el riesgo y hasta cuándo): `socios_sin_cobertura` ya la
+        descuenta. En bajo y medio no se toca nada: sigue el aviso no
+        bloqueante de `_onchange_aviso_cobertura`."""
+        for obra in self:
+            if not obra.is_coop_obra or obra.nivel_riesgo != 'alto':
+                continue
+            sin = obra.socios_sin_cobertura()
+            if sin:
+                raise ValidationError(_(
+                    'Obra de alto riesgo: no se puede asignar a %s sin una '
+                    'póliza vigente y paga que los cubra. Si igual tienen que '
+                    'arrancar, registrá una excepción (quién asume el riesgo y '
+                    'hasta cuándo) en la pestaña Seguros de la obra.'
+                ) % ', '.join(sin.mapped('name')))
 
     def action_calcular_ruta_critica(self) -> None:
         """Calcula la ruta crítica (CPM) sobre las tareas de la obra.
