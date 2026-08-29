@@ -79,7 +79,11 @@ FALLAS=$?
 echo
 echo "── Control negativo: un wrapper roto tiene que dar rojo ──"
 # El bug clásico: la guarda final no rechaza, ejecuta.
-{ head -n -3 "$REAL"; echo 'exec $CMD'; } > /tmp/fc-roto.sh
+# No usamos `head -n -3`: esa forma existe en GNU head pero macOS la rechaza.
+# Cortamos por el encabezado de la guarda final, que además deja explícito qué
+# parte del wrapper se está rompiendo para el control negativo.
+sed '/^# ── 3\. cualquier otra cosa/,$d' "$REAL" > /tmp/fc-roto.sh
+echo 'exec $CMD' >> /tmp/fc-roto.sh
 bateria /tmp/fc-roto.sh /tmp/fc-roto laxo
 COLADOS=$?
 if [ "$COLADOS" -gt 0 ]; then
