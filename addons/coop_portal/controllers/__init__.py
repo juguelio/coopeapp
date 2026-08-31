@@ -3,6 +3,7 @@ from . import coordinador
 from . import asamblea
 from . import sindico
 from . import admin
+from . import document_proposal
 from . import relevamiento
 from . import herramientas
 from . import seguros
