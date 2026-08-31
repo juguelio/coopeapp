@@ -55,6 +55,10 @@ class CoopPortalDocumentProposal(http.Controller):
             'member': member,
             'proposal': proposal,
             'state_labels': self._state_labels(),
+            'obras': request.env['project.project'].sudo().search([
+                ('is_coop_obra', '=', True),
+                ('estado_obra', 'in', ['planificacion', 'activa']),
+            ], order='name'),
             'error': kw.get('error'),
             'nav_rol': 'admin',
             'nav_activo': 'documentos',
@@ -73,6 +77,13 @@ class CoopPortalDocumentProposal(http.Controller):
             proposal = False
         if not proposal:
             return request.redirect('/app/admin/revision-documental')
+        try:
+            obra = request.env['project.project'].sudo().browse(
+                int(kw.get('obra_id'))).exists() if kw.get('obra_id') else False
+        except (TypeError, ValueError):
+            obra = False
+        if obra and obra.is_coop_obra:
+            proposal.write({'obra_id': obra.id})
         try:
             # Sin sudo: el usuario autenticado es quien decide y queda en la
             # auditoría de approved_by_id/reviewed_by_id.

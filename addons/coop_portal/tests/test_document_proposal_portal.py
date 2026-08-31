@@ -62,6 +62,7 @@ class TestDocumentProposalPortal(HttpCase):
         detail_body = detail.text
         self.assertEqual(detail.status_code, 200)
         self.assertIn('APROBAR PROPUESTA', detail_body)
+        self.assertIn('Obra que corresponde', detail_body)
         self.assertIn('PEDIR CORRECCIÓN', detail_body)
         self.assertIn('RECHAZAR', detail_body)
         self.assertIn('2438121470111', detail_body)

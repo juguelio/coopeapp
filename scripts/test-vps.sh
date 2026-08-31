@@ -257,7 +257,7 @@ ssh "${SSH_OPTS[@]}" "$VPS" "
     odoo odoo -d $DB_TEST \
       --addons-path=$ADDONS_TEST$ADDONS_PATH \
       -u $MODULOS --test-enable --test-tags '$TAGS' \
-      --workers 0 --stop-after-init --log-level=test 2>&1
+      --workers 0 --db-filter '^$DB_TEST$' --stop-after-init --log-level=test 2>&1
 " | tee /tmp/coopeapp-test.log
 RC=${PIPESTATUS[0]}
 set -e

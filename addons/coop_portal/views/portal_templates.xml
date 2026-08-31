@@ -2772,6 +2772,12 @@
                 <form action="/app/admin/revision-documental/accion" method="post">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <input type="hidden" name="proposal_id" t-att-value="proposal.id"/>
+                    <label style="display:block;font-size:14px;font-weight:700;margin:10px 0 6px">Obra que corresponde</label>
+                    <select name="obra_id" style="width:100%;padding:13px;border:2px solid #d7dee5;border-radius:12px;font-size:16px;margin-bottom:10px">
+                        <option value="">— elegí la obra antes de aprobar —</option>
+                        <option t-foreach="obras" t-as="obra" t-att-value="obra.id"
+                                t-att-selected="'selected' if obra.id == proposal.obra_id.id else None"><t t-esc="obra.name"/></option>
+                    </select>
                     <button class="botonazo" type="submit" name="accion" value="approve">✅ APROBAR PROPUESTA</button>
                     <button class="botonazo sec" type="submit" name="accion" value="correction">📝 PEDIR CORRECCIÓN</button>
                     <button class="botonazo sec" type="submit" name="accion" value="reject" style="color:var(--rojo)">✕ RECHAZAR</button>
