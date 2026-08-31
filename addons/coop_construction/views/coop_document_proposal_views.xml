@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coop_document_proposal_list" model="ir.ui.view">
+        <field name="name">coop.document.proposal.list</field>
+        <field name="model">coop.document.proposal</field>
+        <field name="arch" type="xml">
+            <list string="Propuestas documentales"
+                  decoration-warning="state == 'pending_review'"
+                  decoration-danger="state in ('hold', 'rejected')"
+                  decoration-success="state == 'approved'">
+                <field name="create_date" string="Recibida"/>
+                <field name="source_file_name" string="Documento"/>
+                <field name="numero"/>
+                <field name="obra_nombre_extraido" string="Obra"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'pending_review'"
+                       decoration-danger="state in ('hold', 'rejected')"
+                       decoration-success="state == 'approved'"/>
+                <field name="approved_by_id" optional="show"/>
+                <field name="approved_at" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coop_document_proposal_form" model="ir.ui.view">
+        <field name="name">coop.document.proposal.form</field>
+        <field name="model">coop.document.proposal</field>
+        <field name="arch" type="xml">
+            <form string="Propuesta documental">
+                <header>
+                    <button name="action_approve" type="object"
+                            string="Aprobar propuesta" class="btn-primary"
+                            groups="coop_members.group_coop_manager,coop_members.group_coop_coordinador"
+                            invisible="state != 'pending_review'"/>
+                    <button name="action_request_correction" type="object"
+                            string="Pedir corrección"
+                            groups="coop_members.group_coop_manager,coop_members.group_coop_coordinador"
+                            invisible="state != 'pending_review'"/>
+                    <button name="action_reject" type="object" string="Rechazar"
+                            groups="coop_members.group_coop_manager,coop_members.group_coop_coordinador"
+                            invisible="state != 'pending_review'"/>
+                    <button name="action_reset_to_review" type="object"
+                            string="Volver a revisión"
+                            groups="coop_members.group_coop_manager"
+                            invisible="state not in ('needs_correction', 'rejected')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="pending_review,approved,needs_correction,hold,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="source_file_name" string="Documento"/>
+                        <h1><field name="source_file_name" readonly="1"/></h1>
+                    </div>
+                    <group string="Datos para revisar">
+                        <group>
+                            <field name="numero"/>
+                            <field name="aseguradora"/>
+                            <field name="obra_nombre_extraido"/>
+                            <field name="obra_id"
+                                   groups="coop_members.group_coop_manager,coop_members.group_coop_coordinador"/>
+                            <field name="fecha_inicio"/>
+                            <field name="fecha_fin"/>
+                        </group>
+                        <group>
+                            <field name="importe"/>
+                            <field name="socios_extraidos"/>
+                            <field name="poliza_id"/>
+                            <field name="decision_reason"/>
+                        </group>
+                    </group>
+                    <group string="Fuente y trazabilidad">
+                        <field name="box_file_id"/>
+                        <field name="box_version_id"/>
+                        <field name="source_sha256"/>
+                        <field name="campos_json" widget="text"/>
+                    </group>
+                    <group string="Auditoría de decisión">
+                        <group>
+                            <field name="reviewed_by_id"/>
+                            <field name="reviewed_at"/>
+                        </group>
+                        <group>
+                            <field name="approved_by_id"/>
+                            <field name="approved_by_name"/>
+                            <field name="approved_by_role"/>
+                            <field name="approved_at"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'pending_review'">
+                        Revisá los campos contra el documento original. La aprobación
+                        queda registrada con tu usuario autenticado.
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'hold'">
+                        Hay un conflicto material. La propuesta no puede aprobarse
+                        hasta resolverlo.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_coop_document_proposal_search" model="ir.ui.view">
+        <field name="name">coop.document.proposal.search</field>
+        <field name="model">coop.document.proposal</field>
+        <field name="arch" type="xml">
+            <search string="Propuestas documentales">
+                <field name="source_file_name"/>
+                <field name="numero"/>
+                <field name="obra_id"/>
+                <filter name="pending" string="Pendientes"
+                        domain="[('state','=','pending_review')]"/>
+                <filter name="approved" string="Aprobadas"
+                        domain="[('state','=','approved')]"/>
+                <filter name="hold" string="En conflicto"
+                        domain="[('state','=','hold')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_coop_document_proposal" model="ir.actions.act_window">
+        <field name="name">Propuestas documentales</field>
+        <field name="res_model">coop.document.proposal</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coop_document_proposal_search"/>
+    </record>
+
+    <menuitem id="menu_coop_document_proposal"
+              name="Revisión documental"
+              parent="menu_coop_seguros_root"
+              action="action_coop_document_proposal"
+              sequence="5"/>
+</odoo>

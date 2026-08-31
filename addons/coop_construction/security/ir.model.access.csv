@@ -106,3 +106,6 @@ access_coop_poliza_requisito_syndic,coop.poliza.requisito sindico,model_coop_pol
 access_coop_excepcion_manager,coop.cobertura.excepcion manager,model_coop_cobertura_excepcion,coop_members.group_coop_manager,1,1,1,1
 access_coop_excepcion_coordinador,coop.cobertura.excepcion coord,model_coop_cobertura_excepcion,coop_members.group_coop_coordinador,1,1,1,0
 access_coop_excepcion_syndic,coop.cobertura.excepcion sindico,model_coop_cobertura_excepcion,coop_members.group_coop_syndic,1,0,0,0
+access_coop_document_proposal_manager,coop.document.proposal manager,model_coop_document_proposal,coop_members.group_coop_manager,1,1,1,0
+access_coop_document_proposal_coordinador,coop.document.proposal coordinador,model_coop_document_proposal,coop_members.group_coop_coordinador,1,1,1,0
+access_coop_document_proposal_member,coop.document.proposal member,model_coop_document_proposal,coop_members.group_coop_member,1,0,0,0
