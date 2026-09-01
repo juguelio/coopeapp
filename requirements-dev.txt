@@ -1,0 +1,2 @@
+# Dependencias para checks locales que no requieren levantar Odoo.
+openpyxl==3.1.2

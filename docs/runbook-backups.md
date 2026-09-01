@@ -193,8 +193,30 @@ conviene correrlo cuando los socios no lo estén usando.
 ### Los tests del parser de cómputos corren sin Odoo
 
 `foja_parser.py` no importa Odoo a propósito, así que sus tests corren en
-cualquier lado con Python y `openpyxl`:
+cualquier lado con Python y `openpyxl`. Crear un entorno local aislado una vez:
 
 ```bash
-python3 addons/coop_construction/tests/test_foja_parser.py
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
 ```
+
+Después correr:
+
+```bash
+.venv/bin/python addons/coop_construction/tests/test_foja_parser.py
+```
+
+### Preflight de una foja antes de importarla
+
+Antes de crear ítems en una obra, analizar el XLSX sin escribir en Odoo. El
+comando usa el mismo parser que el wizard y deja explícitos el nivel sugerido,
+totales y avisos para la revisión humana:
+
+```bash
+.venv/bin/python scripts/preflight-foja.py "computo-de-la-obra.xlsx" \
+  --output docs/preflight-computo-de-la-obra.md
+```
+
+El informe **no autoriza una importación automática**: si hay importes en más
+de un nivel o el archivo no declara un total, quien conoce la obra debe
+confirmar qué nivel representa la foja real.

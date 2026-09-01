@@ -9,3 +9,4 @@ config/odoo.conf
 
 .env
 .env.local
+.venv/
