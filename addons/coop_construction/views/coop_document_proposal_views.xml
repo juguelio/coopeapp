@@ -64,6 +64,7 @@
                         <group>
                             <field name="importe"/>
                             <field name="socios_extraidos"/>
+                            <field name="socios_pendientes"/>
                             <field name="poliza_id"/>
                             <field name="decision_reason"/>
                         </group>
@@ -90,6 +91,12 @@
                          invisible="state != 'pending_review'">
                         Revisá los campos contra el documento original. La aprobación
                         queda registrada con tu usuario autenticado.
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not socios_pendientes">
+                        Hay socios extraídos que no matchearon con el padrón y
+                        <strong>no quedaron cubiertos</strong>. Vinculalos en la
+                        nómina de la póliza antes de mandarlos a la obra.
                     </div>
                     <div class="alert alert-warning" role="alert"
                          invisible="state != 'hold'">

@@ -40,6 +40,11 @@ class CoopDocumentProposal(models.Model):
     fecha_fin = fields.Date(string='Vigente hasta', readonly=True)
     importe = fields.Float(string='Importe mensual', readonly=True)
     socios_extraidos = fields.Text(string='Socios extraídos', readonly=True)
+    socios_pendientes = fields.Text(
+        string='Socios sin vincular',
+        readonly=True,
+        help='Socios extraídos que no matchearon con el padrón al aprobar. '
+             'Quedan pendientes de vincular a mano: no se adivinan.')
     campos_json = fields.Text(string='Campos extraídos (JSON)', readonly=True)
 
     # Auditoría de revisión/aprobación.
@@ -121,7 +126,7 @@ class CoopDocumentProposal(models.Model):
                     'Vinculala antes de aprobar la propuesta.'))
             policy_vals = {
                 'numero': record.numero or _('Sin número'),
-                'sujeto': 'obra',
+                'sujeto': 'persona',
                 'tipo': 'general',
                 'aseguradora_id': partner.id if partner else False,
                 'obra_id': record.obra_id.id,
@@ -129,10 +134,31 @@ class CoopDocumentProposal(models.Model):
                 'fecha_fin': record.fecha_fin,
             }
             policy = self.env['coop.poliza'].create(policy_vals)
+            # Los socios extraídos pasan a la nómina SOLO cuando matchean
+            # exacto contra el padrón. Lo que no matchea no cubre y queda
+            # pendiente: nunca se adivina una persona para decir que está
+            # cubierta (una afirmación así manda a alguien a un andamio).
+            nomina_alta = record.fecha_inicio or fields.Date.context_today(self)
+            pendientes = []
+            for nombre in (record.socios_extraidos or '').splitlines():
+                nombre = nombre.strip()
+                if not nombre:
+                    continue
+                socio = self.env['coop.member'].sudo().search(
+                    [('name', '=', nombre)], limit=1)
+                if socio:
+                    self.env['coop.poliza.nomina'].sudo().create({
+                        'poliza_id': policy.id,
+                        'member_id': socio.id,
+                        'fecha_alta': nomina_alta,
+                    })
+                else:
+                    pendientes.append(nombre)
             now = fields.Datetime.now()
             record.write({
                 'state': 'approved',
                 'poliza_id': policy.id,
+                'socios_pendientes': '\n'.join(pendientes) or False,
                 'reviewed_by_id': self.env.user.id,
                 'reviewed_at': now,
                 'approved_by_id': self.env.user.id,
