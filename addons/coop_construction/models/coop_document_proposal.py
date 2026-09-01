@@ -86,6 +86,19 @@ class CoopDocumentProposal(models.Model):
         ], limit=1)
         if existing:
             return existing
+        # El worker manda `status` (pending_review / needs_correction) y `conflicts`
+        # (hold). El conflicto pesa más: si hay conflictos el estado es hold (póliza
+        # vencida, nómina vacía...), sin importar el `status`. Si no hay conflictos,
+        # se honra el status — esto habilita el caso "PDF ilegible -> needs_correction",
+        # que hoy no existía porque el modelo ignoraba status.
+        conflicts = payload.get('conflicts')
+        estado_worker = proposal.get('status') or 'pending_review'
+        if conflicts:
+            state = 'hold'
+        elif estado_worker in ('pending_review', 'needs_correction'):
+            state = estado_worker
+        else:
+            state = 'hold'
         vals = {
             'source_file_name': source['file_name'],
             'box_file_id': str(source['file_id']),
@@ -99,8 +112,10 @@ class CoopDocumentProposal(models.Model):
             'importe': proposal.get('importe') or 0.0,
             'socios_extraidos': '\n'.join(proposal.get('socios') or []),
             'campos_json': json.dumps(proposal, ensure_ascii=False),
-            'state': 'hold' if payload.get('conflicts') else 'pending_review',
+            'state': state,
         }
+        if state == 'needs_correction' and proposal.get('reasons'):
+            vals['decision_reason'] = '\n'.join(map(str, proposal['reasons']))
         return self.create(vals)
 
     def _approval_role(self):

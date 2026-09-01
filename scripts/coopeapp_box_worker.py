@@ -139,6 +139,7 @@ def main() -> int:
     entries = raw if isinstance(raw, list) else raw.get('entries', [])
     state = load_state()
     events = []
+    errores = 0
     for item in entries:
         if item.get('type') != 'file' or not item.get('name', '').lower().endswith('.pdf'):
             continue
@@ -147,21 +148,53 @@ def main() -> int:
         key = f"{metadata['id']}:{version}"
         if key in state['seen'] and not args.force:
             continue
-        with tempfile.TemporaryDirectory(prefix='coopeapp-box-worker-') as tmp:
-            target = Path(tmp) / metadata['name']
-            run([str(BOX), 'files:download', str(metadata['id']), '--destination', tmp,
-                 '--save-as', metadata['name'], '--overwrite', '--quiet'])
-            payload = parse_pdf(target, metadata['id'], version)
+        try:
+            with tempfile.TemporaryDirectory(prefix='coopeapp-box-worker-') as tmp:
+                target = Path(tmp) / metadata['name']
+                run([str(BOX), 'files:download', str(metadata['id']), '--destination', tmp,
+                     '--save-as', metadata['name'], '--overwrite', '--quiet'])
+                payload = parse_pdf(target, metadata['id'], version)
+        except ValueError as exc:
+            # No se pudo leer (PDF ilegible o con campos faltantes). ES UN CASO
+            # DE NEGOCIO, no de infraestructura: se crea la propuesta en
+            # needs_correction y se marca el archivo como visto para que no
+            # vuelva a taponar la cola en cada corrida. La traza mínima ya está
+            # (el archivo se descargó antes de parsear).
+            payload = {
+                'source': {
+                    'file_id': str(metadata['id']),
+                    'file_name': metadata['name'],
+                    'version_id': str(version),
+                    'sha256': sha256(target),
+                },
+                'proposal': {
+                    'status': 'needs_correction',
+                    'reasons': ['No se pudo leer el documento: %s' % exc],
+                },
+                'conflicts': [],
+            }
+            errores += 1
+        except Exception as exc:  # noqa: BLE001 — un archivo no debe tumbar la corrida
+            # Falla de infraestructura (download, ssh, box CLI): NO se marca
+            # como visto (se reintenta en la próxima corrida) y se registra.
+            events.append({'file': metadata['name'], 'skipped': True, 'error': str(exc)})
+            errores += 1
+            continue
         if args.dry_run:
-            events.append({'file': metadata['name'], 'dry_run': True, 'payload': payload})
+            events.append({'file': metadata['name'], 'dry_run': True,
+                           'payload': payload,
+                           'state': payload['proposal'].get('status', 'pending_review')})
             continue
         result = write_proposal(payload)
         state['seen'][key] = {'file_name': metadata['name'], 'proposal_id': result['proposal_id']}
         save_state(state)
         events.append({'file': metadata['name'], **result})
+        if result.get('state') == 'needs_correction':
+            errores += 1
     if events:
-        print(json.dumps({'ok': True, 'events': events}, ensure_ascii=False))
-    return 0
+        print(json.dumps({'ok': errores == 0, 'events': events}, ensure_ascii=False))
+    # exit != 0 si hubo fallos, para que el cron pueda gritar
+    return 1 if errores else 0
 
 
 if __name__ == '__main__':

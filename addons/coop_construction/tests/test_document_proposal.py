@@ -133,3 +133,24 @@ class TestDocumentProposal(TransactionCase):
         proposal.action_approve()
         proposal.invalidate_recordset()
         self.assertEqual(len(proposal.poliza_id.nomina_ids), 0)
+
+    def test_ingestion_crea_needs_correction_cuando_el_worker_no_pudo_leer(self):
+        """El caso real del PDF ilegible: el worker manda status=needs_correction
+        sin conflictos; el modelo tiene que honrarlo y dejar el motivo visible."""
+        payload = self.payload()
+        payload['proposal'] = {
+            'status': 'needs_correction',
+            'reasons': ['No se pudo leer el documento: no se encontró el encabezado'],
+        }
+        payload['conflicts'] = []
+        prop = self.env['coop.document.proposal'].create_from_ingestion(payload)
+        self.assertEqual(prop.state, 'needs_correction')
+        self.assertIn('No se pudo leer', prop.decision_reason)
+
+    def test_ingestion_con_conflicto_sigue_siendo_hold(self):
+        """El conflicto pesa sobre el status: una póliza vencida (hold) se
+        mantiene aunque el worker mande status pending_review."""
+        payload = self.payload()
+        payload['conflicts'] = [{'field': 'fecha_fin', 'action': 'hold_for_human_review'}]
+        prop = self.env['coop.document.proposal'].create_from_ingestion(payload)
+        self.assertEqual(prop.state, 'hold')
