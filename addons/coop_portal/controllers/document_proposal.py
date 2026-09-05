@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from odoo import http
 from odoo.exceptions import UserError, ValidationError
 from odoo.http import request
@@ -97,7 +99,7 @@ class CoopPortalDocumentProposal(http.Controller):
                 raise ValidationError('Acción de revisión desconocida.')
         except (UserError, ValidationError) as exc:
             return request.redirect(
-                '/app/admin/revision-documental/%d?error=%s' % (
-                    proposal.id, str(exc)))
+                '/app/admin/revision-documental/%d?%s' % (
+                    proposal.id, urlencode({'error': str(exc)})))
         return request.redirect(
             '/app/admin/revision-documental/%d?ok=1' % proposal.id)

@@ -183,7 +183,8 @@
             <div class="listo">
                 <div class="check" style="background:#a36b00">🏗️</div>
                 <h1>Todavía no estás asignado a una obra</h1>
-                <p class="sub" style="margin-top:8px">Cuando el coordinador te sume al plantel, acá vas a ver tu obra.</p>
+                <p class="sub" style="margin-top:8px">Pedile al administrador que te asigne a tu obra. Después vas a poder cargar trabajo y pedir materiales.</p>
+                <a class="botonazo" href="/app">VOLVER AL INICIO</a>
             </div>
         </t>
     </template>
@@ -2638,9 +2639,9 @@
                 <details class="faq"><summary>¿Dónde veo cuánta plata tengo?</summary>
                     <div class="resp">En <b>Mi plata</b>. Vas a ver lo que ya <b>cobraste</b> y lo que tenés <b>en camino</b> (trabajo cargado que todavía no se liquidó).</div></details>
                 <details class="faq"><summary>¿Qué es "Mi aporte"?</summary>
-                    <div class="resp">Es tu aporte real a la obra: cuántos jornales pusiste y qué porcentaje del trabajo hiciste. Es la <b>transparencia</b> de la cooperativa — todos ven lo que cada uno aportó.</div></details>
+                    <div class="resp">En <b>Mi aporte</b> ves tus jornales y tu producción registrada. El valor de esa producción no es tu pago: tus liquidaciones están en <b>Mi plata</b>.</div></details>
                 <details class="faq"><summary>¿Cómo pido materiales?</summary>
-                    <div class="resp">Desde <b>Obra</b> podés pedir el material que necesitás. El pedido le llega al <b>capataz</b>, que lo junta con los demás y lo manda al corralón.</div></details>
+                    <div class="resp">Desde <b>Pedir</b> podés pedir el material que necesitás. El pedido le llega al <b>coordinador</b>, que lo junta con los demás y lo manda al corralón.</div></details>
                 <details class="faq"><summary>¿Cómo voto en la asamblea?</summary>
                     <div class="resp">Cuando hay una asamblea abierta, te aparece una tarjeta en el inicio. Tu <b>voto es secreto</b>: nadie, ni el administrador, puede ver qué votaste.</div></details>
                 <details class="faq"><summary>Me olvidé el PIN, ¿qué hago?</summary>

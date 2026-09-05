@@ -24,7 +24,7 @@ class TestDocumentProposalPortal(HttpCase):
                 manager_group.id,
             ])],
         })
-        self.env['coop.member'].with_context(
+        self.member = self.env['coop.member'].with_context(
             skip_portal_user=True,
         ).create({
             'name': 'Sofía Test Portal',
@@ -67,3 +67,17 @@ class TestDocumentProposalPortal(HttpCase):
         self.assertIn('RECHAZAR', detail_body)
         self.assertIn('2438121470111', detail_body)
         self.assertIn('2703223890911', detail_body)
+
+    def test_no_work_screen_and_help_have_honest_next_steps(self):
+        self.member.write({'role': 'worker'})
+        self.authenticate(self.user.login, 'DemoOnly-Portal-2026')
+        response = self.url_open('/app/pedir')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.url.endswith('/app/pedir'))
+        self.assertIn('Todavía no estás asignado a una obra', response.text)
+        self.assertIn('Pedile al administrador', response.text)
+        self.assertIn('VOLVER AL INICIO', response.text)
+        help_response = self.url_open('/app/ayuda')
+        self.assertEqual(help_response.status_code, 200)
+        self.assertIn('tus jornales y tu producción registrada', help_response.text)
+        self.assertNotIn('todos ven lo que cada uno aportó', help_response.text)

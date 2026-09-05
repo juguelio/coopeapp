@@ -462,7 +462,9 @@ class CoopPortalCoordinador(http.Controller):
             ('socio_obra_ids', 'in', member.ids),
         ])
         if not obras:
-            return request.redirect('/app/obra')
+            return request.render('coop_portal.sin_obra', {
+                'member': member, 'nav_activo': 'pedir',
+            })
         obra = obras.filtered(lambda o: o.id == int(obra_id)) if obra_id else False
         obra = obra[0] if obra else obras[0]
         materiales = request.env['coop.material'].sudo().search(
