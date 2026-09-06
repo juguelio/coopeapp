@@ -293,6 +293,7 @@
     <!-- ============ INICIO COORDINADOR ============ -->
     <template id="home_coordinador" name="App: inicio coordinador">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <h1>Hola, <t t-esc="member.name.split(' ')[0]"/> 👋</h1>
             <div class="sub" t-if="obras_coord">Coordinás: <t t-esc="', '.join(obras_coord.mapped('name'))"/></div>
@@ -436,6 +437,7 @@
     <!-- ============ COORDINADOR: AVANCE DE LA OBRA ============ -->
     <template id="coord_avance" name="App: avance físico de la obra (coordinador)">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>📊 Avance de la obra</h1>
@@ -648,6 +650,7 @@
 
     <template id="coord_otros" name="App: coordinador resuelve trabajo sin foja">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>✏️ Trabajo fuera de la foja</h1>
             <div class="sub">Cada socio cargó algo que no encontró en la foja. Vos decidís qué pasa con ese trabajo.</div>
@@ -870,6 +873,7 @@
     <!-- ============ LA OBRA ============ -->
     <template id="obra" name="App: la obra">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'obra'"/>
             <h1>La obra</h1>
             <div class="sub"><t t-esc="obra.name"/></div>
@@ -970,6 +974,7 @@
     <!-- ============ COORDINADOR: PEDIDOS ============ -->
     <template id="coord_pedidos" name="App: coordinador revisa pedidos">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>🧱 Pedidos de materiales</h1>
@@ -1032,6 +1037,7 @@
     <!-- ============ COORDINADOR: ARMAR ÓRDENES AL CORRALÓN ============ -->
     <template id="coord_corralon" name="App: consolidar pedidos por corralón">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app/pedidos">← Pedidos</a>
             <h1>📦 Órdenes al corralón</h1>
@@ -1130,6 +1136,7 @@
     <!-- ============ COORDINADOR: DETALLE DE ORDEN + WHATSAPP ============ -->
     <template id="coord_orden" name="App: orden al corralón">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app/corralon">← Órdenes</a>
             <h1>📦 <t t-esc="orden.corralon_id.name"/></h1>
@@ -1245,6 +1252,7 @@
     <!-- ============ SOCIO: PEDIR MATERIALES (paso 1) ============ -->
     <template id="pedir_paso1" name="App: pedir material paso 1">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'pedir'"/>
             <a class="atras" href="/app/obra">← Volver</a>
             <div class="paso">PEDIR MATERIALES · <t t-esc="obra.name"/></div>
@@ -1267,6 +1275,7 @@
 
     <template id="pedir_paso2_otro" name="App: pedir material que no está en el catálogo">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'pedir'"/>
             <a class="atras" t-attf-href="/app/pedir?obra_id={{obra.id}}">← Volver</a>
             <div class="paso">PEDIR MATERIALES</div>
@@ -1296,6 +1305,7 @@
     <!-- ============ SOCIO: PEDIR MATERIALES (paso 2) ============ -->
     <template id="pedir_paso2" name="App: pedir material paso 2">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'pedir'"/>
             <a class="atras" t-attf-href="/app/pedir?obra_id={{obra.id}}">← Volver</a>
             <div class="paso">PEDIR MATERIALES</div>
@@ -1319,6 +1329,7 @@
     <!-- ============ SOCIO: PEDIDO ENVIADO ============ -->
     <template id="pedir_listo" name="App: pedido enviado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'pedir'"/>
             <div class="listo">
                 <div class="check">🧱</div>
@@ -1336,6 +1347,7 @@
     <!-- ============ RELEVAMIENTO: CARGA DEL SOCIO ============ -->
     <template id="relevar" name="App: cargar relevamiento">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>📐 Relevamiento</h1>
@@ -1374,6 +1386,7 @@
 
     <template id="relevar_listo" name="App: relevamiento enviado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <div class="listo">
                 <div class="check">📐</div>
@@ -1390,6 +1403,7 @@
     <!-- ============ HERRAMIENTAS: COORDINADOR ============ -->
     <template id="herramientas_constancia" name="App: constancia de entrega de herramienta">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <a class="atras" href="/app/herramientas">← Volver</a>
             <h1>📄 Constancia de entrega</h1>
             <div class="sub">Leela antes de firmar. Es el papel con el que se reclama la herramienta.</div>
@@ -1438,6 +1452,7 @@
 
     <template id="herramientas" name="App: herramientas del coordinador">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>🔧 Herramientas</h1>
@@ -1556,6 +1571,7 @@
     <!-- ============ REPORTAR INCIDENTE: SOCIO ============ -->
     <template id="reportar" name="App: reportar incidente">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'obra'"/>
             <a class="atras" href="/app/obra">← Volver</a>
             <h1>⚠️ Reportar</h1>
@@ -1607,6 +1623,7 @@
 
     <template id="reportar_listo" name="App: incidente reportado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'obra'"/>
             <div class="listo">
                 <div class="check">⚠️</div>
@@ -1709,6 +1726,7 @@
     <!-- ============ CARGA OFFLINE: ENCOLADO ============ -->
     <template id="cargar_encolado" name="App: avance encolado offline">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <t t-set="nav_activo" t-value="'cargar'"/>
             <div class="listo">
                 <div class="check">📴</div>
@@ -1726,6 +1744,7 @@
     <!-- ============ ASAMBLEA: SIN ASAMBLEA ABIERTA ============ -->
     <template id="asamblea_ninguna" name="App: sin asamblea">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <div class="listo">
                 <div class="check" style="background:#a36b00">🗳️</div>
                 <h1>No hay asamblea en curso</h1>
@@ -1738,6 +1757,7 @@
     <!-- ============ ASAMBLEA: PUNTOS A VOTAR ============ -->
     <template id="asamblea" name="App: asamblea en curso">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>🗳️ <t t-esc="asamblea.name"/></h1>
             <div class="sub">
@@ -1852,6 +1872,7 @@
     <!-- ============ ASAMBLEA: FIRMAR ACTA (revisar antes de firmar) ============ -->
     <template id="asamblea_firmar" name="App: firmar acta">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <a class="atras" href="/app/asamblea">← Volver</a>
             <h1>Firmar el acta</h1>
             <div class="sub">Leé el acta completa antes de firmar</div>
@@ -1877,6 +1898,7 @@
     <!-- ============ ASAMBLEA: VOTAR (3 opciones) ============ -->
     <template id="votar" name="App: votar">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <a class="atras" href="/app/asamblea">← Volver</a>
             <div class="paso">VOTACIÓN SECRETA</div>
             <div class="pregunta"><t t-esc="vote.name"/></div>
@@ -1898,6 +1920,7 @@
     <!-- ============ ASAMBLEA: VOTO REGISTRADO ============ -->
     <template id="votado" name="App: voto registrado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else 'obra'"/>
             <div class="listo">
                 <div class="check">🗳️</div>
                 <h1>Voto registrado</h1>
@@ -2037,6 +2060,7 @@
     <!-- ============ SÍNDICO: AUDITORÍA ============ -->
     <template id="sindico_auditoria" name="App: pista de auditoría">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'sindico'"/>
             <t t-set="nav_activo" t-value="'auditoria'"/>
             <h1>🔎 Auditoría</h1>
@@ -2059,6 +2083,7 @@
     <!-- ============ SEGUROS: cruce visible ============ -->
     <template id="seguros" name="App: seguros y cobertura">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'seguros'"/>
             <a href="/app/obra" class="atras">← Volver</a>
             <h1>🛡️ Seguros</h1>
@@ -2167,6 +2192,7 @@
     <!-- ============ ADMIN: NUEVO TRABAJO (OT) + MANDAR A MEDIR ============ -->
     <template id="admin_ot_nueva" name="App: admin nuevo trabajo">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin">← Volver</a>
             <h1>➕ Nuevo trabajo</h1>
@@ -2199,6 +2225,7 @@
     <!-- ============ ADMIN: BANDEJA DE RELEVAMIENTOS CARGADOS ============ -->
     <template id="admin_relevamientos" name="App: admin relevamientos cargados">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin">← Volver</a>
             <h1>📐 Relevamientos listos</h1>
@@ -2225,6 +2252,7 @@
 
     <template id="admin_relevamiento_detalle" name="App: admin detalle relevamiento">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin/relevamientos">← Volver</a>
             <h1><t t-esc="rel.orden_id.cliente_id.name"/></h1>
@@ -2259,6 +2287,7 @@
     <!-- ============ ADMIN: ARMAR ORDEN AL CORRALÓN (rápido) ============ -->
     <template id="admin_corralon" name="App: admin armar orden al corralón">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin">← Volver</a>
             <h1>🧱 Pedir al corralón</h1>
@@ -2300,6 +2329,7 @@
 
     <template id="admin_corralon_orden" name="App: admin orden al corralón (WhatsApp)">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin/corralon">← Volver</a>
             <h1>🧱 <t t-esc="orden.corralon_id.name"/></h1>
@@ -2334,6 +2364,7 @@
 
     <template id="admin_corralon_resultado" name="App: admin resultado optimizador corralón">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin/corralon">← Volver</a>
             <h1>✅ Órdenes armadas</h1>
@@ -2370,6 +2401,7 @@
     <!-- ============ ADMIN: NOTAS DE OBRA ============ -->
     <template id="admin_notas" name="App: admin notas por obra">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin">← Volver</a>
             <h1>📝 Notas</h1>
@@ -2393,6 +2425,7 @@
 
     <template id="admin_notas_obra" name="App: admin notas de una obra">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <a class="atras" href="/app/admin/notas">← Volver</a>
             <h1>📝 <t t-esc="obra.name"/></h1>
@@ -2577,6 +2610,7 @@
     <!-- ============ ADMIN: REPORTES ============ -->
     <template id="admin_reportes" name="App: reportes admin">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'reportes'"/>
             <h1>📋 Reportes</h1>
@@ -2708,6 +2742,7 @@
 
     <template id="admin_document_proposals" name="App: revisión documental">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'documentos'"/>
             <a class="atras" href="/app/admin">← Volver</a>
@@ -2737,6 +2772,7 @@
 
     <template id="admin_document_proposal_detail" name="App: detalle de propuesta documental">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'documentos'"/>
             <a class="atras" href="/app/admin/revision-documental">← Volver a documentos</a>
