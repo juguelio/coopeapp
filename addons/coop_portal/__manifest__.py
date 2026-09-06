@@ -5,6 +5,7 @@
     'author': 'Coopeapp',
     'depends': ['web', 'coop_construction', 'coop_assembly'],
     'data': [
+        'views/portal_hybrid_styles.xml',
         'views/portal_templates.xml',
     ],
     'license': 'LGPL-3',

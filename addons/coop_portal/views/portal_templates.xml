@@ -77,10 +77,12 @@
                 details.faq .resp{padding:0 16px 16px;font-size:15px;color:var(--tinta);line-height:1.5}
                 details.faq .resp b{color:var(--verde)}
             </style>
+            <t t-call="coop_portal.hybrid_styles"/>
         </head>
-        <body>
-            <t t-out="0"/>
-            <div style="text-align:center;padding:20px 0 90px">
+        <body t-att-class="'ui-' + ui_mode if ui_mode else None">
+            <t t-call="coop_portal.hybrid_icons" t-if="ui_mode"/>
+            <main class="ux-content"><t t-out="0"/></main>
+            <div class="ux-footer" style="text-align:center;padding:20px 0 90px">
                 <a href="/app/ayuda"
                    style="color:var(--gris);font-size:14px;text-decoration:none">❓ Preguntas frecuentes</a>
                 <span style="color:#cbd3da;margin:0 8px">·</span>
@@ -88,29 +90,29 @@
                    style="color:var(--gris);font-size:14px;text-decoration:none">↪ Cerrar sesión</a>
             </div>
             <div class="nav" t-if="nav_rol == 'sindico'">
-                <a href="/app/control" t-att-class="'viva' if nav_activo == 'control' else None"><span class="ico">🛡️</span>Control</a>
-                <a href="/app/auditoria" t-att-class="'viva' if nav_activo == 'auditoria' else None"><span class="ico">🔎</span>Auditoría</a>
-                <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><span class="ico">🗳️</span>Asamblea</a>
-                <a href="/app/certificados" t-att-class="'viva' if nav_activo == 'firmar' else None"><span class="ico">✍️</span>Firmar</a>
+                <a href="/app/control" t-att-class="'viva' if nav_activo == 'control' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-obra"/></svg><span t-else="" class="ico">🛡️</span>Control</a>
+                <a href="/app/auditoria" t-att-class="'viva' if nav_activo == 'auditoria' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-doc"/></svg><span t-else="" class="ico">🔎</span>Auditoría</a>
+                <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-asamblea"/></svg><span t-else="" class="ico">🗳️</span>Asamblea</a>
+                <a href="/app/certificados" t-att-class="'viva' if nav_activo == 'firmar' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-cargar"/></svg><span t-else="" class="ico">✍️</span>Firmar</a>
             </div>
             <div class="nav" t-elif="nav_rol == 'admin'">
-                <a href="/app/admin" t-att-class="'viva' if nav_activo == 'tablero' else None"><span class="ico">📊</span>Tablero</a>
-                <a href="/app/admin/ruta" t-att-class="'viva' if nav_activo == 'ruta' else None"><span class="ico">🔴</span>Ruta</a>
-                <a href="/app/admin/reportes" t-att-class="'viva' if nav_activo == 'reportes' else None"><span class="ico">📋</span>Reportes</a>
-                <a href="/app/admin/revision-documental" t-att-class="'viva' if nav_activo == 'documentos' else None"><span class="ico">📄</span>Documentos</a>
-                <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><span class="ico">🗳️</span>Asamblea</a>
+                <a href="/app/admin" t-att-class="'viva' if nav_activo == 'tablero' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-tablero"/></svg><span t-else="" class="ico">📊</span>Tablero</a>
+                <a href="/app/admin/ruta" t-att-class="'viva' if nav_activo == 'ruta' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-ruta"/></svg><span t-else="" class="ico">🔴</span>Ruta</a>
+                <a href="/app/admin/reportes" t-att-class="'viva' if nav_activo == 'reportes' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-nota"/></svg><span t-else="" class="ico">📋</span>Reportes</a>
+                <a href="/app/admin/revision-documental" t-att-class="'viva' if nav_activo == 'documentos' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-doc"/></svg><span t-else="" class="ico">📄</span>Documentos</a>
+                <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-asamblea"/></svg><span t-else="" class="ico">🗳️</span>Asamblea</a>
             </div>
             <div class="nav" t-elif="nav_rol == 'coordinador'">
-                <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
-                <a href="/app/validar" t-att-class="'viva' if nav_activo == 'avances' else None"><span class="ico">✅</span>Avances</a>
-                <a href="/app/pedidos" t-att-class="'viva' if nav_activo == 'pedidos' else None"><span class="ico">📋</span>Pedidos</a>
-                <a href="/app/corralon" t-att-class="'viva' if nav_activo == 'corralon' else None"><span class="ico">📦</span>Corralón</a>
+                <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-inicio"/></svg><span t-else="" class="ico">🏠</span>Inicio</a>
+                <a href="/app/validar" t-att-class="'viva' if nav_activo == 'avances' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-nota"/></svg><span t-else="" class="ico">✅</span>Avances</a>
+                <a href="/app/pedidos" t-att-class="'viva' if nav_activo == 'pedidos' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-nota"/></svg><span t-else="" class="ico">📋</span>Pedidos</a>
+                <a href="/app/corralon" t-att-class="'viva' if nav_activo == 'corralon' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-corralon"/></svg><span t-else="" class="ico">📦</span>Corralón</a>
             </div>
             <div class="nav" t-else="">
-                <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><span class="ico">🏠</span>Inicio</a>
-                <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><span class="ico">✏️</span>Cargar</a>
-                <a href="/app/pedir" t-att-class="'viva' if nav_activo == 'pedir' else None"><span class="ico">🧱</span>Pedir</a>
-                <a href="/app/obra" t-att-class="'viva' if nav_activo == 'obra' else None"><span class="ico">🏗️</span>Obra</a>
+                <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-inicio"/></svg><span t-else="" class="ico">🏠</span>Inicio</a>
+                <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-cargar"/></svg><span t-else="" class="ico">✏️</span>Cargar</a>
+                <a href="/app/pedir" t-att-class="'viva' if nav_activo == 'pedir' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-pedir"/></svg><span t-else="" class="ico">🧱</span>Pedir</a>
+                <a href="/app/obra" t-att-class="'viva' if nav_activo == 'obra' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-obra"/></svg><span t-else="" class="ico">🏗️</span>Obra</a>
             </div>
 
             <div id="offline-aviso" style="display:none;position:fixed;bottom:74px;left:12px;right:12px;background:var(--amarillo);color:#3a2a00;padding:10px 14px;border-radius:12px;font-size:14px;text-align:center;z-index:99">
@@ -167,6 +169,28 @@
         </html>
     </template>
 
+    <template id="hybrid_icons" name="App: íconos del diseño local">
+        <svg class="ux-sprite" aria-hidden="true"><defs>
+ <symbol id="k-inicio" viewBox="0 0 24 24"><path d="M2.5 11 12 3l9.5 8"/><path d="M5 9.8V21h14V9.8"/><path d="M10 21v-6h4v6"/></symbol>
+ <symbol id="k-cargar" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M14.8 3.4 18.6 7.2 8.4 17.4 3.6 18.4 4.6 13.6z"/><path d="M12.6 5.6 16.4 9.4"/></symbol>
+ <symbol id="k-pedir" viewBox="0 0 24 24"><path d="M2.5 4.5h19v15h-19z"/><path d="M2.5 9.5h19M2.5 14.5h19"/><path d="M12 4.5v5M7.3 9.5V14.5M16.7 9.5V14.5M12 14.5v5"/></symbol>
+ <symbol id="k-obra" viewBox="0 0 24 24"><path d="M2 21h20"/><path d="M8.5 21V6"/><path d="M3 6h18"/><path d="M2.5 2.5h4V6h-4z"/><path d="M17 6v5"/><path d="M14.6 11h4.8v4h-4.8z"/></symbol>
+ <symbol id="k-plata" viewBox="0 0 24 24"><path d="M2.5 6h19v12h-19z"/><circle cx="12" cy="12" r="2.8"/><path d="M6.2 6v12M17.8 6v12"/></symbol>
+ <symbol id="k-asamblea" viewBox="0 0 24 24"><path d="M3 8.5h18V21H3z"/><path d="M8.5 8.5V3.5h7v5"/><path d="M7 12.8h10"/></symbol>
+ <symbol id="k-nota" viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></symbol>
+ <symbol id="k-tablero" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6.5 21V12M12 21V4.5M17.5 21V8.5"/></symbol>
+ <symbol id="k-ruta" viewBox="0 0 24 24"><path d="M2.5 3h7v6h-7z"/><path d="M14.5 15h7v6h-7z"/><path d="M9.5 6h4.5v12h-4.5"/></symbol>
+ <symbol id="k-doc" viewBox="0 0 24 24"><path d="M8 2.5h7L19.5 7v12.5H8z"/><path d="M15 2.5V7h4.5"/><path d="M4.5 6.5V21.5H16"/></symbol>
+ <symbol id="k-corralon" viewBox="0 0 24 24"><path d="M3 7.5 12 3.5l9 4v9L12 20.5l-9-4z"/><path d="M3 7.5 12 11.8l9-4.3"/><path d="M12 11.8V20.5"/></symbol>
+ <symbol id="k-nuevo" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></symbol>
+ <symbol id="k-critico" viewBox="0 0 24 24"><path d="M12 3.4 21.6 20.6H2.4z"/><path d="M12 10v4.6M12 17.3h.02"/></symbol>
+ <symbol id="k-flecha" viewBox="0 0 24 24"><path d="M3 12h16.5"/><path d="M13 5.5 19.5 12 13 18.5"/></symbol>
+ <symbol id="k-atras" viewBox="0 0 24 24"><path d="M21 12H4.5"/><path d="M11 5.5 4.5 12 11 18.5"/></symbol>
+ <symbol id="k-ayuda" viewBox="0 0 24 24"><path d="M7.6 8.2a4.4 4.4 0 1 1 4.4 4.4V15.4"/><path d="M10.8 18.2h2.4v2.4h-2.4z"/></symbol>
+ <symbol id="k-salir" viewBox="0 0 24 24"><path d="M13 3.5H4V20.5h9"/><path d="M9.5 12h11"/><path d="M16 7.5 20.5 12 16 16.5"/></symbol>
+</defs></svg>
+    </template>
+
     <!-- ============ AVISOS ============ -->
     <template id="sin_socio" name="App: usuario sin socio">
         <t t-call="coop_portal.layout">
@@ -180,11 +204,12 @@
 
     <template id="sin_obra" name="App: socio sin obra">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <div class="listo">
                 <div class="check" style="background:#a36b00">🏗️</div>
                 <h1>Todavía no estás asignado a una obra</h1>
                 <p class="sub" style="margin-top:8px">Pedile al administrador que te asigne a tu obra. Después vas a poder cargar trabajo y pedir materiales.</p>
-                <a class="botonazo" href="/app">VOLVER AL INICIO</a>
+                <a class="botonazo ux-primary" href="/app">VOLVER AL INICIO</a>
             </div>
         </t>
     </template>
@@ -192,21 +217,20 @@
     <!-- ============ INICIO ============ -->
     <template id="home" name="App: inicio socio">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
-            <h1>Hola, <t t-esc="member.name.split(' ')[0]"/> 👋</h1>
+            <h1>Hola, <t t-esc="member.name.split(' ')[0]"/></h1>
             <div class="sub" t-if="obras">Obra: <t t-esc="obras[0].name"/></div>
             <div class="sub" t-else="">Sin obra asignada por ahora</div>
 
-            <a class="botonazo" href="/app/cargar">✏️ CARGAR LO QUE HICE</a>
-            <a class="botonazo sec" href="/app/pedir">🧱 PEDIR MATERIALES</a>
-            <a class="card" href="/app/aporte" style="border-left:6px solid #2d7ff9;text-decoration:none;color:inherit;display:block">
-                <div class="fila" style="border:0;padding:0"><div>📊 Mi aporte (producción y plata)</div><span class="chip ok">ver →</span></div>
-            </a>
+            <a class="botonazo ux-primary" href="/app/cargar"><svg class="ux-icon" aria-hidden="true"><use href="#k-cargar"/></svg>Cargar lo que hice</a>
+            <a class="botonazo sec" href="/app/pedir">Pedir materiales</a>
+            <a class="botonazo sec" href="/app/aporte">Ver mi aporte →</a>
 
             <div class="card" t-if="asamblea" style="border-left:6px solid #f5a623">
                 <h3>🗳️ ASAMBLEA EN CURSO</h3>
                 <div style="font-size:16px;font-weight:700;margin-bottom:10px"><t t-esc="asamblea.name"/></div>
-                <a class="botonazo" style="min-height:50px;font-size:16px;margin:0" href="/app/asamblea">ENTRAR Y VOTAR</a>
+                <a class="botonazo sec" style="min-height:56px;font-size:16px;margin:0" href="/app/asamblea">ENTRAR Y VOTAR</a>
             </div>
 
             <div class="card" t-if="relevamiento" style="border-left:6px solid #2d7ff9">
@@ -215,7 +239,7 @@
                     <t t-esc="relevamiento.orden_id.cliente_id.name"/> ·
                     <t t-esc="relevamiento.orden_id.ubicacion or relevamiento.orden_id.name"/>
                 </div>
-                <a class="botonazo" style="min-height:50px;font-size:16px;margin:0"
+                <a class="botonazo sec" style="min-height:56px;font-size:16px;margin:0"
                    t-attf-href="/app/relevar/{{relevamiento.id}}">CARGAR RELEVAMIENTO</a>
             </div>
 
@@ -252,7 +276,7 @@
             </div>
 
             <div class="card" t-if="avances">
-                <h3>TUS ÚLTIMAS CARGAS</h3>
+                <h3>Tus últimas cargas</h3>
                 <div class="fila" t-foreach="avances" t-as="a">
                     <div>
                         <t t-esc="a.fecha.strftime('%d/%m')"/> —
@@ -260,7 +284,7 @@
                         <b><t t-esc="'%g' % a.cantidad"/> <t t-esc="uom_labels.get(a.uom, a.uom)"/></b>
                     </div>
                     <span t-if="a.state == 'validado'" class="chip ok">✓ Validado</span>
-                    <span t-else="" class="chip espera">⏳ Lo revisa el coordinador</span>
+                    <span t-else="" class="chip espera">Pendiente de revisión</span>
                 </div>
             </div>
         </t>
@@ -345,105 +369,66 @@
     <!-- ============ SOCIO: MI APORTE ============ -->
     <template id="mi_aporte" name="App: mi aporte (socio)">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
-            <a class="atras" href="/app">← Volver</a>
-            <h1>📊 Mi aporte</h1>
-            <div class="sub">Lo que produjiste, tu plata y tu parte de la obra. Sin secretos.</div>
-
+            <a class="atras" href="/app">← Volver al inicio</a>
+            <h1>Mi aporte</h1>
+            <div class="sub">Tu trabajo registrado en la cooperativa.</div>
+            <section class="ux-metric">
+                <h2>Jornales registrados</h2>
+                <div class="nro"><t t-esc="'%g' % jornales"/></div>
+                <p class="sub" t-if="horas or tareas">
+                    También registraste <t t-if="horas"><t t-esc="'%g' % horas"/> horas</t>
+                    <t t-if="horas and tareas"> y </t><t t-if="tareas"><t t-esc="'%g' % tareas"/> tareas</t>.
+                </p>
+            </section>
+            <a class="botonazo ux-primary" href="/app/cargar">Cargar trabajo</a>
             <div class="card">
-                <h3>JORNALES QUE PUSISTE</h3>
-                <div style="font-size:34px;font-weight:800;color:var(--verde)"><t t-esc="'%g' % jornales"/></div>
-                <div style="font-size:13px;color:var(--gris)">
-                    <t t-if="horas">+ <t t-esc="'%g' % horas"/> horas </t>
-                    <t t-if="tareas">+ <t t-esc="'%g' % tareas"/> tareas</t>
-                </div>
+                <h3>Tu parte del avance</h3>
+                <div class="ux-amount"><t t-esc="'%g' % aporte"/>%</div>
+                <p class="ux-note">Porcentaje del avance que aportó tu trabajo validado.</p>
             </div>
-
-            <div class="card" style="border-left:6px solid #2d7ff9">
-                <div class="fila" style="border:0;padding:0">
-                    <div>👁️ Tu aporte al avance de la obra</div>
-                    <span style="font-size:20px;font-weight:800;color:#2d7ff9"><t t-esc="'%g' % aporte"/>%</span>
-                </div>
-                <div style="font-size:12px;color:var(--gris);margin-top:4px">Lo mismo que ve el consejo.</div>
+            <div class="card">
+                <h3>Producción registrada</h3>
+                <div class="ux-amount">$ <t t-esc="'{:,.0f}'.format(produccion).replace(',', '.')"/></div>
+                <p>Valor del trabajo a precio de la foja. Incluye cargas pendientes de revisión.</p>
+                <details class="faq">
+                    <summary>¿Por qué no cobro estos $ <t t-esc="'{:,.0f}'.format(produccion).replace(',', '.')"/>?</summary>
+                    <div class="resp">Es producción, no tu pago. Faltan los costos de la obra y la liquidación acordada por la cooperativa. El reparto por producción todavía no se calcula en la app.</div>
+                </details>
+                <div class="fila"><span class="chip ok">Validado por el coordinador</span>
+                    <b>$ <t t-esc="'{:,.0f}'.format(esperando_liquidacion).replace(',', '.')"/></b></div>
+                <div class="fila"><span class="chip espera">Pendiente de revisión</span>
+                    <b>$ <t t-esc="'{:,.0f}'.format(esperando_validacion).replace(',', '.')"/></b></div>
             </div>
-
-            <div class="card" style="border-left:6px solid var(--verde)">
-                <h3>TU PLATA</h3>
-                <div class="fila" style="border:0;padding:0 0 3px">
-                    <div>Ya cobrado</div>
-                    <b style="font-size:22px">$ <t t-esc="'{:,.0f}'.format(cobrado).replace(',', '.')"/></b>
-                </div>
-                <div style="font-size:12px;color:var(--gris);margin-top:4px">Lo que ya se liquidó y es tuyo.</div>
-                <a class="fila" href="/app/plata" style="text-decoration:none;color:inherit;border:0;padding-top:12px">
-                    <div>💵 Ver mis liquidaciones</div><span class="chip ok">→</span>
-                </a>
-            </div>
-
-            <div class="card" style="border-left:6px solid #e69a1f">
-                <h3>VALOR DE TU PRODUCCIÓN CERTIFICADA</h3>
-                <div style="font-size:24px;font-weight:800;margin:2px 0 6px">$ <t t-esc="'{:,.0f}'.format(produccion).replace(',', '.')"/></div>
-                <div style="font-size:12px;color:var(--gris);line-height:1.5;margin-bottom:10px">
-                    Es el valor del trabajo que mediste, a precio de la foja de la obra.
-                    <b>No es lo que vas a cobrar:</b> todavía no tiene descontados los costos
-                    de la obra — materiales, administración, impuestos y logística.
-                    La coop acuerda un monto con la cuadrilla y lo reparte el coordinador
-                    según lo que hizo cada uno: <b>el que pone más, cobra más.</b>
-                </div>
-                <div class="fila" style="border:0;padding:0 0 3px">
-                    <div>Validado, esperando liquidación
-                        <span style="font-size:12px;color:var(--gris)">(el coordinador ya lo aprobó)</span>
-                    </div><b>$ <t t-esc="'{:,.0f}'.format(esperando_liquidacion).replace(',', '.')"/></b>
-                </div>
-                <div class="barra"><div t-attf-style="width:{{liq_pct}}%;background:#2d7ff9"/></div>
-                <div class="fila" style="border:0;padding:12px 0 3px">
-                    <div>Esperando validación
-                        <span style="font-size:12px;color:var(--gris)">(lo cargaste, falta que lo aprueben)</span>
-                    </div><b>$ <t t-esc="'{:,.0f}'.format(esperando_validacion).replace(',', '.')"/></b>
-                </div>
-                <div class="barra"><div t-attf-style="width:{{val_pct}}%;background:#e69a1f"/></div>
-            </div>
-
             <div class="card" t-if="items">
-                <h3>LO QUE HICISTE</h3>
+                <h3>Trabajos validados</h3>
                 <div class="fila" t-foreach="items" t-as="it">
-                    <div><t t-esc="it['name']"/></div>
-                    <div style="text-align:right">
-                        <b><t t-esc="'%g' % it['cant']"/> <t t-esc="uom_labels.get(it['uom'], it['uom'])"/></b>
-                        <div t-if="it['prod']" style="font-size:11px;color:var(--gris)"><t t-esc="'%g' % it['prod']"/>/jornal</div>
-                    </div>
+                    <b><t t-esc="it['name']"/></b>
+                    <span><t t-esc="'%g' % it['cant']"/> <t t-esc="uom_labels.get(it['uom'], it['uom'])"/></span>
+                    <span t-if="it['prod']" class="ux-note"><t t-esc="'%g' % it['prod']"/> por jornal</span>
                 </div>
             </div>
-            <div class="card" t-if="not items">
-                <div style="color:var(--gris)">Todavía no tenés avances validados. Cargá lo que hacés y, cuando el coordinador lo valida, aparece acá.</div>
-            </div>
-
+            <div class="card" t-else=""><p>Todavía no tenés avances validados. Van a aparecer acá cuando el coordinador los revise.</p></div>
             <div class="card" t-if="otros">
-                <h3>OTRAS COSAS QUE HICISTE</h3>
-                <div style="font-size:12px;color:var(--gris);margin-bottom:6px">Trabajo que no estaba en la foja. Suma a tus jornales; no mueve el % de avance de la obra.</div>
-                <div t-foreach="otros" t-as="o" style="padding:10px 0;border-bottom:1px solid #eef2f5">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                        <div>
-                            <t t-esc="o.descripcion"/>
-                            <div style="font-size:11px;color:var(--gris)">
-                                <t t-esc="o.fecha"/>
-                                <t t-if="o.foto_id"> · <a t-attf-href="/app/otros/foto/{{o.id}}" style="color:var(--gris)">📷 tu foto</a></t>
-                            </div>
-                        </div>
-                        <div style="text-align:right;white-space:nowrap">
-                            <b><t t-esc="o.trabajo_texto"/></b>
-                            <div style="font-size:11px">
-                                <span t-if="o.state == 'pendiente'" class="chip espera">esperando al coordinador</span>
-                                <span t-if="o.state == 'registrado'" class="chip ok">registrado</span>
-                                <span t-if="o.state == 'mapeado'" class="chip ok">✓ pasó a la foja</span>
-                                <span t-if="o.state == 'rechazado'" class="chip" style="background:#fdecea;color:#b3261e">✗ rechazado</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div t-if="o.nota_coordinador"
-                         t-attf-style="font-size:13px;margin-top:6px;padding:8px 10px;border-radius:8px;background:{{'#fdecea' if o.state == 'rechazado' else '#f6f8fa'}};color:{{'#8a2018' if o.state == 'rechazado' else 'var(--gris)'}}">
-                        <b><t t-esc="o.resuelto_por.name or 'El coordinador'"/>:</b> <t t-esc="o.nota_coordinador"/>
-                    </div>
+                <h3>Otros trabajos</h3>
+                <p class="ux-note">Suman a tus jornales cuando el coordinador los resuelve.</p>
+                <div t-foreach="otros" t-as="o" class="ux-other-row">
+                    <p><b><t t-esc="o.descripcion"/></b></p>
+                    <p><t t-esc="o.fecha.strftime('%d/%m/%Y')"/> · <t t-esc="o.trabajo_texto"/></p>
+                    <span t-if="o.state == 'pendiente'" class="chip espera">Pendiente de revisión</span>
+                    <span t-if="o.state == 'registrado'" class="chip ok">Registrado</span>
+                    <span t-if="o.state == 'mapeado'" class="chip ok">Pasó a la foja</span>
+                    <span t-if="o.state == 'rechazado'" class="chip" style="background:#b3261e;color:#fff">Rechazado</span>
+                    <p t-if="o.nota_coordinador"><b><t t-esc="o.resuelto_por.name or 'El coordinador'"/>:</b> <t t-esc="o.nota_coordinador"/></p>
+                    <a t-if="o.foto_id" class="atras" t-attf-href="/app/otros/foto/{{o.id}}">Ver tu foto →</a>
                 </div>
+            </div>
+            <div class="card">
+                <h3>Dinero cobrado</h3>
+                <div class="ux-amount">$ <t t-esc="'{:,.0f}'.format(cobrado).replace(',', '.')"/></div>
+                <p class="ux-note">Liquidaciones registradas como pagadas.</p>
+                <a class="botonazo sec" href="/app/plata">Ver mis liquidaciones →</a>
             </div>
         </t>
     </template>
@@ -486,6 +471,7 @@
     <!-- ============ CARGAR PASO 1 ============ -->
     <template id="cargar_paso1" name="App: cargar paso 1">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'cargar'"/>
             <a class="atras" href="/app">← Salir</a>
             <div class="paso">PASO 1 DE 3 · <t t-esc="obra.name"/></div>
@@ -506,21 +492,22 @@
                 </span>
             </a>
             <a class="opcion" t-attf-href="/app/cargar/otro?obra_id={{obra.id}}">
-                <span>✏️ Otra cosa que hice</span>
+                <span>✏️ Otro trabajo que hice</span>
                 <span style="margin-left:auto;color:var(--gris)">no está en la lista</span>
             </a>
             <div class="card" t-if="not items">
                 <h3>SIN ÍTEMS</h3>
-                <div>La obra todavía no tiene foja de medición cargada, pero podés cargar igual lo que hiciste con <b>Otra cosa que hice</b>: el coordinador lo resuelve.</div>
+                <div>La obra todavía no tiene foja de medición cargada, pero podés cargar igual lo que hiciste con <b>Otro trabajo que hice</b>: el coordinador lo resuelve.</div>
             </div>
         </t>
     </template>
 
     <template id="cargar_otro" name="App: cargar trabajo sin ítem de foja">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'cargar'"/>
             <a class="atras" t-attf-href="/app/cargar?obra_id={{obra.id}}">← Volver</a>
-            <div class="paso">OTRA COSA QUE HICE · <t t-esc="obra.name"/></div>
+            <div class="paso">Otro trabajo que hice · <t t-esc="obra.name"/></div>
             <div class="pregunta">¿Qué hiciste?</div>
             <div class="sub">Escribilo con tus palabras. El coordinador lo revisa después.</div>
             <form action="/app/cargar/otro/confirmar" method="post" enctype="multipart/form-data" id="form-otro">
@@ -531,7 +518,7 @@
                        style="width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:var(--radio);font-size:16px;margin-bottom:14px"/>
 
                 <div class="pregunta" style="font-size:18px">Sacale una foto (opcional)</div>
-                <div class="sub" style="margin-bottom:8px">Es lo único que el coordinador va a ver de lo que hiciste. Con foto le queda mucho más fácil reconocértelo.</div>
+                <div class="sub" style="margin-bottom:8px">La foto ayuda al coordinador a revisar tu trabajo.</div>
                 <label class="botonazo sec" style="margin-bottom:6px" for="foto-otro">📷 Sacar o elegir foto</label>
                 <input id="foto-otro" type="file" name="foto" accept="image/*" capture="environment" style="display:none"/>
                 <div id="foto-preview" style="display:none;margin-bottom:10px">
@@ -557,7 +544,7 @@
                         medible contra la foja: eso solo se mueve si él lo pasa a un ítem.
                     </div>
                 </div>
-                <button class="botonazo" type="submit">CARGAR ✓</button>
+                <button class="botonazo ux-primary" type="submit">Cargar trabajo</button>
             </form>
 
             <script>
@@ -640,9 +627,10 @@
 
     <template id="cargar_otro_listo" name="App: trabajo sin foja cargado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'cargar'"/>
             <div class="listo">
-                <div class="check">✅</div>
+                <div class="check">✓</div>
                 <h1>Quedó cargado</h1>
                 <p class="sub" style="margin-top:8px">
                     <b><t t-esc="trabajo.descripcion"/></b><br/>
@@ -652,8 +640,8 @@
                 <div t-if="aviso_foto" class="card" style="border-left:6px solid #e69a1f;text-align:left">
                     <div style="font-size:14px">⚠️ El trabajo quedó cargado, pero la foto no se pudo guardar: <t t-esc="aviso_foto"/></div>
                 </div>
-                <a class="botonazo" href="/app/aporte">Ver mi aporte</a>
-                <a class="atras" href="/app/cargar">Cargar otra cosa</a>
+                <a class="botonazo ux-primary" href="/app/aporte">Ver mi aporte</a>
+                <a class="atras" href="/app/cargar">Cargar otro trabajo</a>
             </div>
         </t>
     </template>
@@ -777,6 +765,7 @@
     <!-- ============ CARGAR PASO 2 ============ -->
     <template id="cargar_paso2" name="App: cargar paso 2">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'cargar'"/>
             <a class="atras" href="/app/cargar">← Volver</a>
             <div class="paso">PASO 2 DE 3</div>
@@ -787,7 +776,7 @@
                 <input class="numero-grande" type="number" name="cantidad" step="any"
                        min="0.01" required="required" inputmode="decimal"
                        t-attf-placeholder="{{uom_labels.get(item.uom, item.uom)}}"/>
-                <button class="botonazo" type="submit">Seguir →</button>
+                <button class="botonazo ux-primary" type="submit">Seguir →</button>
             </form>
         </t>
     </template>
@@ -795,6 +784,7 @@
     <!-- ============ CARGAR PASO 3 ============ -->
     <template id="cargar_paso3" name="App: cargar paso 3">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'cargar'"/>
             <a class="atras" t-attf-href="/app/cargar/cantidad?item_id={{item.id}}">← Volver</a>
             <div class="paso">PASO 3 DE 3</div>
@@ -808,10 +798,10 @@
                            t-att-checked="'checked' if m[0] == 'jornal' else None" required="required"/>
                     <span><t t-esc="m[2]"/> <t t-esc="m[1]"/></span>
                 </label>
-                <div class="paso" style="margin-top:10px">¿CUÁNTOS? (jornales / horas / tareas)</div>
+                <div class="paso" style="margin-top:10px">¿Cuántos?</div>
                 <input class="numero-grande" type="number" name="cantidad_trabajo" step="any"
                        min="0.1" value="1" required="required" inputmode="decimal"/>
-                <button class="botonazo" type="submit">CONFIRMAR ✓</button>
+                <button class="botonazo ux-primary" type="submit">Confirmar carga</button>
             </form>
         </t>
     </template>
@@ -819,6 +809,7 @@
     <!-- ============ CARGAR LISTO ============ -->
     <template id="cargar_listo" name="App: avance cargado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'cargar'"/>
             <div class="listo">
                 <div class="check">✓</div>
@@ -826,9 +817,9 @@
                 <p class="sub" style="margin-top:8px">
                     Cargaste <b><t t-esc="'%g' % avance.cantidad"/></b> de
                     "<t t-esc="item.name"/>".<br/>
-                    Ahora lo revisa el coordinador y suma a tu participación.
+                    Falta que lo valide el coordinador. Después suma al avance de la obra.
                 </p>
-                <a class="botonazo" href="/app">Volver al inicio</a>
+                <a class="botonazo ux-primary" href="/app">Volver al inicio</a>
                 <a class="atras" t-attf-href="/app/cargar/cantidad?item_id={{item.id}}">Cargar otro</a>
             </div>
         </t>
@@ -837,40 +828,40 @@
     <!-- ============ MI PLATA ============ -->
     <template id="plata" name="App: mi plata">
         <t t-call="coop_portal.layout">
-            <!-- 'plata' salió de la barra del socio: se llega desde Mi aporte,
-                 que cuelga de Inicio. Marcamos Inicio, como hace mi_aporte, para
-                 que la barra no quede sin ninguna pestaña activa. -->
+            <t t-set="ui_mode" t-value="'cartel' if member and member.role == 'worker' else None"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
+            <a class="atras" href="/app/aporte">← Volver a mi aporte</a>
             <h1>Mi plata</h1>
-            <div class="sub">Tus liquidaciones y tu producción</div>
-
+            <div class="sub">Liquidado no siempre significa cobrado.</div>
             <div class="card" t-if="payrolls">
-                <h3>ÚLTIMA LIQUIDACIÓN</h3>
-                <div class="nro">$ <t t-esc="'{:,.0f}'.format(payrolls[0].net_amount).replace(',', '.')"/></div>
-                <div class="sub" style="margin:4px 0 0">
-                    <t t-esc="payrolls[0].date_from.strftime('%d/%m')"/> al
-                    <t t-esc="payrolls[0].date_to.strftime('%d/%m')"/> ·
-                    <t t-esc="payroll_state_labels.get(payrolls[0].state, payrolls[0].state)"/>
-                </div>
+                <h3>Última liquidación</h3>
+                <div class="ux-amount">$ <t t-esc="'{:,.0f}'.format(payrolls[0].net_amount).replace(',', '.')"/></div>
+                <p><t t-esc="payrolls[0].date_from.strftime('%d/%m/%Y')"/> al <t t-esc="payrolls[0].date_to.strftime('%d/%m/%Y')"/></p>
+                <p class="ux-note"><t t-esc="payroll_state_labels.get(payrolls[0].state, payrolls[0].state)"/></p>
+                <span t-if="payrolls[0].state == 'paid'" class="ux-status paid">Pagada</span>
+                <span t-elif="payrolls[0].state == 'cancelled'" class="ux-status">Anulada: no es un pago</span>
+                <span t-else="" class="ux-status">Todavía no está pagada</span>
             </div>
+            <div class="card" t-else="">
+                <h3>Todavía no tenés liquidaciones</h3>
+                <p>Tu trabajo cargado se ve en Mi aporte. No es un pago hasta que la cooperativa lo liquide y lo pague.</p>
+            </div>
+            <a class="botonazo ux-primary" href="/app/aporte">Ver mi producción</a>
             <div class="card" t-if="len(payrolls) &gt; 1">
-                <h3>ANTERIORES</h3>
+                <h3>Liquidaciones anteriores</h3>
                 <div class="fila" t-foreach="payrolls[1:]" t-as="p">
-                    <div><t t-esc="p.date_to.strftime('%m/%Y')"/></div>
                     <b>$ <t t-esc="'{:,.0f}'.format(p.net_amount).replace(',', '.')"/></b>
+                    <span><t t-esc="p.date_to.strftime('%d/%m/%Y')"/></span>
+                    <span t-att-class="'chip ok' if p.state == 'paid' else 'chip espera'"><t t-esc="payroll_state_labels.get(p.state, p.state)"/></span>
                 </div>
             </div>
-            <div class="card" t-if="not payrolls">
-                <h3>LIQUIDACIONES</h3>
-                <div>Todavía no tenés liquidaciones cargadas.</div>
-            </div>
-
             <div class="card" t-if="validados">
-                <h3>TU PRODUCCIÓN VALIDADA</h3>
+                <h3>Producción validada</h3>
+                <p class="ux-note">Estas cantidades son trabajo aprobado. No son dinero cobrado.</p>
                 <div class="fila" t-foreach="validados" t-as="v">
-                    <div><t t-esc="v.foja_item_id.name"/></div>
-                    <b><t t-esc="'%g' % v.cantidad"/> en <t t-esc="'%g' % v.cantidad_trabajo"/>
-                       <t t-esc="medida_labels.get(v.medida_trabajo, v.medida_trabajo)"/></b>
+                    <b><t t-esc="v.foja_item_id.name"/></b>
+                    <span><t t-esc="'%g' % v.cantidad"/> <t t-esc="uom_labels.get(v.uom, v.uom)"/></span>
+                    <span><t t-esc="'%g' % v.cantidad_trabajo"/> <t t-esc="medida_labels.get(v.medida_trabajo, v.medida_trabajo)"/></span>
                 </div>
             </div>
         </t>
@@ -935,6 +926,7 @@
     <!-- ============ COORDINADOR: VALIDAR AVANCES ============ -->
     <template id="coord_validar" name="App: coordinador valida avances">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_activo" t-value="'inicio'"/>
             <a class="atras" href="/app">← Volver</a>
             <h1>👍 Avances para revisar</h1>
@@ -1918,6 +1910,7 @@
     <!-- ============ SÍNDICO: PANEL DE CONTROL ============ -->
     <template id="sindico_control" name="App: panel del síndico">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'sindico'"/>
             <t t-set="nav_activo" t-value="'control'"/>
             <h1>🛡️ Control</h1>
@@ -1960,6 +1953,7 @@
     <!-- ============ SÍNDICO: CERTIFICADOS A FIRMAR ============ -->
     <template id="sindico_certificados" name="App: certificados a firmar">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'sindico'"/>
             <t t-set="nav_activo" t-value="'firmar'"/>
             <h1>✍️ Certificados</h1>
@@ -1994,6 +1988,7 @@
     <!-- ============ SÍNDICO: ACTO DE FIRMA ============ -->
     <template id="sindico_firmar" name="App: firmar certificado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'sindico'"/>
             <t t-set="nav_activo" t-value="'firmar'"/>
             <a class="atras" href="/app/certificados">← Volver</a>
@@ -2024,6 +2019,7 @@
     <!-- ============ SÍNDICO: FIRMADO ============ -->
     <template id="sindico_firmado" name="App: certificado firmado">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'sindico'"/>
             <t t-set="nav_activo" t-value="'firmar'"/>
             <div class="listo">
@@ -2107,6 +2103,7 @@
     <!-- ============ ADMIN: TABLERO MULTI-OBRA ============ -->
     <template id="admin_dashboard" name="App: tablero del administrador">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'tablero'"/>
             <h1>📊 Administración</h1>
@@ -2424,6 +2421,7 @@
     <!-- ============ ADMIN: RUTA CRÍTICA MULTI-OBRA ============ -->
     <template id="admin_ruta" name="App: hoja de ruta visual (Gantt CPM)">
         <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'obra'"/>
             <t t-set="nav_rol" t-value="'admin'"/>
             <t t-set="nav_activo" t-value="'ruta'"/>
             <h1>🔴 Hoja de ruta</h1>
@@ -2620,9 +2618,10 @@
     <!-- ============ AYUDA: PREGUNTAS FRECUENTES POR ROL ============ -->
     <template id="ayuda" name="App: preguntas frecuentes por rol">
         <t t-call="coop_portal.layout">
-            <h1>❓ Preguntas frecuentes</h1>
+            <t t-set="ui_mode" t-value="'cartel' if rol == 'socio' else None"/>
+            <h1>Preguntas frecuentes</h1>
             <div class="sub" t-if="rol == 'socio'">Para socios · todo lo que necesitás para usar la app</div>
-            <div class="sub" t-if="rol == 'coordinador'">Para el capataz · cómo manejar tu obra desde el celular</div>
+            <div class="sub" t-if="rol == 'coordinador'">Para el coordinador · cómo manejar tu obra desde el celular</div>
             <div class="sub" t-if="rol == 'admin'">Para la administración · operación de la cooperativa</div>
             <div class="sub" t-if="rol == 'sindico'">Para el síndico · control y firma de actas</div>
 
@@ -2635,9 +2634,9 @@
                 <details class="faq"><summary>Cargué algo sin señal, ¿se pierde?</summary>
                     <div class="resp">No. Si estás sin internet, lo que cargás <b>se guarda en el teléfono</b> y se envía solo cuando vuelve la señal. Vas a ver un aviso amarillo mientras tanto.</div></details>
                 <details class="faq"><summary>¿Por qué mi avance dice "en espera"?</summary>
-                    <div class="resp">Porque todavía <b>el capataz no lo validó</b>. Cuando lo aprueba, pasa a contar para tu plata y para el avance de la obra.</div></details>
+                    <div class="resp">Porque todavía <b>el coordinador no lo validó</b>. Cuando lo aprueba, suma al avance de la obra. Eso no significa que ya esté liquidado o pagado.</div></details>
                 <details class="faq"><summary>¿Dónde veo cuánta plata tengo?</summary>
-                    <div class="resp">En <b>Mi plata</b>. Vas a ver lo que ya <b>cobraste</b> y lo que tenés <b>en camino</b> (trabajo cargado que todavía no se liquidó).</div></details>
+                    <div class="resp">En <b>Mi plata</b> ves tus liquidaciones y su estado. Solo las que dicen <b>Pagada</b> están registradas como cobradas. Tu producción está en <b>Mi aporte</b>.</div></details>
                 <details class="faq"><summary>¿Qué es "Mi aporte"?</summary>
                     <div class="resp">En <b>Mi aporte</b> ves tus jornales y tu producción registrada. El valor de esa producción no es tu pago: tus liquidaciones están en <b>Mi plata</b>.</div></details>
                 <details class="faq"><summary>¿Cómo pido materiales?</summary>
@@ -2661,7 +2660,7 @@
                 <details class="faq"><summary>¿Qué hace el botón "Optimizar"?</summary>
                     <div class="resp">Busca el <b>precio más barato</b> para cada material: primero usa lo que ya está en <b>acopio</b> (precio congelado), y lo que falta lo compra al corralón más conveniente. Te muestra el <b>ahorro</b>.</div></details>
                 <details class="faq"><summary>¿Por qué no me aparece una obra?</summary>
-                    <div class="resp">Porque solo ves las obras donde estás asignado como <b>capataz</b>. Si falta una, que el administrador te asigne a esa obra.</div></details>
+                    <div class="resp">Porque solo ves las obras donde estás asignado como <b>coordinador</b>. Si falta una, que el administrador te asigne a esa obra.</div></details>
             </t>
 
             <!-- ===== ADMINISTRADOR ===== -->
@@ -2700,6 +2699,7 @@
                     <div class="resp">En <b>Asamblea</b> ves el quórum en vivo y el orden del día. Como síndico también firmás el <b>acta</b> con tu rol al cierre.</div></details>
             </t>
 
+            <a t-if="rol == 'socio'" class="botonazo ux-primary" href="/app">Volver al inicio</a>
             <div class="card" style="background:var(--verde-claro);border:0;text-align:center;font-size:14px;color:var(--tinta);margin-top:6px">
                 ¿No encontrás tu respuesta? Escribinos y lo sumamos acá.
             </div>
