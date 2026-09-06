@@ -22,6 +22,16 @@
         <xpath expr="//div[hasclass('border-top')]" position="replace"/>
     </template>
 
+    <!-- Fallback sin JavaScript: Odoo oculta el form mientras espera que
+         web.user_switch lo renderice. Si ese asset tarda o falla, el usuario
+         igual debe poder entrar con correo y contraseña. -->
+    <template id="coop_login_form_fallback" inherit_id="web.login">
+        <xpath expr="//form[contains(@t-attf-class, 'oe_login_form')]"
+               position="attributes">
+            <attribute name="t-attf-class">oe_login_form</attribute>
+        </xpath>
+    </template>
+
     <!-- Saca el "¿No tienes una cuenta?" (registro público) → solo por invitación -->
     <function model="ir.config_parameter" name="set_param">
         <value>auth_signup.invitation_scope</value>
