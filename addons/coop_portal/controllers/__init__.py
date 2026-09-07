@@ -10,3 +10,4 @@ from . import seguros
 from . import pwa
 from . import auth
 from . import home
+from . import account

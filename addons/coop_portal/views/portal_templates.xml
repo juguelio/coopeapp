@@ -83,6 +83,9 @@
             <t t-call="coop_portal.hybrid_icons" t-if="ui_mode"/>
             <main class="ux-content"><t t-out="0"/></main>
             <div class="ux-footer" style="text-align:center;padding:20px 0 90px">
+                <a href="/app/cuenta"
+                   style="color:var(--gris);font-size:14px;text-decoration:none">👤 Mi cuenta</a>
+                <span style="color:#cbd3da;margin:0 8px">·</span>
                 <a href="/app/ayuda"
                    style="color:var(--gris);font-size:14px;text-decoration:none">❓ Preguntas frecuentes</a>
                 <span style="color:#cbd3da;margin:0 8px">·</span>
@@ -210,6 +213,29 @@
                 <h1>Todavía no estás asignado a una obra</h1>
                 <p class="sub" style="margin-top:8px">Pedile al administrador que te asigne a tu obra. Después vas a poder cargar trabajo y pedir materiales.</p>
                 <a class="botonazo ux-primary" href="/app">VOLVER AL INICIO</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ CUENTA: PIN Y AYUDA DE ACCESO ============ -->
+    <template id="cuenta" name="App: mi cuenta">
+        <t t-call="coop_portal.layout">
+            <a class="atras" href="/app">← Volver al inicio</a>
+            <h1>Mi cuenta</h1>
+            <div class="sub">Tus datos para entrar a coopeapp.</div>
+            <div class="card">
+                <h3>USUARIO</h3>
+                <div class="nro" style="font-size:24px"><t t-esc="member.name"/></div>
+                <div class="ux-note"><t t-esc="rol_label"/></div>
+            </div>
+            <div class="card">
+                <h3>SEGURIDAD</h3>
+                <p class="ux-note">Podés cambiar tu PIN cuando quieras. Elegí uno distinto al inicial y no se lo compartas a nadie.</p>
+                <a class="botonazo ux-primary" href="/app/cambiar-pin">Cambiar mi PIN</a>
+            </div>
+            <div class="card">
+                <h3>¿OLVIDASTE TU PIN?</h3>
+                <p class="ux-note">Pedile al administrador de la cooperativa que lo reinicie. Al volver a entrar, la app te va a pedir que elijas un PIN nuevo.</p>
             </div>
         </t>
     </template>

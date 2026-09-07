@@ -91,3 +91,10 @@ class TestHybridUI(HttpCase):
         self.assertEqual(tree.xpath('//div[@class="nav"]/a/@href'), [
             '/app/admin', '/app/admin/ruta', '/app/admin/reportes',
             '/app/admin/revision-documental', '/app/asamblea'])
+
+    def test_account_exposes_pin_change_and_recovery_path(self):
+        self.authenticate(self.user.login, 'Local-UI-Test-Only')
+        tree = self.page('/app/cuenta')
+        self.assertIn('Mi cuenta', tree.text_content())
+        self.assertTrue(tree.xpath('//a[@href="/app/cambiar-pin"]'))
+        self.assertIn('Pedile al administrador', tree.text_content())
