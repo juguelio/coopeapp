@@ -33,12 +33,14 @@ node addons/coop_portal/tests/test_pwa_queue.cjs
     tail -100 "$LOG_DIR/tests.log"; exit 1;
   }
 # Un proceso que termina en 0 sin descubrir tests no prueba nada.
-docker run --rm -v "$LOG_DIR:/logs:ro" --entrypoint python3 odoo:18.0 -c '
+# Leer el log desde el runner evita que el usuario interno del contenedor
+# validator choque con los permisos del directorio temporal de GitHub Actions.
+python3 - "$LOG_DIR/tests.log" <<'PY'
 import pathlib, re, sys
-text = pathlib.Path("/logs/tests.log").read_text()
+text = pathlib.Path(sys.argv[1]).read_text()
 results = re.findall(r"(\d+) failed, (\d+) error\(s\) of (\d+) tests", text)
 for failed, errors, count in results:
     print(f"{failed} fallas, {errors} errores, {count} tests")
 sys.exit(0 if results and all(int(f) == int(e) == 0 for f,e,n in results)
          and sum(int(n) for f,e,n in results) > 0 else 1)
-'
+PY
