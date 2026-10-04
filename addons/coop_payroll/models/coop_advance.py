@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class CoopAdvance(models.Model):
@@ -28,6 +28,44 @@ class CoopAdvance(models.Model):
         ('amount_positive', 'CHECK(amount > 0)', 'El monto del anticipo debe ser mayor a cero.'),
     ]
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.su and not self.env.user.has_group('coop_members.group_coop_manager'):
+            defaults = self.default_get(['state', 'payroll_id', 'approved_by', 'date_approved'])
+            for vals in vals_list:
+                values = dict(defaults, **vals)
+                if values.get('state', 'draft') != 'draft' or any(
+                    values.get(field) for field in ('payroll_id', 'approved_by', 'date_approved')
+                ):
+                    raise AccessError(_('Solo la administración puede aprobar o descontar anticipos.'))
+        default_payroll = self.default_get(['payroll_id']).get('payroll_id')
+        self._check_paid_payroll(self.env['coop.payroll'].browse([
+            vals.get('payroll_id', default_payroll) for vals in vals_list
+            if vals.get('payroll_id', default_payroll)
+        ]))
+        return super().create(vals_list)
+
+    def _check_paid_payroll(self, payrolls):
+        if payrolls.filtered(lambda p: p.state == 'paid'):
+            raise ValidationError(_('No se pueden modificar anticipos de una liquidación pagada.'))
+
+    def write(self, vals):
+        payrolls = self.mapped('payroll_id')
+        if vals.get('payroll_id'):
+            payrolls |= self.env['coop.payroll'].browse(vals['payroll_id'])
+        self._check_paid_payroll(payrolls)
+        return super().write(vals)
+
+    def unlink(self):
+        self._check_paid_payroll(self.mapped('payroll_id'))
+        return super().unlink()
+
+    @api.constrains('member_id', 'payroll_id')
+    def _check_payroll_member(self):
+        for advance in self:
+            if advance.payroll_id and advance.member_id != advance.payroll_id.member_id:
+                raise ValidationError(_('El anticipo y la liquidación deben pertenecer al mismo socio.'))
+
     def action_approve(self):
         for advance in self:
             advance.write({
@@ -35,11 +73,11 @@ class CoopAdvance(models.Model):
                 'approved_by': self.env.user.id,
                 'date_approved': fields.Date.today(),
             })
-            advance.message_post(body=_('Anticipo aprobado por %s.') % self.env.user.name)
+            advance.sudo().message_post(author_id=self.env.user.partner_id.id, body=_('Anticipo aprobado por %s.') % self.env.user.name)
 
     def action_reject(self):
         self.write({'state': 'rejected'})
-        self.message_post(body=_('Anticipo rechazado.'))
+        self.sudo().message_post(author_id=self.env.user.partner_id.id, body=_('Anticipo rechazado.'))
 
     def action_draft(self):
         self.write({'state': 'draft'})

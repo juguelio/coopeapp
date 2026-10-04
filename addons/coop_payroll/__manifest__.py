@@ -1,6 +1,6 @@
 {
     'name': 'Cooperativa - Liquidaciones a Socios',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'Liquidación transparente a socios: horas, anticipos y pagos visibles para cada socio',
     'author': 'Plataforma Cooperativa',
     'category': 'Cooperative',

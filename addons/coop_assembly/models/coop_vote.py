@@ -59,7 +59,7 @@ class CoopVote(models.Model):
             elif vote.vote_type == 'absolute':
                 vote.approved = percentage_yes > 50
             elif vote.vote_type == 'two_thirds':
-                vote.approved = percentage_yes >= 66.67
+                vote.approved = vote.votes_yes * 3 >= total * 2
             elif vote.vote_type == 'unanimous':
                 vote.approved = vote.votes_no == 0 and vote.votes_abstain == 0
 

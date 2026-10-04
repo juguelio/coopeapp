@@ -22,6 +22,9 @@ class CoopTrabajoOtro(models.Model):
     vuelve avance certificable), o lo deja registrado sin certificar.
     """
     _name = 'coop.trabajo.otro'
+    _inherit = ['coop.reviewable']
+    _pending_state = 'pendiente'
+    _review_fields = frozenset({'resuelto_por', 'nota_coordinador', 'avance_id'})
     _description = 'Trabajo del socio sin ítem de foja'
     _order = 'fecha desc, id desc'
 
@@ -77,6 +80,12 @@ class CoopTrabajoOtro(models.Model):
     def _compute_trabajo_texto(self) -> None:
         for r in self:
             r.trabajo_texto = texto_trabajo(r.cantidad_trabajo, r.medida_trabajo)
+
+    def write(self, vals):
+        if 'state' in vals and vals['state'] != 'mapeado' and any(
+                r.avance_id for r in self):
+            raise UserError('Un trabajo ya mapeado no puede reabrirse: corregí el avance generado.')
+        return super().write(vals)
 
     def action_registrar(self, resuelto_por=None, nota=None) -> None:
         """Queda como trabajo registrado: cuenta para los jornales del socio,
@@ -153,7 +162,8 @@ class CoopTrabajoOtro(models.Model):
         porque cuando cargó no había ítem contra el cual medirla.
         """
         self.ensure_one()
-        if self.state == 'mapeado':
+        self._check_review_access()
+        if self.avance_id or self.state == 'mapeado':
             raise UserError('Este trabajo ya está mapeado a la foja.')
         if not foja_item or foja_item.obra_id != self.obra_id:
             raise UserError('El ítem de foja tiene que ser de la misma obra.')

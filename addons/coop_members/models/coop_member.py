@@ -121,7 +121,7 @@ class CoopMember(models.Model):
     def action_approve(self):
         for member in self:
             member.write({'state': 'active', 'date_admission': member.date_admission or fields.Date.today()})
-            member.message_post(body=_('Socio aprobado y activado.'))
+            member.sudo().message_post(author_id=self.env.user.partner_id.id, body=_('Socio aprobado y activado.'))
 
     def action_suspend(self):
         self.write({'state': 'suspended'})
@@ -205,7 +205,7 @@ class CoopMember(models.Model):
         pin = ''.join(c for c in (self.dni or '') if c.isdigit())[-4:]
         if len(pin) == 4:
             user.set_coop_pin(pin)
-        self.message_post(body=_(
+        self.sudo().message_post(author_id=self.env.user.partner_id.id, body=_(
             'Acceso a la app creado. Usuario: %s · PIN inicial: los últimos 4 '
             'dígitos del DNI (recomendá cambiarlo).') % self.dni)
         return user
@@ -224,9 +224,14 @@ class CoopMember(models.Model):
             g = self.env.ref(xmlid, raise_if_not_found=False)
             if g:
                 coop_groups |= g
+        if self.role == 'syndic':
+            for xmlid in ('project.group_project_manager', 'project.group_project_user'):
+                project_group = self.env.ref(xmlid, raise_if_not_found=False)
+                if project_group:
+                    coop_groups |= project_group
         cmds = [(3, g.id) for g in coop_groups] + [(4, grupo.id)]
         user.sudo().write({'groups_id': cmds})
-        self.message_post(body=_('Rol actualizado a %s en la app.')
+        self.sudo().message_post(author_id=self.env.user.partner_id.id, body=_('Rol actualizado a %s en la app.')
                           % dict(self._fields['role'].selection).get(self.role))
         return True
 
@@ -249,7 +254,7 @@ class CoopMember(models.Model):
                 'El DNI no tiene 4 dígitos para armar un PIN. Usá '
                 '"Cambiar PIN" para poner uno a mano.'))
         user.sudo().set_coop_pin(pin)
-        self.message_post(body=_(
+        self.sudo().message_post(author_id=self.env.user.partner_id.id, body=_(
             'PIN reiniciado a los últimos 4 dígitos del DNI.'))
         return {
             'type': 'ir.actions.client', 'tag': 'display_notification',

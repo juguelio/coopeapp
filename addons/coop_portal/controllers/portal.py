@@ -1,3 +1,5 @@
+import math
+
 from odoo import http
 from odoo.http import request
 
@@ -25,12 +27,29 @@ class CoopPortal(http.Controller):
             ('socio_obra_ids', 'in', member.ids),
         ])
 
+    def _item_del_socio(self, member, item_id):
+        """El ítem de foja pedido, sólo si es de una obra del socio.
+
+        Las record rules del avance dejan crear el registro propio pero no
+        miran la obra: sin este filtro, un id de ítem adivinado deja cargar
+        trabajo contra la foja de otra obra. La pantalla ya ofrece sólo las
+        obras del socio; esto es lo que lo garantiza del lado del servidor.
+        """
+        try:
+            pedido = int(item_id or 0)
+        except (TypeError, ValueError):
+            return request.env['coop.foja.item'].sudo().browse()
+        return request.env['coop.foja.item'].sudo().search([
+            ('id', '=', pedido), ('obra_id', 'in', self._obras(member).ids)])
+
     def _obra_o_primera(self, member, obra_id):
         obras = self._obras(member)
         if obra_id:
-            elegida = obras.filtered(lambda o: o.id == int(obra_id))
-            if elegida:
-                return elegida[0], obras
+            try:
+                pedido = int(obra_id)
+            except (TypeError, ValueError):
+                return obras[:0], obras
+            return obras.filtered(lambda o: o.id == pedido)[:1], obras
         return (obras[0] if obras else obras), obras
 
     def _render(self, template, valores):
@@ -235,6 +254,8 @@ class CoopPortal(http.Controller):
     def cargar_otro_confirmar(self, obra_id, descripcion, medida_trabajo,
                               cantidad_trabajo, foto=None, **kw):
         member = self._member()
+        if not member or not obra_id:
+            return request.redirect('/app/cargar')
         obra, _obras = self._obra_o_primera(member, obra_id)
         texto = (descripcion or '').strip()
         trabajo = self._a_numero(cantidad_trabajo)
@@ -261,7 +282,7 @@ class CoopPortal(http.Controller):
     @http.route('/app/cargar/cantidad', type='http', auth='user', website=False)
     def cargar_paso2(self, item_id, **kw):
         member = self._member()
-        item = request.env['coop.foja.item'].sudo().browse(int(item_id)).exists()
+        item = self._item_del_socio(member, item_id)
         if not member or not item:
             return request.redirect('/app/cargar')
         return self._render('coop_portal.cargar_paso2', {
@@ -271,7 +292,7 @@ class CoopPortal(http.Controller):
     @http.route('/app/cargar/trabajo', type='http', auth='user', website=False)
     def cargar_paso3(self, item_id, cantidad, **kw):
         member = self._member()
-        item = request.env['coop.foja.item'].sudo().browse(int(item_id)).exists()
+        item = self._item_del_socio(member, item_id)
         cantidad = self._a_numero(cantidad)
         if not member or not item or cantidad <= 0:
             return request.redirect('/app/cargar')
@@ -285,7 +306,7 @@ class CoopPortal(http.Controller):
     def cargar_confirmar(self, item_id, cantidad, medida_trabajo,
                          cantidad_trabajo, **kw):
         member = self._member()
-        item = request.env['coop.foja.item'].sudo().browse(int(item_id)).exists()
+        item = self._item_del_socio(member, item_id)
         cantidad = self._a_numero(cantidad)
         trabajo = self._a_numero(cantidad_trabajo)
         if not member or not item or cantidad <= 0 or trabajo <= 0:
@@ -347,6 +368,7 @@ class CoopPortal(http.Controller):
     @staticmethod
     def _a_numero(valor):
         try:
-            return float(str(valor).replace(',', '.'))
+            numero = float(str(valor).replace(',', '.'))
+            return numero if math.isfinite(numero) else 0.0
         except (TypeError, ValueError):
             return 0.0

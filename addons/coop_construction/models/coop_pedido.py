@@ -30,6 +30,9 @@ class CoopMaterial(models.Model):
 
 class CoopPedidoMaterial(models.Model):
     _name = 'coop.pedido.material'
+    _inherit = ['coop.reviewable']
+    _pending_state = 'pendiente'
+    _review_fields = frozenset({'revisado_por', 'motivo_rechazo', 'corralon_id', 'orden_id'})
     _description = 'Pedido de material de un socio'
     _order = 'create_date desc'
 

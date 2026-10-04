@@ -30,3 +30,33 @@ class CoopWorkEntry(models.Model):
         for entry in self:
             if entry.hours <= 0:
                 raise ValidationError(_('Las horas trabajadas deben ser mayor a cero.'))
+
+    def _check_paid_payroll(self, payrolls):
+        if payrolls.filtered(lambda p: p.state == 'paid'):
+            raise ValidationError(_('No se pueden modificar horas de una liquidación pagada.'))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        default_payroll = self.default_get(['payroll_id']).get('payroll_id')
+        self._check_paid_payroll(self.env['coop.payroll'].browse([
+            vals.get('payroll_id', default_payroll) for vals in vals_list
+            if vals.get('payroll_id', default_payroll)
+        ]))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        payrolls = self.mapped('payroll_id')
+        if vals.get('payroll_id'):
+            payrolls |= self.env['coop.payroll'].browse(vals['payroll_id'])
+        self._check_paid_payroll(payrolls)
+        return super().write(vals)
+
+    def unlink(self):
+        self._check_paid_payroll(self.mapped('payroll_id'))
+        return super().unlink()
+
+    @api.constrains('member_id', 'payroll_id')
+    def _check_payroll_member(self):
+        for entry in self:
+            if entry.payroll_id and entry.member_id != entry.payroll_id.member_id:
+                raise ValidationError(_('Las horas y la liquidación deben pertenecer al mismo socio.'))

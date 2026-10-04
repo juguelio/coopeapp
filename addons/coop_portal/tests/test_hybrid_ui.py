@@ -98,3 +98,51 @@ class TestHybridUI(HttpCase):
         self.assertIn('Mi cuenta', tree.text_content())
         self.assertTrue(tree.xpath('//a[@href="/app/cambiar-pin"]'))
         self.assertIn('Pedile al administrador', tree.text_content())
+
+    # ── Modo foco: ingresar y cambiar-pin dentro del sistema visual ──
+    #
+    # Antes estas dos pantallas eran documentos HTML aparte con su propia
+    # hoja de estilo, así que cada vez que el diseño avanzaba se quedaban
+    # atrás (le pasó a `ingresar` con el híbrido; `cambiar_pin` seguía en el
+    # verde viejo). Ahora usan el layout con `sin_barra`, que oculta la barra
+    # de navegación y el pie.
+
+    def test_ingresar_usa_el_sistema_visual_sin_sesion(self):
+        """Sin sesión: hereda los estilos, y NO muestra barra ni pie."""
+        response = self.url_open('/app/ingresar')
+        self.assertEqual(response.status_code, 200)
+        tree = html.fromstring(response.content)
+        clases = tree.xpath('//body/@class')[0].split()
+        self.assertIn('ui-cartel', clases)
+        self.assertIn('ux-foco', clases)
+        # el fallo silencioso que hay que evitar: que se cuele la barra del
+        # socio a alguien que todavía no entró
+        self.assertFalse(tree.xpath('//div[@class="nav"]'))
+        self.assertFalse(tree.xpath('//div[contains(@class,"ux-footer")]'))
+        self.assertFalse(tree.xpath('//a[contains(@href,"logout")]'))
+        # y lo que sí tiene que estar
+        self.assertTrue(tree.xpath('//input[@name="telefono"]'))
+        self.assertTrue(tree.xpath('//input[@name="pin"]'))
+        self.assertTrue(tree.xpath('//a[@href="/web/login"]'))
+        self.assertIn('administrador', tree.text_content().lower())
+
+    def test_cambiar_pin_usa_el_sistema_visual(self):
+        """Con sesión, pero es una tarea única: mismo estilo, sin barra."""
+        self.authenticate(self.user.login, 'Local-UI-Test-Only')
+        response = self.url_open('/app/cambiar-pin')
+        self.assertEqual(response.status_code, 200)
+        tree = html.fromstring(response.content)
+        clases = tree.xpath('//body/@class')[0].split()
+        self.assertIn('ui-cartel', clases)
+        self.assertIn('ux-foco', clases)
+        self.assertFalse(tree.xpath('//div[@class="nav"]'))
+        self.assertTrue(tree.xpath('//input[@name="pin"]'))
+        self.assertTrue(tree.xpath('//input[@name="pin2"]'))
+
+    def test_la_barra_sigue_apareciendo_donde_corresponde(self):
+        """Control: `sin_barra` no puede haber apagado la barra en el resto."""
+        self.authenticate(self.user.login, 'Local-UI-Test-Only')
+        tree = self.page('/app')
+        self.assertEqual(tree.xpath('//div[@class="nav"]/a/@href'),
+                         ['/app', '/app/cargar', '/app/pedir', '/app/obra'])
+        self.assertTrue(tree.xpath('//div[contains(@class,"ux-footer")]'))

@@ -1,3 +1,4 @@
+import math
 from urllib.parse import quote
 
 from odoo import http
@@ -41,6 +42,31 @@ class CoopPortalCoordinador(http.Controller):
         # ya corregido en herramientas.py.
         return (bool(member) and bool(obra) and bool(obra.capataz_id)
                 and obra.capataz_id.id == member.id)
+
+    def _obras_socio(self, member):
+        """Las obras del plantel del socio. Es la misma búsqueda que arma la
+        pantalla de pedidos: el socio pide materiales de donde trabaja."""
+        if not member:
+            return request.env['project.project'].sudo()
+        return request.env['project.project'].sudo().search([
+            ('is_coop_obra', '=', True),
+            ('estado_obra', 'in', ['planificacion', 'activa']),
+            ('socio_obra_ids', 'in', member.ids),
+        ])
+
+    def _obra_del_socio(self, member, obra_id):
+        """La obra pedida, sólo si el socio participa en ella.
+
+        Las record rules del pedido dejan crear el registro propio y no miran
+        la obra: sin esto, un id de obra adivinado deja pedir materiales en
+        nombre de otra obra. Devuelve recordset vacío si no corresponde.
+        """
+        obras = self._obras_socio(member)
+        try:
+            pedida = int(obra_id or 0)
+        except (TypeError, ValueError):
+            return obras[:0]
+        return obras.filtered(lambda o: o.id == pedida)
 
     def _corralones(self):
         return request.env['coop.corralon'].sudo().search(
@@ -456,17 +482,12 @@ class CoopPortalCoordinador(http.Controller):
         member = self._member()
         if not member:
             return request.redirect('/app')
-        obras = request.env['project.project'].sudo().search([
-            ('is_coop_obra', '=', True),
-            ('estado_obra', 'in', ['planificacion', 'activa']),
-            ('socio_obra_ids', 'in', member.ids),
-        ])
+        obras = self._obras_socio(member)
         if not obras:
             return request.render('coop_portal.sin_obra', {
                 'member': member, 'nav_activo': 'pedir',
             })
-        obra = obras.filtered(lambda o: o.id == int(obra_id)) if obra_id else False
-        obra = obra[0] if obra else obras[0]
+        obra = self._obra_del_socio(member, obra_id)[:1] or obras[:1]
         materiales = request.env['coop.material'].sudo().search(
             [('active', '=', True)], order='name')
         return request.render('coop_portal.pedir_paso1', {
@@ -477,8 +498,7 @@ class CoopPortalCoordinador(http.Controller):
     @http.route('/app/pedir/cantidad', type='http', auth='user', website=False)
     def pedir_paso2(self, obra_id, material_id, **kw):
         member = self._member()
-        obra = request.env['project.project'].sudo().browse(
-            int(obra_id)).exists()
+        obra = self._obra_del_socio(member, obra_id)
         if not member or not obra:
             return request.redirect('/app/pedir')
         uom_labels = dict(request.env['coop.material']._fields['uom'].selection)
@@ -503,13 +523,12 @@ class CoopPortalCoordinador(http.Controller):
     def pedir_confirmar(self, obra_id, material_id, cantidad, nota=None,
                         descripcion=None, uom=None, **kw):
         member = self._member()
-        obra = request.env['project.project'].sudo().browse(
-            int(obra_id)).exists()
+        obra = self._obra_del_socio(member, obra_id)
         try:
             cant = float(str(cantidad).replace(',', '.'))
         except (TypeError, ValueError):
             cant = 0.0
-        if not member or not obra or cant <= 0:
+        if not member or not obra or not math.isfinite(cant) or cant <= 0:
             return request.redirect('/app/pedir')
         if material_id == OTRO:
             texto = (descripcion or '').strip()

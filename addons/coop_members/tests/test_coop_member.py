@@ -164,3 +164,77 @@ class TestCoopMember(TransactionCase):
         self.assertEqual(self.member.state, 'leaving')
         self.member.action_confirm_leaving()
         self.assertEqual(self.member.state, 'former')
+
+    def test_withdrawal_cannot_overdraw_on_confirmation(self):
+        withdrawal = self.env['coop.contribution'].create({
+            'member_id': self.member.id, 'name': 'Retiro sin fondos',
+            'type': 'withdrawal', 'amount': 100,
+        })
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            withdrawal.action_confirm()
+
+    def test_withdrawal_can_use_entire_available_capital(self):
+        self.env['coop.contribution'].create({
+            'member_id': self.member.id, 'name': 'Aporte',
+            'amount': 100, 'state': 'confirmed',
+        })
+        self.env['coop.contribution'].create({
+            'member_id': self.member.id, 'name': 'Retiro completo',
+            'type': 'withdrawal', 'amount': 100, 'state': 'confirmed',
+        })
+        self.assertEqual(self.member.social_capital, 0)
+
+    def test_syndic_reads_all_members_without_manager_permissions(self):
+        from odoo.exceptions import AccessError
+        syndic = self.env['res.users'].create({
+            'name': 'Síndico auditor', 'login': 'sindico_core_test',
+            'groups_id': [(6, 0, [self.env.ref('coop_members.group_coop_syndic').id])],
+        })
+        self.assertFalse(syndic.has_group('coop_members.group_coop_manager'))
+        self.assertIn(self.member, self.env['coop.member'].with_user(syndic).search([]))
+        with self.assertRaises(AccessError):
+            self.member.with_user(syndic).write({'name': 'Cambio no autorizado'})
+        contribution = self.env['coop.contribution'].create({
+            'member_id': self.member.id, 'name': 'Aporte', 'amount': 100,
+        })
+        self.assertEqual(contribution.with_user(syndic).amount, 100)
+        with self.assertRaises(AccessError):
+            contribution.with_user(syndic).action_confirm()
+
+    def test_manager_to_syndic_removes_management_groups(self):
+        self.member.role = 'manager'
+        self.member.role = 'syndic'
+        self.assertFalse(self.member.app_user_id.has_group('coop_members.group_coop_manager'))
+        self.assertFalse(self.member.app_user_id.has_group('coop_members.group_coop_coordinador'))
+        for xmlid in ('project.group_project_manager', 'project.group_project_user'):
+            project_group = self.env.ref(xmlid, raise_if_not_found=False)
+            if project_group:
+                self.assertNotIn(project_group, self.member.app_user_id.groups_id)
+
+    def test_syndic_upgrade_removes_stale_management_grants(self):
+        import importlib.util
+        from pathlib import Path
+
+        syndic = self.env['res.users'].create({
+            'name': 'Síndico anterior', 'login': 'sindico_upgrade_test',
+            'groups_id': [(6, 0, [self.env.ref('coop_members.group_coop_syndic').id,
+                                  self.env.ref('coop_members.group_coop_manager').id])],
+        })
+        manager = self.env['res.users'].create({
+            'name': 'Administrador conservado', 'login': 'manager_upgrade_test',
+            'groups_id': [(6, 0, [self.env.ref('coop_members.group_coop_manager').id])],
+        })
+        script = Path(__file__).resolve().parents[1] / 'migrations/18.0.1.7.0/post-migration.py'
+        spec = importlib.util.spec_from_file_location('coop_syndic_migration_test', script)
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        migration.migrate(self.cr, '18.0.1.6.0')
+        migration.migrate(self.cr, '18.0.1.6.0')
+        self.assertFalse(syndic.has_group('coop_members.group_coop_manager'))
+        self.assertFalse(syndic.has_group('coop_members.group_coop_coordinador'))
+        self.assertTrue(syndic.has_group('coop_members.group_coop_syndic'))
+        self.assertTrue(manager.has_group('coop_members.group_coop_manager'))
+        for xmlid in ('project.group_project_manager', 'project.group_project_user'):
+            project_group = self.env.ref(xmlid, raise_if_not_found=False)
+            if project_group:
+                self.assertNotIn(project_group, syndic.groups_id)

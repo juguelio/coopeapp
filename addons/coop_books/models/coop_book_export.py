@@ -59,7 +59,7 @@ class CoopBookExport(models.TransientModel):
         return self.env['coop.assembly'].search([
             ('assembly_type', '=', assembly_type),
             ('date', '>=', self.date_from),
-            ('date', '<=', self.date_to),
+            ('date', '<', fields.Date.add(self.date_to, days=1)),
             ('state', '=', 'closed'),
         ], order='date asc')
 

@@ -74,28 +74,28 @@ class CoopContribution(models.Model):
         ('amount_positive', 'CHECK(amount > 0)', 'El monto debe ser mayor a cero.'),
     ]
 
-    @api.constrains('amount')
+    @api.constrains('amount', 'state', 'type', 'member_id')
     def _check_withdrawal_amount(self):
         for contribution in self:
             if contribution.type == 'withdrawal' and contribution.state == 'confirmed':
                 member = contribution.member_id
                 current_capital = member.social_capital
-                if contribution.amount > current_capital:
+                if current_capital < 0:
                     raise ValidationError(
                         _('El retiro de %s supera el capital social disponible (%s).')
-                        % (contribution.amount, current_capital)
+                        % (contribution.amount, current_capital + contribution.amount)
                     )
 
     def action_confirm(self):
         self.write({'state': 'confirmed'})
-        self.message_post(
+        self.sudo().message_post(author_id=self.env.user.partner_id.id,
             body=_('Aporte/Retiro confirmado.'),
             message_type='notification',
         )
 
     def action_cancel(self):
         self.write({'state': 'cancelled'})
-        self.message_post(
+        self.sudo().message_post(author_id=self.env.user.partner_id.id,
             body=_('Aporte/Retiro anulado.'),
             message_type='notification',
         )

@@ -106,3 +106,12 @@ class TestCoopAssembly(TransactionCase):
         self.assertTrue(self.assembly.numero_acta,
                         'el acta se numera al generarse')
         self.assertIn('ACTA N° %s' % self.assembly.numero_acta, acta)
+
+    def test_exact_two_thirds_is_approved(self):
+        vote = self.env['coop.vote'].create({
+            'name': 'Dos tercios exactos', 'assembly_id': self.assembly.id,
+            'vote_type': 'two_thirds', 'votes_yes': 2, 'votes_no': 1,
+        })
+        self.assertTrue(vote.approved)
+        vote.votes_no = 2
+        self.assertFalse(vote.approved)

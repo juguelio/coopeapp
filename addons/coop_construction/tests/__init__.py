@@ -9,3 +9,5 @@ from . import test_contrato_estado
 from . import test_seguros
 from . import test_seguros_pantalla
 from . import test_nivel_riesgo
+
+from . import test_pilot_integrity

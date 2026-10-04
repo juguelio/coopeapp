@@ -1,6 +1,7 @@
 import re
 
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 from .coop_pedido import UOM_COMPRA
 
@@ -258,6 +259,10 @@ class CoopOrdenCorralon(models.Model):
         orden por corralón con sus líneas explicadas. Determinista.
         Asignación por línea completa (sin partir saldo): cada pedido va a la
         fuente más barata que lo cubre. Devuelve dict con ordenes y skipped."""
+        obra.ensure_one()
+        if any(p.obra_id != obra or p.state != 'aceptado' or p.orden_id
+               for p in pedidos):
+            raise UserError('Solo se pueden ordenar pedidos aceptados, sin orden y de esta obra.')
         Linea = self.env['coop.orden.corralon.linea']
         # saldo disponible por acopio, se va consumiendo dentro de la corrida
         saldo_restante = {

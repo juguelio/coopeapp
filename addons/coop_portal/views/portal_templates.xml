@@ -4,6 +4,7 @@
     <!-- ============ LAYOUT ============ -->
     <template id="layout" name="App socios: layout">
         <t t-set="nav_activo" t-value="nav_activo or 'inicio'"/>
+        <t t-set="sin_barra" t-value="sin_barra or False"/>
         &lt;!DOCTYPE html&gt;
         <html lang="es">
         <head>
@@ -79,10 +80,11 @@
             </style>
             <t t-call="coop_portal.hybrid_styles"/>
         </head>
-        <body t-att-class="'ui-' + ui_mode if ui_mode else None">
+        <t t-set="body_class" t-value="(('ui-' + ui_mode) if ui_mode else '') + (' ux-foco' if sin_barra else '')"/>
+        <body t-att-class="body_class.strip() or None">
             <t t-call="coop_portal.hybrid_icons" t-if="ui_mode"/>
             <main class="ux-content"><t t-out="0"/></main>
-            <div class="ux-footer" style="text-align:center;padding:20px 0 90px">
+            <div class="ux-footer" t-if="not sin_barra" style="text-align:center;padding:20px 0 90px">
                 <a href="/app/cuenta"
                    style="color:var(--gris);font-size:14px;text-decoration:none">👤 Mi cuenta</a>
                 <span style="color:#cbd3da;margin:0 8px">·</span>
@@ -92,7 +94,7 @@
                 <a href="/web/session/logout?redirect=/app/ingresar"
                    style="color:var(--gris);font-size:14px;text-decoration:none">↪ Cerrar sesión</a>
             </div>
-            <div class="nav" t-if="nav_rol == 'sindico'">
+            <div class="nav" t-if="not sin_barra and nav_rol == 'sindico'">
                 <a href="/app/control" t-att-class="'viva' if nav_activo == 'control' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-obra"/></svg><span t-else="" class="ico">🛡️</span>Control</a>
                 <a href="/app/auditoria" t-att-class="'viva' if nav_activo == 'auditoria' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-doc"/></svg><span t-else="" class="ico">🔎</span>Auditoría</a>
                 <a href="/app/asamblea" t-att-class="'viva' if nav_activo == 'asamblea' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-asamblea"/></svg><span t-else="" class="ico">🗳️</span>Asamblea</a>
@@ -111,7 +113,7 @@
                 <a href="/app/pedidos" t-att-class="'viva' if nav_activo == 'pedidos' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-nota"/></svg><span t-else="" class="ico">📋</span>Pedidos</a>
                 <a href="/app/corralon" t-att-class="'viva' if nav_activo == 'corralon' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-corralon"/></svg><span t-else="" class="ico">📦</span>Corralón</a>
             </div>
-            <div class="nav" t-else="">
+            <div class="nav" t-elif="not sin_barra">
                 <a href="/app" t-att-class="'viva' if nav_activo == 'inicio' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-inicio"/></svg><span t-else="" class="ico">🏠</span>Inicio</a>
                 <a href="/app/cargar" t-att-class="'viva' if nav_activo == 'cargar' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-cargar"/></svg><span t-else="" class="ico">✏️</span>Cargar</a>
                 <a href="/app/pedir" t-att-class="'viva' if nav_activo == 'pedir' else None"><svg t-if="ui_mode" class="ux-icon" aria-hidden="true"><use href="#k-pedir"/></svg><span t-else="" class="ico">🧱</span>Pedir</a>
@@ -122,34 +124,60 @@
                 📴 Sin señal — lo que cargues se guarda y se envía solo cuando vuelva.
             </div>
 
-            <script>
+            <script t-att-data-queue-uid="request.env.uid" t-att-data-csrf-token="request.csrf_token()">
                 if ('serviceWorker' in navigator) {
                     window.addEventListener('load', function () {
                         navigator.serviceWorker.register('/app/sw.js', {scope: '/app/'}).catch(function () {});
                     });
                 }
                 (function () {
-                    var KEY = 'coopeapp_cola_avances';
+                    var queueUid = document.currentScript.getAttribute('data-queue-uid');
+                    var csrfToken = document.currentScript.getAttribute('data-csrf-token');
+                    var KEY = 'coopeapp_cola_avances_' + queueUid;
+                    var syncing = false;
                     function cola() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
                     function guardar(c) { localStorage.setItem(KEY, JSON.stringify(c)); }
+                    function nuevoToken() {
+                        var bytes = new Uint8Array(16);
+                        crypto.getRandomValues(bytes);
+                        return Array.from(bytes, function (b) {
+                            return b.toString(16).padStart(2, '0');
+                        }).join('');
+                    }
                     function avisoOffline() {
                         var el = document.getElementById('offline-aviso');
                         if (el) { el.style.display = navigator.onLine ? 'none' : 'block'; }
                     }
                     function sincronizar() {
-                        if (!navigator.onLine) { return; }
+                        if (!navigator.onLine || syncing) { return; }
                         var pend = cola();
                         if (!pend.length) { return; }
-                        var resto = [];
+                        // Persistir ANTES de enviar: el mismo token sobrevive
+                        // a un cierre de pestaña o a perder la respuesta HTTP.
+                        pend.forEach(function (item) {
+                            if (!item.sync_token) {
+                                item.sync_token = nuevoToken();
+                            }
+                        });
+                        guardar(pend);
+                        syncing = true;
+                        var confirmados = new Set();
                         var faltan = pend.length;
                         pend.forEach(function (item) {
                             var fd = new FormData();
                             Object.keys(item).forEach(function (k) { fd.append(k, item[k]); });
+                            fd.set('queue_uid', queueUid);
+                            fd.set('csrf_token', csrfToken);
                             fetch('/app/cargar/sync', {method: 'POST', body: fd, credentials: 'same-origin'})
                                 .then(function (r) { return r.json(); })
-                                .then(function (j) { if (!j.ok) { resto.push(item); } })
-                                .catch(function () { resto.push(item); })
-                                .finally(function () { faltan--; if (faltan === 0) { guardar(resto); } });
+                                .then(function (j) { if (j.ok) { confirmados.add(item.sync_token); } })
+                                .catch(function () { /* Sigue en cola para reintentar. */ })
+                                .finally(function () { faltan--; if (faltan === 0) {
+                                    guardar(cola().filter(function (item) {
+                                        return !confirmados.has(item.sync_token);
+                                    }));
+                                    syncing = false;
+                                } });
                         });
                     }
                     window.addEventListener('online', function () { avisoOffline(); sincronizar(); });
@@ -163,6 +191,7 @@
                         ev.preventDefault();
                         var datos = {};
                         new FormData(f).forEach(function (v, k) { datos[k] = v; });
+                        datos.sync_token = nuevoToken();
                         var c = cola(); c.push(datos); guardar(c);
                         window.location = '/app/cargar/encolado';
                     });
@@ -1664,100 +1693,55 @@
 
     <!-- ============ LOGIN TELÉFONO + PIN ============ -->
     <template id="ingresar" name="App: ingresar con teléfono y PIN">
-        &lt;!DOCTYPE html&gt;
-        <html lang="es">
-        <head>
-            <meta charset="utf-8"/>
-            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-            <meta name="theme-color" content="#1a7f4e"/>
-            <link rel="manifest" href="/app/manifest.webmanifest"/>
-            <link rel="apple-touch-icon" href="/coop_portal/static/img/icon.svg"/>
-            <link rel="icon" href="/coop_portal/static/img/icon.svg"/>
-            <title>coopeapp · ingresar</title>
-            <style>
-                :root{--plano:#0e2e4a;--accion:#c34412;--papel:#faf9f6;--tinta:#0b1114;--gris:#52616c;--rojo:#b3261e}
-                *{box-sizing:border-box}
-                body{font-family:Arial,Helvetica,sans-serif;background:var(--plano);margin:0;padding:0;color:var(--tinta)}
-                .wrap{max-width:480px;margin:0 auto;padding:24px 20px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
-                .logo{text-align:center;margin-bottom:18px}
-                .logo img{width:76px;height:76px;background:var(--papel);padding:8px;border:4px solid var(--accion)}
-                .eyebrow{text-align:center;color:#e4edf3;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
-                h1{text-align:center;color:#fff;font-size:36px;line-height:1.05;margin:0 0 8px;font-weight:900}
-                .sub{text-align:center;color:#e4edf3;font-size:17px;margin-bottom:22px}
-                .panel{background:var(--papel);padding:22px 20px;border-top:6px solid var(--accion)}
-                label{display:block;font-size:16px;font-weight:700;margin:0 0 6px;color:var(--tinta)}
-                input{width:100%;padding:15px;border:2px solid #cfd7dc;border-radius:0;font-size:18px;margin:0 0 16px;min-height:56px;background:#fff}
-                input:focus{outline:3px solid #f2b01e;outline-offset:2px;border-color:var(--plano)}
-                button{width:100%;padding:18px;background:var(--accion);color:#fff;border:0;border-radius:0;font-size:21px;font-weight:900;min-height:64px;box-shadow:inset 0 -5px 0 #8c2e08}
-                .err{background:#fdeceb;color:var(--rojo);padding:12px;border-left:5px solid var(--rojo);font-size:15px;margin-bottom:16px;text-align:left}
-                .alt{text-align:center;margin-top:18px;font-size:15px;line-height:1.4;color:#e4edf3}
-                .alt a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px}
-            </style>
-        </head>
-        <body>
-            <div class="wrap">
-                <div class="logo"><img src="/coop_portal/static/img/icon.svg" alt="coopeapp"/></div>
-                <div class="eyebrow">Cooperativa de trabajo</div>
-                <h1>Entrar a coopeapp</h1>
-                <div class="sub">Con tu teléfono y tu PIN.</div>
-                <div class="panel">
-                    <div class="err" t-if="error"><t t-esc="error"/></div>
-                    <form action="/app/ingresar/entrar" method="post">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <label for="telefono">Teléfono</label>
-                        <input id="telefono" type="tel" name="telefono" placeholder="Tu teléfono" inputmode="tel" required="required"/>
-                        <label for="pin">PIN</label>
-                        <input id="pin" type="password" name="pin" placeholder="Tu PIN" inputmode="numeric" required="required"/>
-                        <button type="submit">Entrar</button>
-                    </form>
-                </div>
-                <div class="alt">¿Sos de la administración? <a href="/web/login">Entrá a la oficina (escritorio) →</a></div>
-            </div>
-        </body>
-        </html>
-    </template>
-
-    <!-- ============ CAMBIO DE PIN (PRIMER INGRESO) ============ -->
-    <template id="cambiar_pin" name="App: cambiar PIN">
-        &lt;!DOCTYPE html&gt;
-        <html lang="es">
-        <head>
-            <meta charset="utf-8"/>
-            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-            <meta name="theme-color" content="#1a7f4e"/>
-            <link rel="manifest" href="/app/manifest.webmanifest"/>
-            <link rel="apple-touch-icon" href="/coop_portal/static/img/icon.svg"/>
-            <link rel="icon" href="/coop_portal/static/img/icon.svg"/>
-            <title>coopeapp · cambiar PIN</title>
-            <style>
-                body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#f4f6f8;margin:0;padding:0;color:#1a2430}
-                .wrap{max-width:420px;margin:0 auto;padding:40px 20px;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center}
-                .logo{text-align:center;margin-bottom:20px}
-                .logo img{width:72px;height:72px}
-                h1{text-align:center;font-size:23px;margin:0 0 6px}
-                .sub{text-align:center;color:#6b7785;font-size:15px;margin-bottom:22px}
-                input{width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dee5;border-radius:12px;font-size:17px;margin-bottom:12px}
-                button{width:100%;padding:16px;background:#1a7f4e;color:#fff;border:0;border-radius:12px;font-size:18px;font-weight:700}
-                .err{background:#fdeceb;color:#b3261e;padding:12px;border-radius:12px;font-size:14px;margin-bottom:12px;text-align:center}
-                .aviso{background:#fdf3e0;color:#a36b00;padding:12px;border-radius:12px;font-size:14px;margin-bottom:16px;text-align:center}
-            </style>
-        </head>
-        <body>
-            <div class="wrap">
-                <div class="logo"><img src="/coop_portal/static/img/icon.svg" alt="coopeapp"/></div>
-                <h1>Elegí tu PIN</h1>
-                <div class="sub">Por seguridad, cambiá el PIN inicial por uno tuyo.</div>
-                <div class="aviso">Tu PIN es tu clave para entrar. No se lo des a nadie.</div>
-                <div class="err" t-if="error"><t t-esc="error"/></div>
-                <form action="/app/cambiar-pin/guardar" method="post">
+        <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel'"/>
+            <t t-set="sin_barra" t-value="True"/>
+            <div class="ux-marca"><img src="/coop_portal/static/img/icon.svg" alt="coopeapp"/></div>
+            <div class="paso">Cooperativa de trabajo</div>
+            <h1>Entrar a coopeapp</h1>
+            <div class="sub">Con tu teléfono y tu PIN.</div>
+            <div class="card">
+                <div class="ux-error" t-if="error"><t t-esc="error"/></div>
+                <form action="/app/ingresar/entrar" method="post">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <input type="password" name="pin" placeholder="Nuevo PIN (4 a 8 números)" inputmode="numeric" required="required"/>
-                    <input type="password" name="pin2" placeholder="Repetí el nuevo PIN" inputmode="numeric" required="required"/>
-                    <button type="submit">Guardar mi PIN</button>
+                    <label for="telefono">Teléfono</label>
+                    <input id="telefono" type="tel" name="telefono" placeholder="Tu teléfono"
+                           inputmode="tel" autocomplete="tel" required="required"/>
+                    <label for="pin">PIN</label>
+                    <input id="pin" type="password" name="pin" placeholder="Tu PIN"
+                           inputmode="numeric" autocomplete="current-password" required="required"/>
+                    <button class="botonazo ux-primary" type="submit">Entrar</button>
                 </form>
             </div>
-        </body>
-        </html>
+            <p class="ux-alt">
+                ¿Todavía no tenés PIN? Pedíselo al administrador de tu cooperativa.<br/>
+                ¿Sos de la administración? <a href="/web/login">Entrá a la oficina (escritorio) →</a>
+            </p>
+        </t>
+    </template>
+
+    <template id="cambiar_pin" name="App: cambiar PIN">
+        <t t-call="coop_portal.layout">
+            <t t-set="ui_mode" t-value="'cartel'"/>
+            <t t-set="sin_barra" t-value="True"/>
+            <div class="ux-marca"><img src="/coop_portal/static/img/icon.svg" alt="coopeapp"/></div>
+            <h1>Elegí tu PIN</h1>
+            <div class="sub">Por seguridad, cambiá el PIN inicial por uno tuyo.</div>
+            <div class="card">
+                <div class="ux-aviso">Tu PIN es tu clave para entrar. No se lo des a nadie.</div>
+                <div class="ux-error" t-if="error"><t t-esc="error"/></div>
+                <form action="/app/cambiar-pin/guardar" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <label for="pin">Nuevo PIN</label>
+                    <input id="pin" type="password" name="pin" placeholder="4 a 8 números"
+                           inputmode="numeric" autocomplete="new-password" required="required"/>
+                    <label for="pin2">Repetilo</label>
+                    <input id="pin2" type="password" name="pin2" placeholder="Escribilo de nuevo"
+                           inputmode="numeric" autocomplete="new-password" required="required"/>
+                    <button class="botonazo ux-primary" type="submit">Guardar mi PIN</button>
+                </form>
+            </div>
+        </t>
     </template>
 
     <!-- ============ CARGA OFFLINE: ENCOLADO ============ -->

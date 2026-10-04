@@ -170,3 +170,12 @@ class TestCoopBooks(TransactionCase):
         rows = self.wizard.get_capital_summary()
         row1 = next(r for r in rows if r['member'] == self.member1)
         self.assertEqual(row1['capital'], 40000)
+
+    def test_assembly_export_includes_last_day_evening(self):
+        assembly = self.env['coop.assembly'].create({
+            'name': 'Última asamblea del período', 'assembly_type': 'ordinary',
+            'date': '2026-12-31 18:00:00', 'state': 'closed',
+        })
+        self.assertIn(assembly, self.wizard.get_assemblies('ordinary'))
+        assembly.date = '2027-01-01 00:00:00'
+        self.assertNotIn(assembly, self.wizard.get_assemblies('ordinary'))

@@ -1,0 +1,26 @@
+name: Pruebas aisladas
+
+on:
+  pull_request:
+    paths: ['addons/**', 'scripts/**', '.github/workflows/**']
+  push:
+    branches: [main]
+    # Los pushes de addons a main ya ejecutan esta suite desde deploy.yml.
+    paths: ['scripts/**', '.github/workflows/**']
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar y verificar los siete módulos en una base descartable
+        run: bash scripts/test-local.sh
+      - name: Conservar evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: odoo-test-logs
+          path: /tmp/coopeapp-tests.*/*.log

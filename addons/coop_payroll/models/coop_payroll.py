@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class CoopPayroll(models.Model):
@@ -91,7 +91,6 @@ class CoopPayroll(models.Model):
         'coop.advance',
         'payroll_id',
         string='Anticipos descontados',
-        domain=[('state', '=', 'approved')],
     )
     total_advances = fields.Monetary(
         string='Total anticipos',
@@ -168,6 +167,7 @@ class CoopPayroll(models.Model):
         'work_entry_ids.hours',
         'hour_rate',
         'advance_ids.amount',
+        'advance_ids.state',
         'bonus_amount',
         'deduction_amount',
     )
@@ -175,7 +175,7 @@ class CoopPayroll(models.Model):
         for payroll in self:
             payroll.total_hours = sum(e.hours for e in payroll.work_entry_ids)
             payroll.hours_amount = payroll.total_hours * payroll.hour_rate
-            payroll.total_advances = sum(a.amount for a in payroll.advance_ids)
+            payroll.total_advances = sum(a.amount for a in payroll.advance_ids if a.state == 'approved')
             payroll.gross_amount = payroll.hours_amount + payroll.bonus_amount
             payroll.net_amount = (
                 payroll.gross_amount
@@ -195,10 +195,18 @@ class CoopPayroll(models.Model):
                         _('La fecha de fin no puede ser anterior a la de inicio.')
                     )
 
-    @api.constrains('net_amount')
+    @api.constrains('member_id', 'work_entry_ids', 'advance_ids')
+    def _check_child_members(self):
+        for payroll in self:
+            if any(entry.member_id != payroll.member_id for entry in payroll.work_entry_ids) or any(
+                advance.member_id != payroll.member_id for advance in payroll.advance_ids
+            ):
+                raise ValidationError(_('Las horas y anticipos deben pertenecer al socio de la liquidación.'))
+
+    @api.constrains('net_amount', 'state')
     def _check_net_amount(self):
         for payroll in self:
-            if payroll.state == 'approved' and payroll.net_amount < 0:
+            if payroll.state in ('approved', 'paid') and payroll.net_amount < 0:
                 raise ValidationError(
                     _('El importe neto no puede ser negativo. Revisá los anticipos.')
                 )
@@ -207,6 +215,15 @@ class CoopPayroll(models.Model):
     # Write lock — una liquidación pagada no se puede modificar
     # -------------------------------------------------------------------------
     def write(self, vals):
+        if not self.env.su and not self.env.user.has_group('coop_members.group_coop_manager'):
+            if set(vals) - {'member_observation', 'member_agrees'}:
+                raise AccessError(_('Solo la administración puede modificar la liquidación.'))
+            if self.filtered(lambda p: p.state != 'review'):
+                raise ValidationError(_('Solo se puede dar conformidad durante la revisión.'))
+        if vals.get('state') == 'paid' and self.filtered(lambda p: p.state != 'approved'):
+            raise ValidationError(_('Solo se puede pagar una liquidación aprobada.'))
+        if vals.get('state') == 'approved' and self.filtered(lambda p: p.state != 'review'):
+            raise ValidationError(_('La liquidación debe pasar por revisión antes de aprobarse.'))
         if self.filtered(lambda p: p.state == 'paid'):
             raise ValidationError(_('Una liquidación pagada no puede modificarse.'))
         return super().write(vals)
@@ -226,7 +243,7 @@ class CoopPayroll(models.Model):
         """Envía la liquidación al socio para que la revise."""
         for payroll in self:
             payroll.write({'state': 'review'})
-            payroll.message_post(
+            payroll.sudo().message_post(author_id=self.env.user.partner_id.id,
                 body=_('Liquidación enviada al socio para revisión. El socio puede marcar observaciones.'),
                 message_type='notification',
             )
@@ -237,7 +254,7 @@ class CoopPayroll(models.Model):
             if payroll.net_amount < 0:
                 raise ValidationError(_('No se puede aprobar una liquidación con importe neto negativo.'))
             payroll.write({'state': 'approved'})
-            payroll.message_post(
+            payroll.sudo().message_post(author_id=self.env.user.partner_id.id,
                 body=_('Liquidación aprobada. Pendiente de pago.'),
                 message_type='notification',
             )
@@ -249,7 +266,7 @@ class CoopPayroll(models.Model):
                 'state': 'paid',
                 'date_paid': payroll.date_paid or fields.Date.today(),
             })
-            payroll.message_post(
+            payroll.sudo().message_post(author_id=self.env.user.partner_id.id,
                 body=_('Liquidación pagada el %s.') % payroll.date_paid,
                 message_type='notification',
             )
@@ -263,7 +280,7 @@ class CoopPayroll(models.Model):
     def action_member_agree(self):
         """El socio marca que está conforme con la liquidación."""
         self.write({'member_agrees': True})
-        self.message_post(
+        self.sudo().message_post(author_id=self.env.user.partner_id.id,
             body=_('El socio confirmó estar conforme con esta liquidación.'),
             message_type='notification',
         )

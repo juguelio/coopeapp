@@ -119,6 +119,9 @@ class CoopFojaItem(models.Model):
 
 class CoopAvanceMedicion(models.Model):
     _name = 'coop.avance.medicion'
+    _inherit = ['coop.reviewable']
+    _pending_state = 'borrador'
+    _review_fields = frozenset()
     _description = 'Avance de medición registrado por un socio'
     _order = 'fecha desc, id desc'
 
@@ -154,8 +157,12 @@ class CoopAvanceMedicion(models.Model):
         ('validado', 'Validado'),
     ], string='Estado', default='borrador', required=True)
     observaciones = fields.Char(string='Observaciones')
+    portal_sync_token = fields.Char(
+        string='Identificador de carga offline', copy=False, index=True)
 
     _sql_constraints = [
+        ('portal_sync_token_member_unique', 'UNIQUE(member_id, portal_sync_token)',
+         'Esta carga offline ya fue recibida para este socio.'),
         ('cantidad_positiva', 'CHECK(cantidad > 0)',
          'La cantidad producida debe ser positiva.'),
         ('trabajo_positivo', 'CHECK(cantidad_trabajo > 0)',
